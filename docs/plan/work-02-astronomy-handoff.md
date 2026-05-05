@@ -10,8 +10,8 @@
 
 | 항목 | 값 |
 |---|---|
-| 현재 phase | **P2 완료** ✓ — P3 진입 대기 |
-| 다음 액션 | **P3 — Reference Frames (Core)** 진입 — 세차/장동 모델 / frame bias / 행렬 표현 / ε 값 4건 결정 |
+| 현재 phase | **P3 완료** ✓ — P4 진입 대기 |
+| 다음 액션 | **P4 — IAU Rotation Model Foundation** 진입 — 회전 모델 데이터 출처 / 검증 천체 2건 결정 |
 | 마지막 갱신 | 2026-05-05 |
 | 블로커 | 없음 |
 
@@ -22,7 +22,7 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 - [x] **P1** — Constants & NAIF Catalog _(완료 2026-05-05)_
 - [x] **P2** — Time Systems _(완료 2026-05-05)_
-- [ ] **P3** — Reference Frames (Core)
+- [x] **P3** — Reference Frames (Core) _(완료 2026-05-05)_
 - [ ] **P4** — IAU Rotation Model Foundation
 - [ ] **P5** — Dev Demo `/dev/astro`
 - [ ] **P6** — Cross-validation & Golden Fixtures (Closeout)
@@ -41,6 +41,10 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 6 | TDB-TT 모델 | **Fairhead-Bretagnon 1990 simplified, 1차항** (`0.001658·sin(g) + 0.000014·sin(2g)`, ~50µs vs IAU 2009) | 풀 시리즈(787항)는 코드 ~30KB. Work 2~10 visualization timeline에 50µs 충분. Work 12 검증 시 풀 모델 업그레이드 검토. astropy 비교 budget = 100µs. | P2 | 2026-05-05 |
 | 7 | JD epoch 기준 시각 | **TDB** (`J2000_JD_TDB = 2451545.0`, 천체역학 표준) | Work 3+의 ephemeris 평가 입력이 모두 JD_TDB. UTC/TT epoch이 필요하면 명시 변환. brand type (`JdTdb`/`JdTt`/`JdTai`/`JdUtc`)으로 컴파일 타임 구분. | P2 | 2026-05-05 |
 | 8 | 톨러런스 | **UTC/TAI/TT/JD 1µs (fixture 비트 동일), TDB 100µs (astropy IAU 2009 비교)**, invariant test는 cancellation 한계로 1e-4 (~100µs) | TS와 Python이 같은 알고리즘 → 같은 IEEE 754 결과 (fixture-based bit-identical). astropy 비교는 모델 차이 ~50µs + 안전 마진. JD ~2.46e6 + double precision = 9 fractional digits → invariant 검증은 cancellation 한계 안에서. | P2 | 2026-05-05 |
+| 9 | 세차/장동 모델 | **무시 (J2000 고정)** — Work 7/8 timeline 확장 시 재평가 | J2000 ± 100yr 누적 오차 ~50″ (Work 2~6 visualization timeline에 충분). IAU 2006/2000A 풀 모델은 코드 ~수 KB + 매 frame 평가 비용. 보이저(1977)~미래 100년 시연 시 mas 정밀도 부족 → Work 12 검증 시 재고. | P3 | 2026-05-05 |
+| 10 | ICRF↔EME2000 frame bias | **적용** (RB matrix from ERFA `bp00` / IAU 2006/2000A, ~23 mas RSS) | 23 mas는 1 AU 거리에서 ~17 km — 무시 못함. RB는 시간 무관 상수 (한 번 계산 후 임베드). bit-exact ERFA `bp00(2451545.0, 0.0)` 결과 9 doubles. orthogonality `B Bᵀ = I` 1e-15 안에서 보장. | P3 | 2026-05-05 |
+| 11 | 회전 행렬 표현 | **3×3 row-major readonly tuple `[number; 9]`** + `Vec3 = readonly [n,n,n]` | 9개 분리 곱셈으로 명시 (loop unroll → cancellation/precision 안정 + `noUncheckedIndexedAccess` 우회). `THREE.Matrix3` 어댑터는 Work 5 렌더링 단계에서 추가. matMul3/matVec3/transposeMatrix3 헬퍼만 제공. | P3 | 2026-05-05 |
+| 12 | 황도경사 ε | **IAU 2006 P03 J2000 = 0.4090926006005829 rad** (P1 #1에서 결정한 `EPS_J2000` 재사용) | ERFA `obl06(2451545.0, 0.0)` 결과 = 84381.406 arcsec. IAU 1976 (84381.448 arcsec) 대비 0.04 arcsec = 40 mas 차이 — IAU 2006이 더 정확. R_x(ε) = `[[1,0,0],[0,cos ε,sin ε],[0,-sin ε,cos ε]]` 컨벤션. | P3 | 2026-05-05 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -59,10 +63,10 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] 톨러런스: **UTC/TAI/TT/JD 1µs / TDB 100µs / invariant 1e-4** ✓ (#8, cancellation 한계 발견 후 조정)
 
 ### P3에서 결정
-- [ ] 세차/장동 모델 (무시 J2000 고정 / IAU 2006/2000A 풀 / IAU 1976/1980 단순)
-- [ ] ICRF↔EME2000 frame bias 적용 여부 (적용 / 무시)
-- [ ] 회전 행렬 표현 (3×3 row-major `number[9]` / THREE.Matrix3 어댑터)
-- [ ] 황도경사 ε 값 (IAU 2006 J2000 / IAU 1976)
+- [x] 세차/장동 모델: **무시 (J2000 고정)** ✓ (#9)
+- [x] ICRF↔EME2000 frame bias: **적용** (ERFA bp00 RB 매트릭스 임베드) ✓ (#10)
+- [x] 회전 행렬 표현: **3×3 row-major readonly tuple** (loop unroll matMul3) ✓ (#11)
+- [x] 황도경사 ε 값: **IAU 2006 P03 J2000 = 0.4090926006005829 rad** (P1 EPS_J2000 재사용) ✓ (#12)
 
 ### P4에서 결정
 - [ ] IAU 회전 데이터 출처 (WGCCRE 2015 인라인 / spiceypy PCK 런타임 / 병행)
@@ -157,8 +161,35 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 - **CI workflow extras 갱신**: P1 메모대로 `[astro,dev]` 적용 — Python job에서 astropy/spiceypy 사용 가능 (P3+ frames/rotation reference에 필요).
 - **CLI 패턴 정착**: `orbitarium-tools fixtures --work=N --out=DIR` — Work 3+에서도 동일 패턴으로 새 모듈 추가만 하면 된다.
 
-### P3 — Reference Frames (Core)
-_미시작_
+### P3 — Reference Frames (Core) _(완료 2026-05-05)_
+생성/수정 파일:
+- [`src/astro/frames.ts`](../../src/astro/frames.ts) — `Vec3` / `Matrix3` (readonly tuples), 행렬 헬퍼 (`matVec3`, `matMul3`, `transposeMatrix3`, `IDENTITY_MATRIX3`), 6개 변환 행렬 (`ICRF_TO_EME2000` 임베드 + 5개 파생), 6개 vector convenience 함수.
+- [`src/astro/index.ts`](../../src/astro/index.ts) — `frames` re-export 추가.
+- [`tools/python/src/orbitarium_tools/frames.py`](../../tools/python/src/orbitarium_tools/frames.py) — TS 미러. `erfa_frame_bias_matrix()` 헬퍼 (런타임 ERFA bp00 비교용). `_TEST_VECTORS_ICRF` 12개 + `generate_fixtures(out_dir)` 함수.
+- [`tools/python/src/orbitarium_tools/cli.py`](../../tools/python/src/orbitarium_tools/cli.py) — `args.work == 2` 분기에서 time + frames 두 fixture 생성 호출.
+
+테스트 + fixture:
+- [`tests/fixtures/work-02/frames.json`](../../tests/fixtures/work-02/frames.json) — 12 ICRF 테스트 벡터 (단위 축 6개, 1/√3 단위벡터, 임의 3개, 1AU magnitude 2개) → (eme2000, ecliptic_j2000, round_trip_icrf). 추가로 `matrices` 섹션에 임베드 행렬 9-tuple 3개.
+- [`tests/unit/astro/frames.test.ts`](../../tests/unit/astro/frames.test.ts) — 5 그룹: 행렬 유틸 (5 tests) + 임베드 행렬 sanity (4 tests) + orthogonality `B Bᵀ = I` (3 tests) + transpose 페어 (3 tests) + fixture 비교 (12 × 5 = 60 tests) + 축 방향 (2 tests). 총 ~77 sub-tests.
+- [`tools/python/tests/test_frames.py`](../../tools/python/tests/test_frames.py) — 15 tests: 임베드/ERFA bp00 bit-exact, frame bias magnitude, orthogonality (3건), 축 방향 (2건), 라운드트립, astropy ICRS↔BarycentricMeanEcliptic 1mas 비교, fixture 생성/자기일관성.
+
+검증 결과:
+- `pnpm typecheck` ✓ — `Matrix3 = readonly [n,n,n,...,n]` (9-tuple) 패턴이 `noUncheckedIndexedAccess`를 자연 우회 (positional [0]~[8]).
+- `pnpm lint` ✓ — 초기 simple-import-sort 1건 → autofix.
+- `pnpm format:check` ✓ — Prettier가 `EME2000_TO_ECLIPTIC_J2000` 9-element literal을 9줄로 분할 (가독성 약간 떨어지지만 일관).
+- `pnpm test` ✓ — **261 tests** (P1+P2 184 → P3 +77).
+- `pnpm build` ✓ — 1113.46 kB (변동 없음).
+- `pnpm test:e2e` ✓ — 7 tests, 회귀 없음.
+- `uv run ruff check` ✓ — 6 SIM300 yoda → autofix (Final 상수 좌측 → 우측). RUF002/003 minus/dash 룰 회피 (ASCII만 사용).
+- `uv run mypy src` ✓ — `erfa` 모듈 type stubs 없음 → `import erfa  # type: ignore[import-untyped]` 처리.
+- `uv run pytest` ✓ — **61 tests** (P1+P2 46 → P3 +15).
+
+설계 결정 + 발견:
+- **임베드 vs 런타임 ERFA**: TS는 ERFA를 못 부르므로 bp00 결과 9 doubles 임베드. Python은 정상 임포트 + 헬퍼 `erfa_frame_bias_matrix()`로 매번 ERFA 호출. 두 결과 bit-exact 일치 검증 (`test_icrf_to_eme2000_matches_erfa_bp00_bit_exact`). 향후 IERS가 bias 모델 업데이트 시 한 번만 갱신.
+- **R_x(ε) 부호 컨벤션**: `R_x(ε) = [[1,0,0],[0,cos ε,sin ε],[0,-sin ε,cos ε]]` — ICRF Z (0,0,1) → ecliptic (0, +sin ε, cos ε). 처음 docstring에 -sin ε 적은 건 잘못 — 테스트 expected value도 +sin ε로 수정.
+- **frame bias 컴포넌트 한계**: ICRF X → ecliptic Z 컴포넌트는 frame bias + R_x(ε) 합성으로 ~21 mas (단순 ~17 mas 아님) — 톨러런스 1e-7 → 2e-7로 완화.
+- **astropy 비교의 의미**: 우리 transform vs astropy `ICRS → BarycentricMeanEcliptic(equinox=J2000.0)` 1 mas 안에서 일치 (J2000 epoch에서 precession=0이므로 mean ecliptic = our ICRF→Ecliptic). 본 구현이 astropy reference와 호환됨을 보장.
+- **Loop-unrolled matMul3**: 9개 분리 expression — TS의 noUncheckedIndexedAccess 우회 + dynamic index 추론 회피 + IEEE 754 evaluation 안정성. 가독성 약간 떨어지나 cancellation 위험 없음.
 
 ### P4 — IAU Rotation Model Foundation
 _미시작_
@@ -173,25 +204,23 @@ _미시작_
 
 > 새 세션이나 다른 작업자가 이어 받을 때 여기를 먼저 본다.
 
-### 즉시 액션: P3 — Reference Frames (Core) 진입
+### 즉시 액션: P4 — IAU Rotation Model Foundation 진입
 
-1. [plan §3 P3](work-02-astronomy.md#phase-3--reference-frames-core) 의 Decisions 4개 항목을 사용자와 결정 → §2 결정 로그에 기록
-   - 세차/장동 모델 (무시 J2000 고정 / IAU 2006/2000A 풀 / IAU 1976/1980)
-   - ICRF↔EME2000 frame bias 적용 (적용 ~23 mas / 무시)
-   - 회전 행렬 표현 (3×3 row-major `number[9]` / `THREE.Matrix3` 어댑터)
-   - 황도경사 ε (IAU 2006 J2000 = 0.4090926006005829 rad / IAU 1976)
+1. [plan §3 P4](work-02-astronomy.md#phase-4--iau-rotation-model-foundation) 의 Decisions 2개 항목을 사용자와 결정 → §2 결정 로그에 기록
+   - IAU 회전 데이터 출처 (WGCCRE 2015 인라인 / spiceypy PCK 런타임 / 병행)
+   - 본 phase 검증 천체 (지구만 / 지구 + 달)
 2. 신규 파일:
-   - `src/astro/frames.ts` — ICRF↔EME2000↔Ecliptic 변환 + 3×3 행렬 헬퍼
-   - `src/astro/matrix3.ts` (필요 시) — 3×3 행렬 헬퍼 분리
-   - `tools/python/src/orbitarium_tools/frames.py` — astropy.coordinates 래퍼 + `generate_fixtures`
-3. 골든 fixture: `tests/fixtures/work-02/frames.json` — ~30 단위벡터/실벡터의 변환 결과 (1mas tolerance)
-4. CLI 확장: `cli.py::main` 의 `args.work == 2` 분기에서 `frames.generate_fixtures` 호출 추가
+   - `src/astro/rotation.ts` — `IAURotationModel` 타입 + `evaluateRotation(model, jdTdb)` + `bodyFixedToInertial(model, jdTdb)`
+   - `src/astro/rotationData.ts` — 지구 회전 모델 (Work 6에서 전체 천체 확장)
+   - `tools/python/src/orbitarium_tools/rotation.py` — spiceypy PCK 평가 reference + `generate_fixtures`
+3. 골든 fixture: `tests/fixtures/work-02/rotation-earth.json` — 현재 시각의 W (그리니치 자오선 각) + 다양한 J2000 경과 시각의 (ra, dec, w)
+4. CLI 확장: `cli.py::main`의 work=2 분기에 rotation도 추가
 5. 테스트:
-   - `tests/unit/astro/frames.test.ts` — fixture + round-trip + 단위벡터 검증
-   - `tools/python/tests/test_frames.py` — astropy 비교 (ICRS↔BarycentricMeanEcliptic 등)
-6. P3 마감: handoff §2/§3/§4/§7 갱신 → §0 "현재 phase = P4 진입 대기"
+   - `tests/unit/astro/rotation.test.ts` — 지구 W (현재 시각) 1mas 비교, J2000 ± 50yr 범위
+   - `tools/python/tests/test_rotation.py` — spiceypy PCK vs 우리 모델 비교
+6. P4 마감: handoff §2/§3/§4/§7 갱신 → §0 "현재 phase = P5 진입 대기"
 
-### P1+P2 산출물 빠른 참조
+### P1+P2+P3 산출물 빠른 참조
 
 ```ts
 // src/astro/index.ts 가 export하는 핵심 심볼
@@ -204,6 +233,12 @@ import {
   J2000_JD_TDB, TT_TAI_OFFSET_S, SECONDS_PER_DAY,
   type JdTdb, type JdTt,
 } from '@/astro'
+import {
+  ICRF_TO_EME2000, ICRF_TO_ECLIPTIC_J2000, EME2000_TO_ECLIPTIC_J2000,
+  icrfToEme2000, icrfToEcliptic, eme2000ToEcliptic,
+  matVec3, matMul3, transposeMatrix3,
+  type Vec3, type Matrix3,
+} from '@/astro'
 ```
 
 ```python
@@ -214,6 +249,12 @@ from orbitarium_tools.time import (
     jd_to_j2000_days, jd_to_mjd, leap_seconds_at,
     J2000_JD_TDB, TT_TAI_OFFSET_S, SECONDS_PER_DAY,
     generate_fixtures,
+)
+from orbitarium_tools.frames import (
+    ICRF_TO_EME2000, ICRF_TO_ECLIPTIC_J2000,
+    icrf_to_eme2000, icrf_to_ecliptic,
+    mat_vec3, mat_mul3, transpose_matrix3,
+    erfa_frame_bias_matrix,
 )
 ```
 
@@ -302,6 +343,7 @@ uv run orbitarium-tools fixtures --work=2 --out=../../tests/fixtures/work-02/
 | 2026-05-05 | 초기 작성 — P0 kickoff. Plan 본체와 함께 6 phase 구조 확정. P1 결정 4건 대기. |
 | 2026-05-05 | **P1 완료** — `src/astro/{constants,naif,units,index}.ts` + Python 미러 + 25 단위 테스트. astro extras (astropy/spiceypy/pyerfa) 설치. IAU 2015+DE440 정합, 29 NAIF entries, brand type 단위 안전, 단일 constants 모듈. typecheck/lint/format/test/build/e2e/ruff/mypy/pytest 전부 그린. IEEE 754 19→17자리 표기 정정 + ruff SIM300 yoda 비교 순서 정정 처리 |
 | 2026-05-05 | **P2 완료** — `src/astro/{leapSeconds,time}.ts` + Python 미러 + `tests/fixtures/work-02/time.json` (21 representative times) + `orbitarium-tools fixtures --work=2 --out=...` CLI. UTC↔TAI↔TT↔TDB 변환 (TS와 Python 비트 동일, fixture 1µs 매치, astropy IAU 2009 대비 TDB ~50µs). Brand type `JdTdb/JdTt/JdTai/JdUtc`. CI extras `[dev]` → `[astro,dev]`. typecheck/lint/format/test(184)/build/e2e/ruff/mypy/pytest(46) 전부 그린. ruff UP017(timezone.utc→UTC alias) 19건 + RUF002/003(유니코드 minus/dash) 5건 정리. let-binding offset 타입 narrowing 수정. invariant test 톨러런스 1e-4 (cancellation 한계) |
+| 2026-05-05 | **P3 완료** — `src/astro/frames.ts` + Python 미러 + `tests/fixtures/work-02/frames.json` (12 vectors + 3 matrices). ICRF↔EME2000 frame bias (ERFA bp00 RB 임베드, 9 doubles, ~23 mas RSS) + EME2000↔Ecliptic R_x(ε) + 합성 ICRF↔Ecliptic. `Vec3`/`Matrix3` readonly tuple, loop-unrolled matMul3 (9 명시 expression). 세차/장동 무시(J2000 고정), IAU 2006 ε 재사용. astropy ICRS↔BarycentricMeanEcliptic 1mas 매치. orthogonality 1e-15. typecheck/lint/format/test(261)/build/e2e/ruff/mypy/pytest(61) 전부 그린. SIM300 yoda 6건 자동 fix. erfa import-untyped → `# type: ignore`. R_x(ε) 부호 컨벤션 docstring 정정. ICRF X→ecliptic Z 톨러런스 1e-7→2e-7 (frame bias 누적) |
 
 ---
 
