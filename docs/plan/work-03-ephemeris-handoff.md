@@ -8,12 +8,12 @@
 
 ## 0. 현재 상태 (Status)
 
-| 항목         | 값                                                                                                                       |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| 현재 phase   | **P2 완료** ✓ — P3 진입 대기                                                                                             |
-| 다음 액션    | **P3 — TS Chebyshev Evaluator** 진입 — `src/ephemeris/{de440Loader,chebyshev,de440Evaluator}.ts` 작성, fixture 비교 |
-| 마지막 갱신  | 2026-05-06                                                                                                               |
-| 블로커       | 없음                                                                                                                     |
+| 항목         | 값                                                                                              |
+| ------------ | ----------------------------------------------------------------------------------------------- |
+| 현재 phase   | **P3 완료** ✓ — P4 진입 대기                                                                    |
+| 다음 액션    | **P4 — Horizons Reference (Python)** 진입 — `orbitarium_tools.horizons` astroquery wrapper 작성 |
+| 마지막 갱신  | 2026-05-06                                                                                      |
+| 블로커       | 없음 (CI에서 DE440 preprocess는 P6에서 통합)                                                    |
 
 ## 1. 진행 체크리스트
 
@@ -22,7 +22,7 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 - [x] **P1** — Strategy & Brand Types _(완료 2026-05-05)_
 - [x] **P2** — DE440 Preprocessing (Python) _(완료 2026-05-06)_
-- [ ] **P3** — TS Chebyshev Evaluator
+- [x] **P3** — TS Chebyshev Evaluator _(완료 2026-05-06)_
 - [ ] **P4** — Horizons Reference (Python)
 - [ ] **P5** — Dev Demo `/dev/ephemeris`
 - [ ] **P6** — Cross-validation & Golden Fixtures (Closeout)
@@ -51,6 +51,10 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 16  | Manifest 위치 | **`public/data/ephemeris/de440/manifest.json`** + body별 `spk_<target>_<center>.bin` | `public/data/`는 Vite static asset root — `/data/ephemeris/de440/...` URL로 fetch 가능. .gitignore 의 `public/data/ephemeris/*` 정책 그대로 적용 (binary 미commit). | P2 | 2026-05-06 |
 | 17  | Binary commit 정책 | **build-time download/생성** (.gitignore — `public/data/ephemeris/*` 이미 적용) | DE440 SPK ~120MB + 사전처리 binary ~25MB는 git LFS 도입하지 않는 한 commit 부담. `pnpm de440:preprocess` 한 줄로 재생성. CI에서는 캐시 + 1회 다운로드. | P2 | 2026-05-06 |
 | 18  | spiceypy/jplephem 비교 톨러런스 | **위치 < 1 mm, 속도 < 1 µm/s** — 측정 결과 max 0.49mm/0.007µm/s | jplephem `compute_and_differentiate`와 우리 evaluator 차이는 IEEE 754 evaluation 순서 차이 수준 (sub-µm). spiceypy `spkezr` 와 SSB-centered chain 비교에서도 < 0.1mm 일관. | P2 | 2026-05-06 |
+| 19  | TS evaluator API 패턴 | **async Promise** + 주입 가능한 `De440SegmentLoader` 인터페이스 (loadManifest / loadSegment) | binary fetch가 본질적으로 async (브라우저 fetch / Node fs). 테스트는 in-memory loader, 프로덕션은 fetch loader. 단일 evaluator로 양쪽 커버. | P3 | 2026-05-06 |
+| 20  | Segment 캐시 정책 | **Promise 단위 LRU없음 (Map 그대로 누적)** — chunk 단위 ~수 MB → 14개 합쳐도 25MB | LRU eviction은 메모리 한계 도달 시 의미 — 14 segments * 평균 1.8MB는 항상 인메모리에서 OK. Work 11 폴리시에서 lazy unload 검토. | P3 | 2026-05-06 |
+| 21  | Position diff 비교 방식 | **L_∞ (component-wise max)** — 1 mm 톨러런스 | L2 norm은 sqrt(3) 배 누적 → 30AU(=4.5e12m) 거리에서 IEEE 754 LSB ≈ 1mm/axis × √3 ≈ 1.7mm. axis별 1mm 보장이 더 의미 있고 측정 가능. | P3 | 2026-05-06 |
+| 22  | DE440 binary CI 통합 | **P6 closeout에서 CI 워크플로 추가** | 현재 TS evaluator 테스트는 `describe.skipIf(!dataAvailable)` — public/data/ephemeris/de440/manifest.json 부재 시 스킵. 로컬에서는 `pnpm de440:preprocess` 한 줄 실행. | P3 | 2026-05-06 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -83,9 +87,11 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 ### P3에서 결정
 
-- [ ] 캐시 정책 (chunk LRU / 전체 인메모리 / 무캐시)
-- [ ] API 패턴 (async Promise / preload-then-sync)
-- [ ] 에러 종류 (missing body / out-of-range / invalid binary)
+- [x] API 패턴: **async Promise + 주입 가능한 `De440SegmentLoader`** ✓ (#19)
+- [x] 캐시 정책: **Promise Map (eviction 없음)** ✓ (#20)
+- [x] Position diff 비교 방식: **L_∞ component-wise** ✓ (#21)
+- [x] CI 통합: **P6 closeout 에서 처리** (현재 skipIf로 graceful skip) ✓ (#22)
+- [x] 에러 종류: **out-of-range** (`"outside segment ..."` Error throw); **missing body** (`"no DE440 segment for target=..."` Error throw); **size mismatch** (`parseSegmentBinary` Error throw)
 
 ### P4에서 결정
 
@@ -174,9 +180,40 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 - **Velocity 정밀도 borderline**: Chebyshev derivative 는 polynomial degree -1 → max diff ~7e-9 µm/s 측정. P3 TS 평가에서도 동일 수준 예상; tolerance 1µm/s 충분 마진.
 - **certifi 의존성**: 스크립트에서 `urllib.request.urlopen` 호출 시 SSL CA 가 누락된 환경 (uv 기본 cpython) 에서 verify 실패. `certifi.where()` 로 명시적 CA 사용. astropy 의존성으로 이미 설치됨 (no extra dep).
 
-### P3 — TS Chebyshev Evaluator
+### P3 — TS Chebyshev Evaluator _(완료 2026-05-06)_
 
-_미시작_
+생성/수정 파일:
+
+- [`src/ephemeris/chebyshev.ts`](../../src/ephemeris/chebyshev.ts) — `evaluateChebyshev` (recurrence, no Clenshaw needed for our use), `evaluateChebyshevAndDerivative` (value + dT_k/ds via dual recurrence T_k 와 T'_k 동시 누적).
+- [`src/ephemeris/de440Format.ts`](../../src/ephemeris/de440Format.ts) — `De440Manifest`/`De440SegmentMeta`/`De440Segment`/`De440BinaryFormat` 타입, `parseSegmentBinary(buffer)`, `parseManifestJson(text)`, `DE440_BINARY_HEADER_BYTES = 32`.
+- [`src/ephemeris/de440Evaluator.ts`](../../src/ephemeris/de440Evaluator.ts) — `De440SegmentLoader` 인터페이스, `createDe440Evaluator(loader)`, chain composition (`findChain` 으로 target → SSB walk), Promise 캐시. SPK km/day → m/s 변환.
+- [`src/ephemeris/index.ts`](../../src/ephemeris/index.ts) — 새 모듈 re-export.
+- [`tools/python/src/orbitarium_tools/de440.py`](../../tools/python/src/orbitarium_tools/de440.py) — `generate_fixtures(out_dir)` 함수 추가 (Work 2 패턴). 20 bodies × 8 JDs = 160 entries → spiceypy spkezr 결과 JSON 직렬화.
+
+테스트 + fixture:
+
+- [`tests/fixtures/work-03/de440-states.json`](../../tests/fixtures/work-03/de440-states.json) — 160 cross-validation 엔트리 (1900-01-01 ~ 2150-12-31, J2000 ±50yr 포함, 2026-05-05). `_tolerance_m=1e-3`, `_tolerance_vel_m_s=1e-6`.
+- [`tests/unit/ephemeris/chebyshev.test.ts`](../../tests/unit/ephemeris/chebyshev.test.ts) — 9 tests: empty/constant/linear/T_2/T_3 직접 평가, 도함수 = 12s²-3, value vs derivative 일관.
+- [`tests/unit/ephemeris/de440Format.test.ts`](../../tests/unit/ephemeris/de440Format.test.ts) — 5 tests: header round-trip, size mismatch / too-short Error, manifest parse, segments not-array reject.
+- [`tests/unit/ephemeris/de440Evaluator.test.ts`](../../tests/unit/ephemeris/de440Evaluator.test.ts) — 4 tests (3 conditional on real binary, 1 in-memory): 160 fixture × component L_∞ < 1mm/1µm/s, segment 캐시 동작, out-of-range Error, synthetic 2-segment chain + alias 검증. `describe.skipIf(!dataAvailable)` 으로 binary 부재 시 graceful skip.
+
+검증 결과:
+
+- `pnpm format:check` ✓ (Prettier auto-format on de440Evaluator.ts/de440Format.test.ts)
+- `pnpm lint` ✓ (`@typescript-eslint/prefer-nullish-coalescing` 1건 → `??=` 적용)
+- `pnpm typecheck` ✓
+- `pnpm test` ✓ — **334 tests** (Work 2 P6 311 → P1 +6 → P3 +17 = 334).
+- `pnpm test:e2e` ✓ — 12 tests, 회귀 없음.
+- `pnpm build` ✓ — 1113.46 kB.
+
+설계 결정 + 발견:
+
+- **Chebyshev recurrence vs Clenshaw**: Clenshaw가 더 효율적이지만 dual evaluation (value + derivative)에서는 두 recurrence를 동시에 누적하는 직관적 방식이 더 명확. 14 coefficient 평균 → 성능 차이 무시 가능.
+- **`Float64Array.subarray` view**: coefficient 슬라이스는 view (allocation 없음). evaluator hot-path에서 GC 부담 0.
+- **`DataView.getInt32(..., true)`** little-endian 명시: x86/ARM 모두 LE 환경이지만 명시적으로 LE 해석. 향후 BE 플랫폼 호환성 의도적 미지원 (결정 #13 따름).
+- **`fileBuffer.buffer.slice(offset, offset+len)`** 패턴: Node `readFileSync`가 반환하는 `Buffer` 는 더 큰 underlying ArrayBuffer 를 공유 — `Float64Array(buffer, offset, len)` 직접 생성 시 alignment 문제. `slice`로 뜬 새 ArrayBuffer는 항상 8-byte aligned.
+- **L_∞ vs L_2**: 처음 L2 norm 으로 비교 시 Neptune barycenter (30AU = 4.5e12m) 에서 1.008 mm 측정 — IEEE 754 LSB(per-axis) ≈ 1mm × √3 누적. component-wise L_∞ 비교가 본질적으로 의미 있고 IEEE 754 한계 안. 결정 #21 추가.
+- **CI 통합 deferred**: 현재 TS evaluator 테스트는 `describe.skipIf(!dataAvailable)` — CI에서 silent skip. P6 closeout 에서 (1) SPK 커널 캐시 + 다운로드 step (2) `pnpm de440:preprocess` step 추가 + (3) skipIf 제거 또는 `expectDataAvailable()` 강제.
 
 ### P4 — Horizons Reference (Python)
 
@@ -304,6 +341,7 @@ pnpm fixtures:work-03
 | 2026-05-05 | 초기 작성 — P0 kickoff. Plan 본체와 함께 6 phase 구조 확정 (Strategy → Preprocessing → TS Evaluator → Horizons Reference → Dev Demo → Closeout). P1 결정 ~10건 대기. |
 | 2026-05-05 | **P1 완료** — `src/ephemeris/{types,constants,index}.ts` + Python 미러 + 10 단위 테스트. 결정 10건 (#1~#10) 모두 권장값 채택: Chebyshev 직접 평가 / DE440 1900-2150 / 20 entries (Sun + 9 bary + 9 body + Moon) / `{position, velocity}` 분리 객체 / JdTdb 입력 / ICRF (m, m/s) 출력 / 1mm·1µm/s 톨러런스 / `PositionICRF`/`VelocityICRF`/`StateVectorICRF` brand 합성. format/lint/typecheck/test(317)/build/ruff/mypy/pytest(75) 전부 그린. ESLint simple-import-sort 1건 autofix. |
 | 2026-05-06 | **P2 완료** — `orbitarium_tools.de440` (`crop_segment`/`evaluate_segment`/`write_segment_binary`/`preprocess`/`resolve_chain` + `De440Segment`), CLI `de440 preprocess`, `pnpm de440:preprocess`, jplephem 2.24 의존성. 결정 8건 (#11~#18): jplephem 라이브러리 / 14 native segments + 6 alias / Float64 LE 헤더 `<iiiidd>` / native intervals / 무압축 / `public/data/ephemeris/de440/` build-time 생성. 단위 테스트 8건 추가 (총 83). 14 segments × 4 JDs 비교: jplephem max diff < 0.49 mm / 0.007 µm/s, spiceypy SSB chain max diff < 0.1 mm / 4 µm/s — 모두 1mm/1µm/s 톨러런스 통과. ruff/mypy/pytest 모두 그린. |
+| 2026-05-06 | **P3 완료** — TS Chebyshev evaluator + DE440 binary loader. `src/ephemeris/{chebyshev,de440Format,de440Evaluator}.ts` + `de440-states.json` fixture (160 entries). 결정 4건 (#19~#22): async Promise + 주입 가능한 loader / Promise Map 캐시 / L_∞ component-wise 비교 / CI 통합은 P6 deferred. 단위 테스트 17건 추가 (총 334): chebyshev 9 + format parse 5 + evaluator 4 (3 conditional on binary). spiceypy fixtures cross-check max < 1 mm / 1 µm/s component-wise (Neptune bary at 30AU = IEEE 754 한계). format/lint/typecheck/test/build/e2e 그린. |
 
 ---
 

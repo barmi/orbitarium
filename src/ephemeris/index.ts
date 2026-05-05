@@ -1,2 +1,5 @@
+export * from './chebyshev'
 export * from './constants'
+export * from './de440Evaluator'
+export * from './de440Format'
 export * from './types'
