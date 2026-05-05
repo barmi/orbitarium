@@ -39,15 +39,16 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 ## 3. 미결정 / 보류 (Open Questions)
 
-### P1에서 결정 (예정 ~12건)
+### P1에서 결정 (예정 ~13건)
 
 - [ ] scene unit ↔ three.js unit 매핑 (권장: 1:1)
-- [ ] 색공간 / 톤매핑 (권장: SRGB output + ACES Filmic + linear internal)
+- [ ] 색공간 / 톤매핑 (권장: SRGB output + ACES Filmic + linear internal — overview §5 "HDR linear-space" 충족)
 - [ ] Default exposure (권장: 1.0, slider 0.1 ~ 4.0)
 - [ ] Logarithmic depth buffer (권장: enabled by default)
 - [ ] Camera near / far (권장: 1e-3 / 1e10 scene unit)
 - [ ] Scene anchor 모델 (권장: string literal union + context payload)
-- [ ] Sun lighting (권장: PointLight + 최소 ambient 0.05)
+- [ ] Sun lighting — Work 5 본 Work 도입분 (권장: PointLight + 최소 ambient 0.05)
+- [ ] **Sun 영역 광원 근사 — overview §5 명시 항목** (권장: 본 Work 미도입, Work 6/11 PBR 검증 후 도입 검토)
 - [ ] `positionToWorld` 시그니처 (권장: `(p, policy, anchor) → Vector3`)
 - [ ] 별 카탈로그 default (권장: Hipparcos main, Vmag ≤ 6.0)
 - [ ] 색온도 변환 공식 (권장: Ballesteros 2012)
@@ -100,6 +101,8 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 - 행성 PBR 텍스처 / 노멀 / 자전 → Work 6
 - 토성 고리, 대기 산란 → Work 6
+- 태양 영역 광원 근사 (RectAreaLight / disk-area approximation) → Work 6/11 (overview §5 명시, P1 결정으로 defer)
+- Tycho-2 별 카탈로그 (~2.5M stars, Hipparcos 21배) → Work 11 perf optimization 동반 (overview §5 명시, plan §5/§6 deferred)
 - 궤도 폴리라인 scene 변환 → Work 7
 - 카메라 인터랙션 (mouse/touch/keyboard) → Work 9
 - adaptive scale ↔ 카메라 wiring → Work 9
@@ -109,6 +112,11 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 - 별이름 라벨 / 별자리 선 → Work 10/11
 - HDR float buffer pipeline → Work 11
 - Cross-browser fallback (log-depth) → Work 12
+
+### Work 5 와 무관한 cleanup 후보 (점검 중 발견 — 별도 spawn task 권장)
+
+- **`tools/python/public/data/ephemeris/` 빈 폴더 잔여**: Work 3 P6 `de440:preprocess` 작업 중 cwd 가 `tools/python/` 일 때 만들어진 출력 경로 흔적. 실제 사용 출력 위치는 repo root 의 `public/data/ephemeris/de440/`. 빈 트리만 남음 → 삭제 + `.gitignore` 정리.
+- **`docs/architecture/dev-routes.md` 의 새 dev 페이지 추가 절차 표기 stale**: 문서는 `src/dev/work-NN-<slug>/Page.tsx`, 실제 컨벤션은 `src/dev/<slug>/<Slug>Demo.tsx` (work-NN prefix 없음, Work 2~4 일관). Work 5 plan/handoff 도 후자 패턴 따름. 문서를 실제 컨벤션과 일치시키는 PR.
 
 ## 4. 산출물 인덱스 (Artifacts)
 
@@ -278,6 +286,8 @@ THREE.SphereGeometry(args=[sceneRadius, ...])
 
 ## 6. 알려진 이슈 / 노트
 
+- **overview §5 와 plan 의 두 갭 (P0 점검 시 발견)**: ① "HDR linear-space rendering" — plan 은 internal linear + ACES + sRGB output 으로 정확히 구현하되 의미를 §1 DoD/§6 위험 메모에 명확화. ② "태양 영역 광원 근사" — overview 명시 항목이지만 P1 결정으로 본 Work 미도입 (Work 6/11 PBR 검증 후) 명시 결정. 두 항목 모두 Work 5 plan §1/§3 P1 Decisions/§5/§6 에 반영 완료.
+- **무관 cleanup 후보 발견 (P0 점검)**: `tools/python/public/data/ephemeris/` 빈 폴더 + `docs/architecture/dev-routes.md` stale 표기. 둘 다 Work 5 작업과 무관 — §3 "추후 보류" 의 "Work 5 와 무관한 cleanup 후보" 항목 참조.
 - **vitest happy-dom 의 WebGL 미지원**: 단위 테스트는 옵션 객체 / decode / palette 등 pure 로직만. WebGL 의존 검증 (log-depth z-fighting, starfield mesh 표시) 은 e2e (playwright + chromium) 에 위임.
 - **R3F gl prop callback 형식**: `<Canvas gl={(canvas) => new WebGLRenderer({ ... })}>` 또는 `<Canvas gl={{ logarithmicDepthBuffer: true, ... }}>`. 일부 옵션은 renderer 생성 시점 강제 — callback 형식이 안전.
 - **Hipparcos download network 의존**: 첫 P4 실행 시 인터넷 필요. astroquery 캐시 (`tools/python/.cache/hipparcos/`) 후 오프라인 가능. CI 는 Work 3 SPK 캐시 패턴 재사용.
@@ -294,7 +304,8 @@ THREE.SphereGeometry(args=[sceneRadius, ...])
 
 | 날짜       | 변경                                                                                                                                                                                                                                                                                          |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-05-06 | 초기 작성 — P0 kickoff. Plan 본체와 함께 6 phase 구조 확정 (Strategy → Renderer Pipeline → Log-Depth + Anchors → Starfield → Dev Demo → Closeout). P1 결정 ~12건 대기. Work 4 산출물 (`PositionScene` / distance·size policy) 적극 활용 예정. `src/render/`, `src/dev/render/`, `orbitarium_tools.starfield` 신설 예정. |
+| 2026-05-06 | 초기 작성 — P0 kickoff. Plan 본체와 함께 6 phase 구조 확정 (Strategy → Renderer Pipeline → Log-Depth + Anchors → Starfield → Dev Demo → Closeout). P1 결정 ~12건 대기. Work 4 산출물 (`PositionScene` / distance·size policy) 적극 활용 예정. `src/render/`, `src/dev/render/`, `orbitarium_tools.starfield` 신설 예정.                                                                |
+| 2026-05-06 | **P0 점검 — overview §7 폴더 구조 vs 실제 비교**. 폴더 구조 / 모듈 위치 / Python 패키지 구성은 overview 와 일치. Work 5 plan 의 두 갭 보강: ① "HDR linear-space" 의미 명확화 (§1 DoD + §6 위험), ② "태양 영역 광원 근사" P1 결정 항목 추가 (본 Work 미도입 / Work 6/11 defer, §1/§3/§5/§6). P1 결정 항목 12 → 13. Tycho-2 deferred 정당화 §6 추가. 무관 cleanup 후보 2건 (`tools/python/public/` 빈 폴더 / `dev-routes.md` stale 표기) §3 추후 보류 + §6 알려진 이슈 기록 — 별도 spawn task 권장. |
 
 ---
 

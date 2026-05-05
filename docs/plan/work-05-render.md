@@ -19,9 +19,9 @@
 
 Work 5 마감은 **다음 모두**가 통과해야 한다:
 
-- [ ] **Renderer pipeline**: three.js `WebGLRenderer` 옵션 (output sRGB, ACES Filmic tone mapping, exposure control, linear-space internal) 이 한 곳에서 정의되고 R3F `<Canvas>`로 통합. Home / Dev 두 라우트가 같은 옵션 객체를 공유.
+- [ ] **Renderer pipeline (HDR linear-space)**: overview §5 의 "HDR linear-space 렌더링" 의도대로 internal lighting / material 계산은 **linear color space** 에서 수행 → ACES Filmic tone mapping → sRGB output. exposure control 포함. 옵션이 한 곳에서 정의되고 R3F `<Canvas>`로 통합, Home / Dev 두 라우트가 같은 옵션 객체를 공유. (float framebuffer 사용 여부는 별개 — Work 11 deferred.)
 - [ ] **Logarithmic depth buffer**: `logarithmicDepthBuffer: true` + 반경 1과 반경 1e9 sphere 가 같은 frame 에서 z-fighting 없이 보임. log-depth OFF 토글 시 z-fighting 재현 (회귀 가드).
-- [ ] **Lighting model**: 태양(point light, intensity 결정값) + 최소 ambient. PBR 호환 (`MeshStandardMaterial` 기본). 환경광 / IBL 은 Work 11.
+- [ ] **Lighting model**: 태양 PointLight (intensity 결정값) + 최소 ambient. PBR 호환 (`MeshStandardMaterial` 기본). overview §5 가 명시한 **태양 "영역 광원 근사"** 는 P1 에서 본 Work 미도입 / Work 6/11 deferred 로 명시 결정. 환경광 / IBL 도 Work 11.
 - [ ] **Scene graph anchor**: `'ssb' | 'heliocentric' | 'body-centric'` 변환 함수 + 단위 테스트. `PositionICRF` (m, ICRF) → `PositionScene` (Work 4) → three.js `Vector3` (anchor 적용) 의 변환 경로가 단일 thin layer (`positionToWorld`).
 - [ ] **Starfield**: Hipparcos catalog (Vmag cutoff) → 브라우저용 바이너리 포맷 + `THREE.Points` mesh. 실제 RA/Dec → ICRF unit vector × 큰 반지름 (celestial sphere), B-V → 색온도 (Kelvin) → 256-entry palette index, magnitude → 점 크기 / alpha.
 - [ ] **Python reference**: `orbitarium_tools.starfield` — 카탈로그 다운로드 + 필터링 + 색온도 변환 + 바이너리 직렬화. CLI 진입점 + `generate_fixtures(out_dir)`.
@@ -104,9 +104,12 @@ Work 5 마감은 **다음 모두**가 통과해야 한다:
 - Scene anchor 모델:
   - (a) **string literal union (`'ssb' | 'heliocentric' | 'body-centric'`)** + body 식별 별도 — 권장
   - (b) discriminated union with body NAIF id payload
-- Sun lighting:
+- Sun lighting (Work 5 본 Work 도입분):
   - (a) **PointLight at Sun position + minimal AmbientLight (intensity 0.05)** — 권장
-  - (b) DirectionalLight (방향만, position 무시) — Work 6/11 PBR 검증 후 재선택
+  - (b) DirectionalLight (방향만, position 무시) — 대안
+- Sun "영역 광원 근사" (overview §5 명시 항목):
+  - (a) **본 Work 미도입 — Work 6/11 PBR 검증 후 도입 검토 (e.g. `RectAreaLight` 또는 셰이더 disk-area approximation)** — 권장 (defer)
+  - (b) 본 Work 에서 `RectAreaLight` 도입 → BRDF 호환성 (toLightProbe 등) 사전 검증 필요
 - Sun intensity 단위: **three.js point light intensity (`PI` 기반 r150+ 컨벤션)** — Work 6 셰이더 검증 시 재조정 가능
 - `positionToWorld` 시그니처:
   - (a) **`positionToWorld(p: PositionICRF, policy: DistancePolicy, anchor: SceneAnchorContext): THREE.Vector3`** — anchor context 가 anchor 종류 + 보조 데이터 (sun pos, body pos) 를 캡슐화 — 권장
@@ -487,6 +490,7 @@ P2 Renderer    P3 Log-Depth + Anchors
 | Camera near / far                   | **1e-3 / 1e10** scene unit                                  | 0.01 / 1e9                                 | P1         |
 | Scene anchor 모델                   | **string literal union + context payload**                  | discriminated union                        | P1         |
 | Sun lighting                        | **PointLight at Sun + ambient 0.05**                        | DirectionalLight                           | P1         |
+| Sun 영역 광원 근사 (overview 명시)  | **본 Work 미도입, Work 6/11 PBR 검증 후 도입 검토 (defer)** | 본 Work 에서 `RectAreaLight` 도입          | P1         |
 | `positionToWorld` 시그니처          | **(p, policy, anchor) → Vector3**                           | anchor 별 함수                             | P1         |
 | 별 카탈로그                         | **Hipparcos main, Vmag ≤ 6.0**                              | + Tycho-2                                  | P1         |
 | 색온도 변환                         | **Ballesteros 2012**                                        | Mamajek 2012                               | P1         |
@@ -514,6 +518,9 @@ P2 Renderer    P3 Log-Depth + Anchors
 
 ## 6. 위험 / 메모
 
+- **"HDR linear-space rendering" 의미 (overview §5)**: internal lighting / material 계산을 linear color space 에서 수행하고 ACES tone mapping 후 sRGB 출력 — PBR 표준 파이프라인. float framebuffer (RGBA16F / RGBA32F) 사용 여부와는 별개 — float buffer 는 Work 11 deferred. 본 Work 의 "HDR" 충족은 linear-space pipeline 만으로 OK.
+- **태양 영역 광원 근사 (overview §5) 처리**: overview 가 "태양(점광원 + **영역 광원 근사**)"를 명시했으나, 본 Work 는 P1 결정으로 PointLight 만 도입. RectAreaLight 는 `MeshStandardMaterial` 기본 BRDF 와의 호환성 사전 검증 필요 + 셰이더 disk-area approximation 은 Work 6 PBR / Work 11 polish 와 함께 도입이 자연스러움 — defer 정당화.
+- **Tycho-2 deferred 이유 (overview §5)**: overview 는 "Hipparcos / Tycho-2" 모두 명시. Tycho-2 는 ~2.5M stars (Hipparcos 의 ~21배). 본 Work 는 Hipparcos main 만 default, Tycho-2 add-on 은 Work 11 perf optimization (LOD / 인스턴싱) 과 함께 검토.
 - **Logarithmic depth buffer GPU 호환성**: WebGL 2 에서 `EXT_frag_depth` 지원 필요. Work 12 cross-browser 검증 시 fallback 정책 결정. 대부분 데스크톱 / 모바일 GPU 지원.
 - **R3F `<Canvas>` 옵션 vs vanilla three.js**: r3f gl prop 으로 `WebGLRenderer` 옵션 그대로 전달 가능. 단, 일부 옵션 (logarithmicDepthBuffer 등) 은 renderer 생성 시점에 전달되어야 함 — `gl={{ ... }}` callback prop 사용 권장.
 - **ACES tone mapping 의 색 시프트**: ACES 는 어두운 영역에서 약간의 색 시프트가 있음. 행성 텍스처 (Work 6) 가 어색하면 Cineon / 직접 LUT 검토.
