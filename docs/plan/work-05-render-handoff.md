@@ -8,12 +8,12 @@
 
 ## 0. 현재 상태 (Status)
 
-| 항목         | 값                                                                                                                |
-| ------------ | ----------------------------------------------------------------------------------------------------------------- |
-| 현재 phase   | **P5 완료** ✓ — **P6 시작 대기**                                                                                  |
-| 다음 액션    | P6 — closeout (`tests/fixtures/work-05/README.md`, `public/data/starfield/README.md`, `docs/architecture/render-conventions.md`) |
-| 마지막 갱신  | 2026-05-06                                                                                                        |
-| 블로커       | 없음                                                                                                              |
+| 항목         | 값                                                                                |
+| ------------ | --------------------------------------------------------------------------------- |
+| 현재 phase   | **P6 완료** ✓ — **Work 5 마감**                                                   |
+| 다음 액션    | **Work 6 — Celestial Bodies** plan/handoff 작성 후 `/dev/body/<name>` 진입       |
+| 마지막 갱신  | 2026-05-06                                                                        |
+| 블로커       | 없음                                                                              |
 
 ## 1. 진행 체크리스트
 
@@ -25,7 +25,9 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] **P3** — Log-Depth & Scene Graph Anchors _(완료 2026-05-06)_
 - [x] **P4** — Starfield Data Pipeline + Mesh _(완료 2026-05-06)_
 - [x] **P5** — Dev Demo `/dev/render` _(완료 2026-05-06)_
-- [ ] **P6** — Cross-validation & Golden Fixtures (Closeout)
+- [x] **P6** — Cross-validation & Golden Fixtures (Closeout) _(완료 2026-05-06)_
+
+> Work 5 마감 = 모든 phase [x] + [plan §1 Definition of Done](work-05-render.md#1-결과-정의-definition-of-done) 모든 항목 충족.
 
 > Work 5 마감 = 모든 phase [x] + [plan §1 Definition of Done](work-05-render.md#1-결과-정의-definition-of-done) 모든 항목 충족.
 
@@ -77,6 +79,10 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 42  | Anchor reference position 표시 | **DE440 evaluator 로 Sun (NAIF 10) + selected body 의 SSB 좌표 fetch + scientific notation 표시** | 2026-05-06 00:00 UTC 고정 (DEMO_UTC). manifest fail 시 evaluator 에러 표시 (Work 4 P5 동일 폴백). body-centric 선택 시 body picker (Mercury~Neptune) 표시. | P5 | 2026-05-06 |
 | 43  | dev page Canvas 옵션 공유 | **`createRendererProps()` (Home 라우트와 동일)** + log-depth 토글 시 `key` 로 Canvas remount | three.js `logarithmicDepthBuffer` 는 constructor-time → React `key` 트릭으로 toggling 처리. exposure / tone mapping 은 setter 형 → live update. | P5 | 2026-05-06 |
 | 44  | FPS 측정 | **로컬 `useFrame` + 500 ms 윈도우 평균** | `FpsTracker` 컴포넌트가 InfoPanel 의 `fps` state 갱신. Work 1 의 `<FpsOverlay>` 와 무관 (dev page 전용). | P5 | 2026-05-06 |
+| 45  | Fixture 형식 | **JSON** + `_` prefix metadata (Work 2/3/4 동일) | 사람이 읽기 쉬움 + diff 친화. Python `json.dump(indent=2)` + Prettier 정렬. | P6 | 2026-05-06 |
+| 46  | Fixture 갱신 정책 | **수동** (`pnpm fixtures:work-05`) | 정책 변경은 의도적 결정. CI 자동 갱신 금지. reviewer 가 fixture diff 검토 (특히 kelvin / palette / RGB). | P6 | 2026-05-06 |
+| 47  | `hipparcos-vmag6.bin` git 정책 | **commit** (~70 KB) | reproducibility (CI 가 download 안 함) + decode test 가 fixture 처럼 작동. 갱신은 `pnpm starfield:preprocess`. | P6 | 2026-05-06 |
+| 48  | Conventions 문서 위치 | **`docs/architecture/render-conventions.md`** (Work 4 패턴) | Truth → Display → world coords 변환 경계 + Work 6+ 진입 체크리스트 + 8 정확도 디버깅 팁. | P6 | 2026-05-06 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -144,11 +150,12 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] Canvas 옵션 공유: **`createRendererProps()` + log-depth 토글 시 `key` remount** ✓ (#43)
 - [x] FPS 측정: **로컬 `useFrame` 500 ms 윈도우** ✓ (#44)
 
-### P6에서 결정
+### P6에서 결정 (4건 모두 완료)
 
-- [ ] Fixture 형식 (권장: JSON, Work 2/3/4 동일)
-- [ ] Fixture 갱신 정책 (권장: 수동 `pnpm fixtures:work-05`)
-- [ ] `hipparcos-vmag6.bin` git 정책 (권장: commit, ~150 KB 예상)
+- [x] Fixture 형식: **JSON** ✓ (#45)
+- [x] Fixture 갱신 정책: **수동 (`pnpm fixtures:work-05`)** ✓ (#46)
+- [x] `hipparcos-vmag6.bin` git 정책: **commit (~70 KB, 예상치보다 작음)** ✓ (#47)
+- [x] Conventions 문서 위치 / 구성: **`docs/architecture/render-conventions.md`** ✓ (#48)
 
 ### 추후 보류 (Work 5 범위 밖)
 
@@ -368,25 +375,46 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 - **빌드 크기**: 1118 → 1118 kB — 변화 무시할 수준 (lazy import 로 dev chunk 분리).
 - **시각 폴리시**: 본 dev demo 는 Work 5 P5 에서 기능 우선 — 폴리시 (border / hover / responsive) 는 Work 11 책임. 모바일 스택 grid (`@media (max-width: 980px)`) 만 추가.
 
-### P6 — Cross-validation & Golden Fixtures (Closeout)
+### P6 — Cross-validation & Golden Fixtures (Closeout) _(완료 2026-05-06)_
 
-_(대기)_
+생성/수정 파일:
+
+- [`tests/fixtures/work-05/README.md`](../../tests/fixtures/work-05/README.md) — 3 fixture (scene-anchors / color-temperature / starfield-samples) 구성, 재생성 명령, JSON 형식, 톨러런스 정책, 수동 갱신 정책, 회귀 가드 절차 문서화.
+- [`public/data/starfield/README.md`](../../public/data/starfield/README.md) — `hipparcos-vmag6.bin` 바이너리 포맷 표 + 디코더 위치 (TS / Python) + 팔레트 / mag bucket 매핑 + 캐시 / git 정책.
+- [`docs/architecture/render-conventions.md`](../architecture/render-conventions.md) — Work 6+ 진입용 정책 모델 / Renderer pipeline (HDR linear-space) / Scene Graph anchors / World coords / Starfield / Renderer settings 데이터 흐름 / Tolerance / Fixtures / Work 6+ 체크리스트 (8 항목) / 정확도 디버깅 (6 케이스) 가이드.
+
+검증 결과:
+
+- `pnpm fixtures:work-05` ✓ — 3 JSON 생성 idempotent (Ballesteros 4600 → 4700 흔든 후 원복하면 git diff 없음).
+- `pnpm format:check` ✓ (render-conventions.md 한 줄 단축)
+- `pnpm lint` ✓
+- `pnpm typecheck` ✓
+- `pnpm test` ✓ — **475 tests** (P5 그대로).
+- `pnpm build` ✓
+- `pnpm test:e2e` ✓ — **27 tests** (Work 1~5 누적 — Home 3 + dev-astro 4 + dev-ephemeris 4 + dev-scale 5 + dev-render 6 + dev-index 5).
+- `cd tools/python && uv run ruff check src tests` ✓
+- `uv run mypy src` ✓ — 13 source files.
+- `uv run pytest` ✓ — **141 tests** (P5 그대로).
+
+설계 결정 + 발견:
+
+- **회귀 가드 검증**: 의도적으로 `bv_to_kelvin` Ballesteros 상수 4600 → 4700으로 흔들기 → `pnpm fixtures:work-05` → `pnpm test -- tests/unit/render/starfield.test.ts` 가 `12 failed | 29 passed` (color-temperature fixture cross-check 12 entry 모두 fail, k diff > 1 K). 원복 후 즉시 그린 — fixture 가 정책 회귀를 정확히 잡아냄.
+- **`render-conventions.md` 8 항목 체크리스트**: Work 6+ 작업자가 mesh 위치 / radius / anchor / 카메라 / log-depth / PBR / fixture 갱신 순서를 한 페이지에서 확인 가능.
+- **`tests/fixtures/work-05/README.md` + `public/data/starfield/README.md` 두 갈래**: fixture (JSON) 와 dataset (바이너리) 의 책임이 다르므로 README 도 분리 — 상호 cross-reference.
+- **CLI `fixtures --work=5` 통합 entry**: `generate_anchor_fixtures` (P3) + `generate_fixtures` (P4 의 color-temp + starfield-samples) 두 호출을 한 분기에서 차례로 실행. Work 2/3/4 패턴과 일치.
+- **Hipparcos bin 갱신 워크플로우**: 별도 `pnpm starfield:preprocess` (catalog → bin) + `pnpm fixtures:work-05` (cache → fixture). 둘 다 idempotent — 의도적 변경 없으면 git diff 빈 결과.
 
 ## 5. 다음 작업자에게 (For the Next Operator)
 
 > 새 세션이나 다른 작업자가 이어 받을 때 여기를 먼저 본다.
 
-### 즉시 액션: P1 시작
+### 즉시 액션: Work 6 — Celestial Bodies 진입
 
-1. [`work-05-render.md`](work-05-render.md) §3 Phase 1 와 §5 권장값 표 검토.
-2. 사용자에게 권장값 ~12건 (위 §3 P1 체크리스트) 컨펌 받기.
-3. 결정 즉시 §2 결정 로그 한 줄씩 추가 (#1 ~ #12).
-4. `src/render/{types,constants,anchors,starfield,index}.ts` 생성 (anchors / starfield 는 P3/P4 placeholder).
-5. `tools/python/src/orbitarium_tools/starfield.py` placeholder 생성 (의미 docstring + 색온도 / 바이너리 포맷 상수).
-6. `tests/unit/render/types.test.ts` 작성.
-7. `pnpm format:check / lint / typecheck / test / build` + `cd tools/python && uv run ruff / mypy / pytest` 그린 확인.
-8. handoff §0 → P2 시작 대기로 갱신, §7 갱신 이력 한 줄 추가, §1 P1 [x].
-9. (선택) 커밋 — `[work-05/p1] Render Strategy & Brand Types 완료 — 결정 12건`
+1. [`docs/architecture/render-conventions.md`](../architecture/render-conventions.md) §9 Work 6+ 진입 체크리스트를 먼저 읽고 mesh 위치 / radius / anchor 변환 경계를 확인.
+2. Work 6 plan/handoff 작성 — 목표: 행성 / 위성 / Sun mesh + PBR 텍스처 + IAU 회전 모델 적용 + 토성 고리 + `/dev/body/<name>` 인스펙터.
+3. Work 6 에서 mesh 생성 시 `radiusToScene(radiusM, sizePolicy)` + `sceneScalarToWorld` 조합으로 radius 결정. 위치는 `positionToWorld(positionIcrf, distancePolicy, anchor)`.
+4. PBR 텍스처 색공간 (sRGB asset) ↔ ACES tone mapping 의 색 시프트 검증 — Work 5 #14 결정 (ACES + Linear + Cineon picker) 으로 비교.
+5. Sun "영역 광원 근사" (overview §5, Work 5 P1 #8 deferred) 가 Work 6 PBR 검증 후 도입할지 결정.
 
 ### Work 2/3/4 산출물 활용 (Work 5 시작 전 점검)
 
@@ -536,7 +564,8 @@ THREE.SphereGeometry(args=[sceneRadius, ...])
 | 2026-05-06 | **P2 완료** — `src/render/renderer.ts` (createRendererProps + clampExposure + resolveToneMapping/OutputColorSpace) + `index.ts` re-export + `Home.tsx` / `HomeScene.tsx` 통합 (DirectionalLight → PointLight decay=0 + ambient 0.05) + Python `kelvin_to_rgb_u8` (Tanner Helland 2012) / `palette_index_for_kelvin` / `kelvin_for_palette_index` / `build_palette` (256×RGBA u8 = 1024 B) / `magnitude_to_bucket`. 결정 9건 (#14~#22): ACES+Linear+Cineon 3종 / HDR float buffer defer (Work 11) / antialias MSAA / Tanner Helland T→RGB / sRGB palette + GPU decode / RGBA u8 layout / linear Vmag bucket / Home 모듈 상수 lifted props / PointLight decay 0. 단위 테스트 20 추가 (TS 10 + Python 10, 총 417 / 123). Home e2e 3 tests 그린. preview 시각 확인 — sphere 가 PointLight 음영 표시 (overview Sun 모델 정합).                                                                                                                                                                                |
 | 2026-05-06 | **P3 완료** — `src/render/anchors.ts` (`SceneAnchorContext` discriminated union + 3 factories + `applyAnchor` + `positionToWorld`) + `src/render/world.ts` (`sceneToVector3` / `vector3ToScene` + scalar adapters, three.js Vector3 의존 격리) + index re-export + Python `orbitarium_tools.render_anchors` 미러 + `tests/fixtures/work-05/scene-anchors.json` (3 anchor × 6 sample = 18 rows). 결정 7건 (#23~#29): camera near/far 그대로 / `PositionICRF` payload / `anchors.ts` 위치 / `render_anchors.py` 신설 / DE440 호출자 책임 / world.ts API 형태 / 6×3 fixture. 단위 테스트 22 추가 (TS 14 + Python 8, 총 434 / 131). mypy 13 files. fixture cross-check 3 anchor entries 1 mm 이내 일치.                                                                                                                                                                                                                                                                                                                                       |
 | 2026-05-06 | **P4 완료** — `tools/python/.../starfield.py` 풀 implementation (Ballesteros 2012 + PM + radec→vector + StarRecord / StarfieldData + serialize/deserialize + download/load/preprocess + NamedStarRef + 3 fixture generators) + CLI `starfield preprocess` + `fixtures --work=5` + `src/render/{starfield,starfieldLoader}.ts` (decoder + palette + custom ShaderMaterial + fetch loader) + `package.json` 2 새 스크립트 + `public/data/starfield/hipparcos-vmag6.bin` (~70 KB, 4 992 stars). 결정 9건 (#30~#38): ECSV cache / NaN row drop / TS-Python bit-exact mirror / little-endian 강제 / single celestial sphere / custom shader + sRGB texture / `starfield.ts` + `starfieldLoader.ts` 분리 / 60″ PM 톨러런스 / bin commit. 단위 테스트 41 추가 (TS 22 + Python 9 + Python pytest 통합 10, 총 475 / 141). fixture 12 색온도 + 5 명성 cross-check 그린 (RGB 정확 / palette 정확 / 60″ 안). mypy 13 files. |
-| 2026-05-06 | **P5 완료** — `/dev/render` 단일 페이지 dev demo. `src/dev/render/{RenderDemo,RendererControls,StarfieldControls,AnchorPicker,InfoPanel}.tsx` + `scene/{LogDepthPair,StarfieldGroup,AnchorMarker}.tsx` + `render.css`, registry/dev.css 연결. exposure / tone mapping / log-depth / starfield toggle + magnitude slider / anchor picker (SSB / Heliocentric / Body-centric + body NAIF picker) + DE440 evaluator (Sun + body SSB position) + FPS tracker. log-depth 토글은 Canvas key remount, 다른 옵션은 live update. 결정 6건 (#39~#44) 채택. e2e 6 추가 + dev-index Work 5 available 전환 (총 11 e2e). 사용자 시각 확인 — 4 panel + Canvas (starfield + sphere + anchor marker 녹색 octahedron), 4992/4992 stars 표시, 120 fps. body-centric Earth → anchor reference SSB ~1e11 m 정합. format/lint/typecheck/test(475)/build/test:e2e(11) 그린. |
+| 2026-05-06 | **P5 완료** — `/dev/render` 단일 페이지 dev demo. `src/dev/render/{RenderDemo,RendererControls,StarfieldControls,AnchorPicker,InfoPanel}.tsx` + `scene/{LogDepthPair,StarfieldGroup,AnchorMarker}.tsx` + `render.css`, registry/dev.css 연결. exposure / tone mapping / log-depth / starfield toggle + magnitude slider / anchor picker (SSB / Heliocentric / Body-centric + body NAIF picker) + DE440 evaluator (Sun + body SSB position) + FPS tracker. log-depth 토글은 Canvas key remount, 다른 옵션은 live update. 결정 6건 (#39~#44) 채택. e2e 6 추가 + dev-index Work 5 available 전환 (총 11 e2e). 사용자 시각 확인 — 4 panel + Canvas (starfield + sphere + anchor marker 녹색 octahedron), 4992/4992 stars 표시, 120 fps. body-centric Earth → anchor reference SSB ~1e11 m 정합. format/lint/typecheck/test(475)/build/test:e2e(11) 그린.                                                          |
+| 2026-05-06 | **P6 완료 / Work 5 마감** — fixture / doc closeout. `tests/fixtures/work-05/README.md` (구성 / 재생성 / 톨러런스 / 회귀 가드 절차) + `public/data/starfield/README.md` (바이너리 포맷 + 디코더 위치 + 캐시 / git 정책) + `docs/architecture/render-conventions.md` (Work 6+ 진입 가이드, 8 항목 체크리스트, 6 디버깅 케이스) 작성. 결정 4건 (#45~#48): JSON fixture / 수동 갱신 / bin commit / `render-conventions.md` 위치. 회귀 가드 검증 — Ballesteros 상수 4600 → 4700 흔들기 → 12 fail → 원복 후 그린. format/lint/typecheck/test(475)/build/test:e2e(27) + Python ruff/mypy(13 files)/pytest(141) 전부 그린. plan §1 DoD 모든 항목 충족. |
 
 ---
 
