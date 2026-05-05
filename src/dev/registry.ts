@@ -1,4 +1,4 @@
-import type { ComponentType, LazyExoticComponent } from 'react'
+import { type ComponentType, lazy, type LazyExoticComponent } from 'react'
 
 export interface DevPageEntry {
   workNumber: number
@@ -14,6 +14,7 @@ export const devPages: DevPageEntry[] = [
     slug: 'astro',
     title: 'Astronomy Foundations',
     summary: 'UTC ↔ TT ↔ TDB ↔ JD 변환기, J2000 경과시간, ICRF ↔ ecliptic 좌표 변환',
+    Component: lazy(() => import('./astro/AstroDemo')),
   },
   {
     workNumber: 3,

@@ -1,3 +1,5 @@
+@import './astro/astro.css';
+
 .dev-index {
   min-height: 100vh;
   padding: 2rem;

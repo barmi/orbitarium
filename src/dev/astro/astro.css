@@ -1,0 +1,323 @@
+.astro-demo {
+  min-height: 100vh;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  color: #e8ece8;
+}
+
+.astro-demo__header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.astro-demo__header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 450;
+  letter-spacing: 0;
+}
+
+.astro-demo__header a {
+  color: #8fb8ff;
+  text-decoration: none;
+}
+
+.astro-demo__header a:hover {
+  text-decoration: underline;
+}
+
+.astro-demo__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.astro-panel {
+  min-width: 0;
+  border: 1px solid #28312e;
+  border-radius: 8px;
+  background: #090d0c;
+  padding: 1rem;
+}
+
+.astro-panel--wide {
+  grid-column: 1 / -1;
+}
+
+.astro-panel__head {
+  min-height: 2.5rem;
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.astro-panel__head h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 550;
+  letter-spacing: 0;
+}
+
+.astro-panel__head button,
+.astro-panel__head time,
+.astro-panel__head output {
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.astro-panel__head button {
+  border: 1px solid #40504c;
+  border-radius: 6px;
+  background: #111817;
+  color: #e8ece8;
+  padding: 0.4rem 0.65rem;
+  cursor: pointer;
+}
+
+.astro-panel__head button:hover {
+  border-color: #8fb8ff;
+}
+
+.astro-panel__eyebrow {
+  margin: 0 0 0.2rem;
+  color: #95d5b2;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.astro-field {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.astro-field span {
+  color: #a7b0ad;
+  font-size: 0.75rem;
+}
+
+.astro-field input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #303c39;
+  border-radius: 6px;
+  background: #050807;
+  color: #f2f5f3;
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.55rem 0.65rem;
+}
+
+.astro-field input:focus {
+  border-color: #8fb8ff;
+  outline: 2px solid rgb(143 184 255 / 20%);
+}
+
+.astro-kv {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+}
+
+.astro-kv--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.astro-kv div {
+  min-width: 0;
+  border-top: 1px solid #1f2826;
+  padding-top: 0.5rem;
+}
+
+.astro-kv dt {
+  color: #a7b0ad;
+  font-size: 0.7rem;
+  margin-bottom: 0.2rem;
+}
+
+.astro-kv dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.82rem;
+}
+
+.astro-counter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem;
+  padding: 0.75rem 0;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+.astro-counter strong {
+  color: #ffd166;
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.astro-vector-controls {
+  display: grid;
+  grid-template-columns: minmax(16rem, 0.8fr) minmax(0, 1.2fr);
+  gap: 1rem;
+  align-items: end;
+}
+
+.astro-segmented {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.astro-segmented label {
+  min-width: 0;
+}
+
+.astro-segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.astro-segmented span {
+  display: block;
+  overflow: hidden;
+  border: 1px solid #303c39;
+  border-radius: 6px;
+  background: #050807;
+  color: #cfd8d4;
+  padding: 0.55rem 0.45rem;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.astro-segmented input:checked + span {
+  border-color: #95d5b2;
+  background: #122019;
+  color: #f2f5f3;
+}
+
+.astro-axis-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.astro-table-wrap {
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+.astro-table {
+  width: 100%;
+  min-width: 44rem;
+  border-collapse: collapse;
+}
+
+.astro-table th,
+.astro-table td {
+  border-top: 1px solid #1f2826;
+  padding: 0.55rem 0.45rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.astro-table th {
+  color: #a7b0ad;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.astro-table td {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.82rem;
+}
+
+.astro-error {
+  margin: 1rem 0 0;
+  color: #ffb4a2;
+  font-size: 0.85rem;
+}
+
+.astro-rotation-readout {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin: 0.85rem 0 0;
+}
+
+.astro-rotation-readout span {
+  color: #a7b0ad;
+  font-size: 0.8rem;
+}
+
+.astro-rotation-readout strong {
+  color: #ffd166;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.astro-matrix {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin-top: 1rem;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+}
+
+.astro-matrix span {
+  min-width: 0;
+  border: 1px solid #1f2826;
+  border-radius: 4px;
+  padding: 0.4rem;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 780px) {
+  .astro-demo {
+    padding: 1rem;
+  }
+
+  .astro-demo__header,
+  .astro-panel__head,
+  .astro-vector-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .astro-demo__header,
+  .astro-panel__head {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .astro-demo__grid,
+  .astro-kv--two,
+  .astro-axis-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .astro-panel--wide {
+    grid-column: auto;
+  }
+}

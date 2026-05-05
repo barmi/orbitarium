@@ -10,8 +10,8 @@
 
 | 항목 | 값 |
 |---|---|
-| 현재 phase | **P4 완료** ✓ — P5 진입 대기 |
-| 다음 액션 | **P5 — Dev Demo `/dev/astro`** 진입 — P2~P4 산출물 인터랙티브 패널 구현 |
+| 현재 phase | **P5 완료** ✓ — P6 진입 대기 |
+| 다음 액션 | **P6 — Cross-validation & Golden Fixtures (Closeout)** 진입 — fixture README / helper / 정책 문서화 |
 | 마지막 갱신 | 2026-05-05 |
 | 블로커 | 없음 |
 
@@ -24,7 +24,7 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] **P2** — Time Systems _(완료 2026-05-05)_
 - [x] **P3** — Reference Frames (Core) _(완료 2026-05-05)_
 - [x] **P4** — IAU Rotation Model Foundation _(완료 2026-05-05)_
-- [ ] **P5** — Dev Demo `/dev/astro`
+- [x] **P5** — Dev Demo `/dev/astro` _(완료 2026-05-05)_
 - [ ] **P6** — Cross-validation & Golden Fixtures (Closeout)
 
 > Work 2 마감 = 모든 phase [x] + [plan §1 Definition of Done](work-02-astronomy.md#1-결과-정의-definition-of-done) 모든 항목 충족.
@@ -48,6 +48,8 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 13 | IAU 회전 데이터 출처 | **TS는 NAIF `pck00011.tpc` BODY399 상수 인라인, Python은 spiceypy text-PCK 평가 병행** | NAIF `pck00011`은 WGCCRE 2015 기반 PCK지만 Earth/Moon orientation은 2015 보고서에서 빠져 2009 WGCCRE 값을 계승한다고 명시. 런타임 PCK 다운로드 없이 동일 BODY399 계수를 `lmpool`로 로드해 SPICE 행렬 컨벤션을 검증. | P4 | 2026-05-05 |
 | 14 | P4 검증 천체 | **지구만** | Work 6에서 전체 천체로 확장. P4는 인터페이스와 행렬 방향을 고정하는 단계라 가장 자주 검증될 Earth W/IAU_EARTH 1건으로 충분. | P4 | 2026-05-05 |
 | 15 | body-fixed 행렬 API | **양방향 제공** (`inertialToBodyFixed`, `bodyFixedToInertial`) | 계획서의 함수명/괄호 설명 방향이 서로 달라 혼동 가능. 이름의 물리 방향을 따르고, `inertialToBodyFixed`는 SPICE `pxform("J2000", "IAU_EARTH", et)`와 일치하도록 검증. | P4 | 2026-05-05 |
+| 16 | Dev Demo 구조 | **단일 페이지 + 4 섹션** | P2~P4 산출물이 각각 독립 패널로 깔끔하게 분리됨. 탭 없이 한 화면에서 시간/좌표/자전 값을 동시에 비교 가능. | P5 | 2026-05-05 |
+| 17 | J2000 라이브 카운터 | **`setInterval(1000)`** | 1초 단위 표시라 `requestAnimationFrame`의 frame-rate 갱신 비용이 필요 없음. React state 갱신도 초당 1회로 제한. | P5 | 2026-05-05 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -77,8 +79,8 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] 행렬 API 방향: **ICRF/J2000→body-fixed + inverse 둘 다 제공** ✓ (#15)
 
 ### P5에서 결정
-- [ ] Dev Demo 구조 (단일 페이지 4 섹션 / 탭 분리)
-- [ ] J2000 라이브 카운터 구현 (setInterval / requestAnimationFrame)
+- [x] Dev Demo 구조: **단일 페이지 4 섹션** ✓ (#16)
+- [x] J2000 라이브 카운터 구현: **setInterval(1000)** ✓ (#17)
 
 ### P6에서 결정
 - [ ] Fixture 형식 (JSON / JSONL / Parquet)
@@ -225,8 +227,32 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 - **PCK 다운로드 회피**: 테스트는 외부 커널 파일 다운로드 없이 `lmpool`으로 최소 BODY399 text-PCK assignment를 로드한다. CI 안정성 + SPICE semantics 검증을 동시에 확보.
 - **JS `% 360` 마지막 bit 흔들림**: `normalizeDegrees`는 이미 `[0, 360)` 범위면 원값을 그대로 반환해 J2000 `W=190.147` 같은 상수 epoch 값을 보존.
 
-### P5 — Dev Demo `/dev/astro`
-_미시작_
+### P5 — Dev Demo `/dev/astro` _(완료 2026-05-05)_
+생성/수정 파일:
+- [`src/dev/astro/AstroDemo.tsx`](../../src/dev/astro/AstroDemo.tsx) — Work 2 dev demo shell. P2~P4 패널 4개를 단일 페이지 grid로 배치.
+- [`src/dev/astro/TimeConverter.tsx`](../../src/dev/astro/TimeConverter.tsx) — UTC `datetime-local` 입력을 UTC로 해석해 leap seconds, JD UTC/TAI/TT/TDB, MJD, J2000 days 표시.
+- [`src/dev/astro/J2000Counter.tsx`](../../src/dev/astro/J2000Counter.tsx) — 현재 UTC 기준 J2000 경과 시간 live counter. `setInterval(1000)` 사용.
+- [`src/dev/astro/FrameConverter.tsx`](../../src/dev/astro/FrameConverter.tsx) — ICRF / EME2000 / Ecliptic J2000 입력 프레임 선택 + 3D vector 변환 + round-trip norm 표시.
+- [`src/dev/astro/EarthRotation.tsx`](../../src/dev/astro/EarthRotation.tsx) — Earth `W`, pole RA/Dec, JD TDB, `ICRF/J2000 → IAU_EARTH` matrix 표시. live/fixed UTC 입력 지원.
+- [`src/dev/astro/{format,timeInput}.ts`](../../src/dev/astro/format.ts) — dev panel formatting, vector diff, UTC input parse/format helpers.
+- [`src/dev/astro/astro.css`](../../src/dev/astro/astro.css) / [`src/dev/dev.css`](../../src/dev/dev.css) — astro demo styling. `dev.css`가 astro CSS를 import.
+- [`src/dev/registry.ts`](../../src/dev/registry.ts) — Work 2 `Component: lazy(() => import('./astro/AstroDemo'))` 연결. `/dev/index` 카드 available 전환.
+
+테스트:
+- [`tests/e2e/dev-index.spec.ts`](../../tests/e2e/dev-index.spec.ts) — Work 2 available + 나머지 10개 placeholder, Work 2 카드 `/dev/astro` navigation 검증.
+- [`tests/e2e/dev-astro.spec.ts`](../../tests/e2e/dev-astro.spec.ts) — 4개 패널 렌더, time converter fixed UTC, frame converter output, Earth rotation W 검증. 4 tests.
+
+검증 결과:
+- `pnpm format:check` ✓
+- `pnpm lint` ✓
+- `pnpm typecheck` ✓
+- `pnpm test` ✓ — 294 tests
+- `pnpm test:e2e -- tests/e2e/dev-astro.spec.ts tests/e2e/dev-index.spec.ts` ✓ — 9 tests
+
+설계 결정 + 발견:
+- **UTC 입력 처리**: 브라우저 `datetime-local`은 timezone을 갖지 않으므로 dev helper에서 문자열 뒤에 `Z`를 붙여 UTC로 해석한다. e2e에서는 Chromium의 `datetime-local` fill 규칙에 맞춰 분 단위 값을 입력.
+- **카탈로그 상태 변경**: `/dev/index`의 Work 2 카드만 `available`, 나머지 10개는 placeholder. 기존 e2e 기대값을 이에 맞춰 갱신.
+- **CSS import 방식**: TS side-effect CSS import를 새 dev page마다 늘리지 않고 `dev.css`에서 `@import './astro/astro.css'`로 묶었다.
 
 ### P6 — Cross-validation & Golden Fixtures (Closeout)
 _미시작_
@@ -235,20 +261,22 @@ _미시작_
 
 > 새 세션이나 다른 작업자가 이어 받을 때 여기를 먼저 본다.
 
-### 즉시 액션: P5 — Dev Demo `/dev/astro` 진입
+### 즉시 액션: P6 — Cross-validation & Golden Fixtures 진입
 
-1. [plan §3 P5](work-02-astronomy.md#phase-5--dev-demo-devastro) 의 UI 구조 결정 → §2 결정 로그에 기록
-   - 단일 페이지 4 섹션 / 탭 분리
-   - J2000 라이브 카운터 구현 방식 (`setInterval` / `requestAnimationFrame`)
-2. 신규 dev route:
-   - `src/dev/astro/` — 시간 변환기, J2000 경과, ICRF↔ecliptic 좌표 변환, 지구 자전 위상 패널
-   - `src/dev/registry.ts` — Work 2 entry의 `Component` 연결 + available 전환
-3. e2e:
-   - `/dev/index` 에서 Work 2 카드 available 확인
-   - `/dev/astro` 패널 기본 렌더/입력 동작 확인
-4. P5 마감: handoff §2/§3/§4/§7 갱신 → §0 "현재 phase = P6 진입 대기"
+1. [plan §3 P6](work-02-astronomy.md#phase-6--cross-validation--golden-fixtures-closeout) 의 Decisions 3개 항목을 확정 → §2 결정 로그에 기록
+   - Fixture 형식 (JSON / JSONL / Parquet)
+   - Fixture 갱신 정책 (수동 / CI 자동)
+   - Diff helper 톨러런스 (시간 1µs / 각도 1mas / 거리 1mm)
+2. Fixture 문서화:
+   - `tests/fixtures/work-02/README.md` — time/frames/rotation-earth schema + 재생성 명령
+   - `docs/architecture/astro-conventions.md` — 시간/좌표/회전 정책 요약
+3. Test helper:
+   - `tests/helpers` 또는 `src/test-utils` — 공통 `expectClose` 류 helper 정리
+4. Work 2 closeout 전체 검증:
+   - `pnpm lint` / `format:check` / `typecheck` / `test` / `test:e2e` / `build`
+   - `cd tools/python && uv run ruff check src tests && uv run mypy src && uv run pytest`
 
-### P1+P2+P3+P4 산출물 빠른 참조
+### P1+P2+P3+P4+P5 산출물 빠른 참조
 
 ```ts
 // src/astro/index.ts 가 export하는 핵심 심볼
@@ -305,7 +333,7 @@ cd tools/python && uv run orbitarium-tools fixtures --work=2 --out=../../tests/f
 
 - Work 1 CI 그린 ✓ (push 후 확인 완료, work-01 handoff §0 참조)
 - `tools/python/.venv` 활성화 가능 ✓ (P6 구축)
-- `/dev/index` 에서 Work 2 placeholder 카드 확인 가능 ✓ — P5 마감 시 "available"로 전환
+- `/dev/index` 에서 Work 2 카드 available + `/dev/astro` 접근 가능 ✓
 
 ### 주요 컨벤션 (Work 1에서 확정 — 그대로 적용)
 
@@ -383,6 +411,7 @@ uv run orbitarium-tools fixtures --work=2 --out=../../tests/fixtures/work-02/
 | 2026-05-05 | **P2 완료** — `src/astro/{leapSeconds,time}.ts` + Python 미러 + `tests/fixtures/work-02/time.json` (21 representative times) + `orbitarium-tools fixtures --work=2 --out=...` CLI. UTC↔TAI↔TT↔TDB 변환 (TS와 Python 비트 동일, fixture 1µs 매치, astropy IAU 2009 대비 TDB ~50µs). Brand type `JdTdb/JdTt/JdTai/JdUtc`. CI extras `[dev]` → `[astro,dev]`. typecheck/lint/format/test(184)/build/e2e/ruff/mypy/pytest(46) 전부 그린. ruff UP017(timezone.utc→UTC alias) 19건 + RUF002/003(유니코드 minus/dash) 5건 정리. let-binding offset 타입 narrowing 수정. invariant test 톨러런스 1e-4 (cancellation 한계) |
 | 2026-05-05 | **P3 완료** — `src/astro/frames.ts` + Python 미러 + `tests/fixtures/work-02/frames.json` (12 vectors + 3 matrices). ICRF↔EME2000 frame bias (ERFA bp00 RB 임베드, 9 doubles, ~23 mas RSS) + EME2000↔Ecliptic R_x(ε) + 합성 ICRF↔Ecliptic. `Vec3`/`Matrix3` readonly tuple, loop-unrolled matMul3 (9 명시 expression). 세차/장동 무시(J2000 고정), IAU 2006 ε 재사용. astropy ICRS↔BarycentricMeanEcliptic 1mas 매치. orthogonality 1e-15. typecheck/lint/format/test(261)/build/e2e/ruff/mypy/pytest(61) 전부 그린. SIM300 yoda 6건 자동 fix. erfa import-untyped → `# type: ignore`. R_x(ε) 부호 컨벤션 docstring 정정. ICRF X→ecliptic Z 톨러런스 1e-7→2e-7 (frame bias 누적) |
 | 2026-05-05 | **P4 완료** — `src/astro/{rotation,rotationData}.ts` + Python 미러 + `tests/fixtures/work-02/rotation-earth.json`. `IAURotationModel` 타입, polynomial/periodic evaluator, Earth `IAU_EARTH` BODY399 constants, `evaluateRotation`, `inertialToBodyFixed`, `bodyFixedToInertial` 구현. NAIF `pck00011.tpc` 기준이며 Earth orientation은 WGCCRE 2009 계승(2015 report no Earth/Moon orientation) 명시. SPICE text-PCK Euler sequence를 `spiceypy.lmpool` + `pxform("J2000","IAU_EARTH")`로 1mas 안에서 검증. TS rotation tests 33, Python rotation tests 10 추가. CLI Work 2 fixture 생성이 time+frames+rotation으로 확장. lint/format/typecheck/test(294)/build/e2e(7)/ruff/mypy/pytest(71) 전부 그린. JS `% 360` 마지막 bit 보존을 위해 `normalizeDegrees` fast path 추가 |
+| 2026-05-05 | **P5 완료** — `/dev/astro` 단일 페이지 dev demo 구현. `src/dev/astro/{AstroDemo,TimeConverter,J2000Counter,FrameConverter,EarthRotation}.tsx` + helper/CSS 추가, Work 2 registry lazy component 연결로 `/dev/index` 카드 available 전환. 시간 변환기(UTC→JD UTC/TAI/TT/TDB/MJD/J2000), live J2000 counter(`setInterval(1000)`), ICRF/EME2000/Ecliptic vector converter + round-trip norm, Earth W/pole/matrix panel 구현. e2e `dev-astro.spec.ts` 4건 추가, `dev-index.spec.ts` Work 2 available 기대값 갱신. format/lint/typecheck/test(294)/targeted e2e(9) 그린. `datetime-local` 입력은 UTC helper가 `Z`를 붙여 해석 |
 
 ---
 
