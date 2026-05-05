@@ -12,9 +12,10 @@ import {
   PIECEWISE_INPUT_BREAKS_AU,
   PIECEWISE_OUTPUT_BREAKS_SCENE,
   PiecewiseMonotonicPolicy,
-  SCALE_TOL_M,
   type SceneUnit,
 } from '@/scale'
+
+import { expectCloseMeters } from '../../helpers/expectClose'
 
 const m = (n: number): Meters => n as Meters
 const s = (n: number): SceneUnit => n as SceneUnit
@@ -78,7 +79,7 @@ describe('PiecewiseMonotonicPolicy', () => {
       const meters = auD * AU
       const f = PiecewiseMonotonicPolicy.forward(m(meters))
       const back = PiecewiseMonotonicPolicy.inverse(f)
-      expect(Math.abs(back - meters)).toBeLessThan(SCALE_TOL_M)
+      expectCloseMeters(back, meters)
     }
   })
 
@@ -106,7 +107,7 @@ describe('LogarithmicPolicy', () => {
     for (const auD of [0.001, 0.4, 1, 5, 30]) {
       const meters = auD * AU
       const back = LogarithmicPolicy.inverse(LogarithmicPolicy.forward(m(meters)))
-      expect(Math.abs(back - meters)).toBeLessThan(SCALE_TOL_M)
+      expectCloseMeters(back, meters)
     }
   })
 
@@ -144,7 +145,7 @@ describe('distance-policies.json fixture', () => {
         const forward = policy.forward(m(sample.distance_m))
         expect(Math.abs(forward - sample.forward_scene)).toBeLessThan(1e-12)
         const inverse = policy.inverse(s(forward))
-        expect(Math.abs(inverse - sample.inverse_m)).toBeLessThan(tol)
+        expectCloseMeters(inverse, sample.inverse_m, tol * 1000)
       }
     }
   })

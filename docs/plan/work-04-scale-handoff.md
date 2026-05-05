@@ -10,8 +10,8 @@
 
 | 항목         | 값                                                                                                            |
 | ------------ | ------------------------------------------------------------------------------------------------------------- |
-| 현재 phase   | **P5 완료** ✓ — P6 진입 대기                                                                                  |
-| 다음 액션    | **P6 — Cross-validation & Golden Fixtures (Closeout)** 진입 — fixture/doc closeout + 전체 검증              |
+| 현재 phase   | **P6 완료** ✓ — Work 4 마감                                                                                   |
+| 다음 액션    | **Work 5 — 3D Rendering Foundation** plan/handoff 작성 후 `/dev/render` 진입                                |
 | 마지막 갱신  | 2026-05-06                                                                                                    |
 | 블로커       | 없음                                                                                                          |
 
@@ -25,7 +25,7 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] **P3** — Body Size Scale Functions _(완료 2026-05-06)_
 - [x] **P4** — Adaptive Scale Interface _(완료 2026-05-06)_
 - [x] **P5** — Dev Demo `/dev/scale` _(완료 2026-05-06)_
-- [ ] **P6** — Cross-validation & Golden Fixtures (Closeout)
+- [x] **P6** — Cross-validation & Golden Fixtures (Closeout) _(완료 2026-05-06)_
 
 > Work 4 마감 = 모든 phase [x] + [plan §1 Definition of Done](work-04-scale.md#1-결과-정의-definition-of-done) 모든 항목 충족.
 
@@ -58,6 +58,10 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 23  | Dev Demo 구조 | **단일 페이지 + 4 섹션** (`PolicyPicker`, `PlanetLineup1D`, `PolicyCurves`, `RoundTripPanel`) | P1~P4 산출물을 한 화면에서 동시에 확인 가능. 탭 전환 없이 정책 선택 → 라인업/곡선/round-trip 변화를 바로 비교. | P5 | 2026-05-06 |
 | 24  | 1D 라이너업 렌더링 | **SVG** | 축 tick, body marker, tooltip, 테이블 동시 제공이 간단. Canvas 대비 e2e/접근성 확인도 쉬움. | P5 | 2026-05-06 |
 | 25  | Adaptive zoom demo wiring | **active policy wrapper**: 거리 `selected -> logarithmic`, 크기 `uniform -> selected` 를 `ZoomLevel` 로 보간 | P4 interface 가 실제 UI 변화로 드러나도록 slider 값을 라인업/곡선/round-trip 계산 경로에 직접 연결. Work 9 카메라 wiring 전의 기능 검증용. | P5 | 2026-05-06 |
+| 26  | Fixture 형식 | **JSON** + `_` prefix metadata | Work 2/3와 동일. 사람이 읽기 쉽고 diff 검토가 가능. Python `json.dump(indent=2)` 후 Prettier 정렬. | P6 | 2026-05-06 |
+| 27  | Fixture 갱신 정책 | **수동** (`pnpm fixtures:work-04`) | 정책/상수 변경은 의도적 결정이어야 하므로 CI 자동 갱신 금지. reviewer가 fixture diff를 검토. | P6 | 2026-05-06 |
+| 28  | Adaptive fixture | **별도 `adaptive.json` 생략** | adaptive는 TS-only interface + binary-search inverse가 핵심. base 거리/크기 교차 검증은 JSON fixture로, zoom 보간은 `adaptive.test.ts`가 직접 검증. | P6 | 2026-05-06 |
+| 29  | Python plot helper | **optional `generate_plots(out_dir)`** with `[viz]` extra | matplotlib은 기본 test env에는 넣지 않고 lazy import. 정책 시각화가 필요할 때 SVG plot 생성. | P6 | 2026-05-06 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -105,8 +109,10 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 ### P6에서 결정
 
-- [ ] Fixture 형식 (JSON / 다른 형식)
-- [ ] Fixture 갱신 정책 (수동 / CI 자동)
+- [x] Fixture 형식: **JSON** ✓ (#26)
+- [x] Fixture 갱신 정책: **수동 (`pnpm fixtures:work-04`)** ✓ (#27)
+- [x] Adaptive fixture: **생략** ✓ (#28)
+- [x] Python plot helper: **optional `[viz]` extra** ✓ (#29)
 
 ### 추후 보류 (Work 4 범위 밖)
 
@@ -272,18 +278,50 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 
 ### P6 — Cross-validation & Golden Fixtures (Closeout)
 
-_미시작_
+생성/수정 파일:
+
+- [`tools/python/src/orbitarium_tools/scaling.py`](../../tools/python/src/orbitarium_tools/scaling.py) — Work 2/3 패턴의 통합 `generate_fixtures(out_dir)` 추가. `generate_distance_fixtures` / `generate_size_fixtures` 는 targeted update 용으로 유지. optional `generate_plots(out_dir)` 추가 (matplotlib lazy import, SVG 정책 plot).
+- [`tools/python/src/orbitarium_tools/cli.py`](../../tools/python/src/orbitarium_tools/cli.py) — Work 4 fixture 분기가 `orbitarium_tools.scaling.generate_fixtures` 를 호출하도록 통일.
+- [`tools/python/tests/test_scaling.py`](../../tools/python/tests/test_scaling.py) — `generate_fixtures` 가 `distance-policies.json` / `size-policies.json` 를 함께 쓰는 smoke test 추가.
+- [`tests/unit/scale/distancePolicies.test.ts`](../../tests/unit/scale/distancePolicies.test.ts) — fixture inverse 비교에 `expectCloseMeters` helper 사용.
+- [`tests/unit/scale/sizePolicies.test.ts`](../../tests/unit/scale/sizePolicies.test.ts) — size inverse 비교에 `expectCloseMeters` helper 사용.
+- [`tests/fixtures/work-04/README.md`](../../tests/fixtures/work-04/README.md) — fixture 구성, 재생성 명령, JSON 형식, 수동 갱신 정책, 회귀 가드 절차.
+- [`docs/architecture/scale-conventions.md`](../architecture/scale-conventions.md) — Work 5+ 진입용 정책 모델 / Truth ↔ Display 변환 / tolerance / import pattern 가이드.
+
+검증 결과:
+
+- `pnpm fixtures:work-04` ✓ — idempotent 확인 (fixture JSON diff 없음).
+- `pnpm test -- tests/unit/scale/distancePolicies.test.ts tests/unit/scale/sizePolicies.test.ts tests/unit/scale/adaptive.test.ts` ✓ — **48 tests**
+- `pnpm format:check` ✓
+- `pnpm lint` ✓
+- `pnpm typecheck` ✓
+- `pnpm test` ✓ — **395 tests**
+- `pnpm build` ✓
+- `pnpm test:e2e` ✓ — **21 tests**
+- `cd tools/python && uv run ruff check src/orbitarium_tools/scaling.py src/orbitarium_tools/cli.py tests/test_scaling.py` ✓
+- `cd tools/python && uv run mypy src/orbitarium_tools/scaling.py src/orbitarium_tools/cli.py tests/test_scaling.py` ✓
+- `cd tools/python && uv run pytest tests/test_scaling.py` ✓ — **16 tests**
+- `cd tools/python && uv run ruff check src tests` ✓
+- `cd tools/python && uv run mypy src` ✓ — **11 source files**
+- `cd tools/python && uv run pytest` ✓ — **104 tests**
+
+설계 결정 + 발견:
+
+- **통합 fixture entry point**: CLI는 이제 Work 2/3와 동일하게 module-level `generate_fixtures(out_dir)`만 호출. 개별 helper는 P2/P3 산출물로 유지해 targeted regeneration 가능.
+- **`adaptive.json` 생략**: P4 adaptive는 Python mirror가 없는 TS interface 성격이 강함. base policy 수치 교차 검증은 distance/size fixture가 담당하고, 보간/역변환은 TS unit test에서 직접 guard.
+- **matplotlib optional 유지**: default Python env에는 `viz` extra가 없으므로 `generate_plots`는 lazy import + 명확한 RuntimeError. Work 9/11에서 정책 plot이 필요하면 `uv sync --extra viz` 후 호출.
+- **회귀 가드**: `PiecewiseMonotonicPolicy` output break point를 의도적으로 흔들어 distance fixture test fail 확인 후 원복.
 
 ## 5. 다음 작업자에게 (For the Next Operator)
 
 > 새 세션이나 다른 작업자가 이어 받을 때 여기를 먼저 본다.
 
-### 즉시 액션: P6 — Cross-validation & Golden Fixtures (Closeout) 진입
+### 즉시 액션: Work 5 — 3D Rendering Foundation 진입
 
-1. [plan §3 P6](work-04-scale.md#phase-6--cross-validation--golden-fixtures-closeout) 의 fixture/doc closeout 항목 확인.
-2. `tests/fixtures/work-04/README.md` 와 `docs/architecture/scale-conventions.md` 작성.
-3. `pnpm fixtures:work-04` 로 distance/size fixture 재생성 경로 검증. adaptive fixture 는 P6에서 추가 여부 결정.
-4. 전체 검증: `pnpm format:check / lint / typecheck / test / build / test:e2e`, Python `ruff / mypy / pytest`.
+1. [`docs/architecture/scale-conventions.md`](../architecture/scale-conventions.md) 를 먼저 읽고 scene unit / policy 경계를 확인.
+2. Work 5 plan/handoff 작성 — 목표: three.js renderer/camera/log-depth/HDR/starfield 기반 + `/dev/render`.
+3. Work 5에서 `1 scene unit = 1 three.js unit` 를 유지할지 확인. 변경이 필요하면 Work 4 결정 #3 supersede 항목을 새 Work에서 명시.
+4. Render 위치는 `positionToScene(pos, distancePolicy)`, mesh radius는 size policy 결과만 사용.
 
 ### Work 2/3 산출물 활용 (Work 4 시작 전 점검)
 
@@ -333,7 +371,7 @@ Dev 라우트:
 
 CI:
   .github/workflows/ci.yml 자동 커버 (Work 3 P6 에서 DE440 캐시 통합 완료)
-  새 Python 의존성 (matplotlib 추가 가능): pyproject.toml [viz] extras 활용
+  새 Python 의존성 (matplotlib 필요 시): pyproject.toml [viz] extras 활용
 
 커밋 prefix: [work-04/p<N>] <한국어 한 줄 요약>
 ```
@@ -358,7 +396,7 @@ uv run ruff check src tests
 uv run mypy src
 uv run pytest
 
-# 골든 fixture 재생성 (P6 후, Work 2/3 패턴)
+# 골든 fixture 재생성 (Work 4 closeout 패턴)
 pnpm fixtures:work-04
 ```
 
@@ -369,7 +407,7 @@ pnpm fixtures:work-04
 - **break point 도함수 불연속**: piecewise monotonic 정책은 break 에서 시각적 점프 가능 — 필요 시 C¹ Hermite 도입.
 - **scene unit vs three.js unit**: 본 Work 는 scene unit 만 정의. Work 5 에서 three.js 좌표로 1:1 매핑 (단순). 만일 변경하려면 scene unit 정의를 Work 4 P1 에서 결정.
 - **adaptive scale 의 카메라 단위 미확정**: Work 9 카메라 거리 단위 (scene vs AU) 와 wiring 시 호환 필요. 본 phase 의 `ZoomLevel = log10(AU)` 가 Work 9 입력과 호환되도록 인터페이스 디자인.
-- **matplotlib 의존성**: Python `[viz]` extras 에 이미 포함. 처음 import 시 ~1초 — pytest 첫 실행 느림. 이후 캐시.
+- **matplotlib 의존성**: 기본 Python env에는 없음. 정책 SVG plot 필요 시 `[viz]` extra 설치 후 `orbitarium_tools.scaling.generate_plots(out_dir)` 호출.
 - **astropy ERFA dubious year warning**: Work 2/3과 동일 — 미래 시각 fixture 호출 시 발생, 무시 가능.
 
 ## 7. 갱신 이력 (Changelog)
@@ -382,6 +420,7 @@ pnpm fixtures:work-04
 | 2026-05-06 | **P3 완료** — `src/scale/sizePolicies.ts` + Python 미러 + `tests/fixtures/work-04/size-policies.json` (3 정책 × 11 bodies). 결정 4건 (#15~#18): Uniform baseline + MinMaxClamp / LogMag 공식 base + k*log10(1+r/r0) (r0=Earth, k=0.5, base=0.005) / MinMaxClamp [0.005, 5] scene log10 normalize / 카탈로그 11 entries 1mm round-trip. 단위 테스트 18건 추가 (TS 14 + Python 4). format/lint/typecheck/test(376)/build/ruff/mypy/pytest(103) 그린. |
 | 2026-05-06 | **P4 완료** — `src/scale/adaptive.ts`: `ZoomLevel` (log10 AU) brand, `ZOOM_INNER = -0.4 / ZOOM_OUTER = 1.7`, smoothstep cubic Hermite, `lerpDistancePolicy / lerpSizePolicy` 두 base 정책 줌 보간, t=0/t=1 short-circuit + 0<t<1 binary-search inverse (value tol 1e-15, bracket tol 1µm). 결정 4건 (#19~#22) 채택. 단위 테스트 19건 추가 (총 395). bisect bracket tol 트랩 발견 (value-only tol 시 lerp slope 0.5 → input 0.3 m 오차) → bracket tol 추가로 해결. format/lint/typecheck/test/build 그린. |
 | 2026-05-06 | **P5 완료** — `/dev/scale` 단일 페이지 dev demo. `src/dev/scale/{ScaleDemo,PolicyPicker,PlanetLineup1D,PolicyCurves,RoundTripPanel}.tsx` + `scale.css`, registry/dev.css 연결. 정책 picker + adaptive zoom slider, DE440 현재 시각 10-body SVG lineup/table, active distance curve, round-trip sanity 구현. 결정 3건 (#23~#25) 채택. e2e 5건 추가/갱신, dev index Work 4 available 전환. format/lint/typecheck/test(395)/build/e2e(21) 그린. |
+| 2026-05-06 | **P6 완료 / Work 4 마감** — fixture/doc closeout. `orbitarium_tools.scaling.generate_fixtures(out_dir)` 통합 entry + optional `generate_plots(out_dir)` 추가, CLI Work 4 분기 통일. `tests/fixtures/work-04/README.md`와 `docs/architecture/scale-conventions.md` 작성. TS fixture tests가 `expectCloseMeters` helper 사용. 결정 4건 (#26~#29): JSON fixture / 수동 갱신 / adaptive fixture 생략 / matplotlib plot optional. `pnpm fixtures:work-04` idempotent. 의도적 break point 변경으로 fixture test fail 확인 후 원복. format/lint/typecheck/test/build/e2e 및 Python ruff/mypy/pytest 그린. |
 
 ---
 

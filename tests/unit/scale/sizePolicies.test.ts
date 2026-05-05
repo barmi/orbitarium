@@ -17,12 +17,13 @@ import {
   MinMaxClampPolicy,
   radiusToScene,
   SCALE_BODY_NAIF_IDS,
-  SCALE_TOL_SIZE_M,
   sceneToRadius,
   SIZE_POLICIES,
   type SizeScene,
   UniformPolicy,
 } from '@/scale'
+
+import { expectCloseMeters } from '../../helpers/expectClose'
 
 const m = (n: number): Meters => n as Meters
 const s = (n: number): SizeScene => n as SizeScene
@@ -79,7 +80,7 @@ describe('LogarithmicMagnificationPolicy', () => {
     for (const id of SCALE_BODY_NAIF_IDS) {
       const r = BODY_MEAN_EQUATORIAL_RADIUS_M[id]!
       const back = LogarithmicMagnificationPolicy.inverse(LogarithmicMagnificationPolicy.forward(r))
-      expect(Math.abs(back - r)).toBeLessThan(SCALE_TOL_SIZE_M)
+      expectCloseMeters(back, r)
     }
   })
 
@@ -112,7 +113,7 @@ describe('MinMaxClampPolicy', () => {
     for (const id of SCALE_BODY_NAIF_IDS) {
       const r = BODY_MEAN_EQUATORIAL_RADIUS_M[id]!
       const back = MinMaxClampPolicy.inverse(MinMaxClampPolicy.forward(r))
-      expect(Math.abs(back - r)).toBeLessThan(SCALE_TOL_SIZE_M)
+      expectCloseMeters(back, r)
     }
   })
 
@@ -163,7 +164,7 @@ describe('size-policies.json fixture', () => {
         const forward = policy.forward(m(sample.radius_m))
         expect(Math.abs(forward - sample.forward_scene)).toBeLessThan(1e-12)
         const inverse = policy.inverse(s(forward))
-        expect(Math.abs(inverse - sample.inverse_m)).toBeLessThan(tol)
+        expectCloseMeters(inverse, sample.inverse_m, tol * 1000)
       }
     }
   })

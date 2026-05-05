@@ -15,6 +15,7 @@ Conventions (Work 4 P1 decision):
 
 from __future__ import annotations
 
+import importlib
 import math
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -235,10 +236,11 @@ def get_size_policy(name: str) -> SizePolicy:
     raise ValueError(f"unknown size policy: {name}")
 
 
-def generate_size_fixtures(out_dir: Path) -> Path:
+def generate_size_fixtures(out_dir: Path | str) -> Path:
     """Size policy x body radii -> forward/inverse table."""
     import json
 
+    out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     fixtures: list[dict[str, object]] = []
@@ -278,10 +280,11 @@ def generate_size_fixtures(out_dir: Path) -> Path:
     return out_path
 
 
-def generate_distance_fixtures(out_dir: Path) -> Path:
+def generate_distance_fixtures(out_dir: Path | str) -> Path:
     """Distance policy x sample distances -> forward/inverse table."""
     import json
 
+    out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     sample_distances_au = [
@@ -336,3 +339,96 @@ def generate_distance_fixtures(out_dir: Path) -> Path:
         json.dump(output, f, indent=2)
         f.write("\n")
     return out_path
+
+
+def generate_fixtures(out_dir: Path | str) -> tuple[Path, Path]:
+    """Generate every Work 4 golden fixture.
+
+    Work 2/3 expose a single ``generate_fixtures(out_dir)`` entry point per
+    module. Work 4 keeps the specialized helpers public for targeted updates,
+    but the CLI and closeout docs use this combined function.
+    """
+
+    out_path = Path(out_dir)
+    return (generate_distance_fixtures(out_path), generate_size_fixtures(out_path))
+
+
+def generate_plots(out_dir: Path | str) -> tuple[Path, Path]:
+    """Generate static SVG plots for the distance and size policies.
+
+    Matplotlib is intentionally imported lazily so the default Python test
+    environment does not need the optional ``viz`` extra.
+    """
+
+    try:
+        matplotlib = importlib.import_module("matplotlib")
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(
+            "matplotlib is required for generate_plots; install with "
+            '`uv pip install -e ".[viz]"` or `uv sync --extra viz`.'
+        ) from exc
+
+    matplotlib.use("Agg")
+    pyplot = importlib.import_module("matplotlib.pyplot")
+    out_path = Path(out_dir)
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    distance_plot = out_path / "distance-policies.svg"
+    size_plot = out_path / "size-policies.svg"
+
+    distance_au = [
+        0.001,
+        0.003,
+        0.01,
+        0.03,
+        0.1,
+        0.3,
+        0.4,
+        0.7,
+        1.0,
+        1.5,
+        2.5,
+        5.0,
+        10.0,
+        20.0,
+        50.0,
+        100.0,
+    ]
+    fig, ax = pyplot.subplots(figsize=(7.2, 4.2))
+    for policy in DISTANCE_POLICIES:
+        ax.plot(
+            distance_au,
+            [policy.forward(d * AU) for d in distance_au],
+            marker="o",
+            label=policy.name,
+        )
+    ax.set_xscale("log")
+    ax.set_xlabel("distance (AU)")
+    ax.set_ylabel("scene unit")
+    ax.set_title("Work 4 Distance Policies")
+    ax.grid(True, which="both", alpha=0.25)
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(distance_plot)
+    pyplot.close(fig)
+
+    radii = [BODY_MEAN_EQUATORIAL_RADIUS_M[naif_id] for naif_id in SCALE_BODY_NAIF_IDS]
+    fig, ax = pyplot.subplots(figsize=(7.2, 4.2))
+    for size_policy in SIZE_POLICIES:
+        ax.plot(
+            radii,
+            [size_policy.forward(r) for r in radii],
+            marker="o",
+            label=size_policy.name,
+        )
+    ax.set_xscale("log")
+    ax.set_xlabel("body radius (m)")
+    ax.set_ylabel("scene unit")
+    ax.set_title("Work 4 Size Policies")
+    ax.grid(True, which="both", alpha=0.25)
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(size_plot)
+    pyplot.close(fig)
+
+    return (distance_plot, size_plot)

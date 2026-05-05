@@ -1,4 +1,5 @@
 import math
+from pathlib import Path
 
 from orbitarium_tools.constants import AU
 from orbitarium_tools.scaling import (
@@ -13,6 +14,7 @@ from orbitarium_tools.scaling import (
     SCALE_BODY_NAIF_IDS,
     SCALE_TOL_M,
     SCALE_TOL_SIZE_M,
+    generate_fixtures,
     get_distance_policy,
 )
 
@@ -139,3 +141,11 @@ def test_minmax_clamp_endpoints_and_round_trips() -> None:
         r = BODY_MEAN_EQUATORIAL_RADIUS_M[naif_id]
         back = MIN_MAX_CLAMP_POLICY.inverse(MIN_MAX_CLAMP_POLICY.forward(r))
         assert abs(back - r) < SCALE_TOL_SIZE_M
+
+
+def test_generate_fixtures_writes_distance_and_size_json(tmp_path: Path) -> None:
+    out_files = generate_fixtures(tmp_path)
+    assert [p.name for p in out_files] == ["distance-policies.json", "size-policies.json"]
+    for out_file in out_files:
+        assert out_file.exists()
+        assert out_file.read_text(encoding="utf-8").startswith("{\n")
