@@ -10,10 +10,10 @@
 
 | 항목 | 값 |
 |---|---|
-| 현재 phase | **P6 완료** ✓ — 다음은 **P7 (CI Pipeline Skeleton)** |
-| 다음 액션 | P7 시작: GitHub Actions로 lint/type/test/build (Node + Python) PR/push 자동 |
+| 현재 phase | **P7 완료** ✓ — **Work 1 전체 완료** 🏁 |
+| 다음 액션 | **Work 2 — Astronomy Foundations** 시작. 별도 plan/handoff 문서: `docs/plan/work-02-astronomy.md` 와 `work-02-astronomy-handoff.md` |
 | 마지막 갱신 | 2026-05-05 |
-| 블로커 | 없음 |
+| 블로커 | 없음. 첫 PR 푸시 후 Actions 그린 확인 필요 (로컬 시뮬레이션은 완료) |
 
 ## 1. 진행 체크리스트
 
@@ -26,7 +26,9 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] **P4** — three.js Hello _(완료 2026-05-05)_
 - [x] **P5** — Test Frameworks _(완료 2026-05-05)_
 - [x] **P6** — Python Tooling Smoke _(완료 2026-05-05)_
-- [ ] **P7** — CI Pipeline Skeleton
+- [x] **P7** — CI Pipeline Skeleton _(완료 2026-05-05)_
+
+🏁 **Work 1 전체 완료** — [plan §1 Definition of Done](work-01-foundation.md#1-결과-정의-definition-of-done) 의 모든 항목 충족.
 
 ## 2. 결정 로그 (Decision Log)
 
@@ -44,6 +46,8 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 10 | e2e 테스트 도구 | **Playwright** | 멀티 브라우저, 내장 trace viewer, webServer auto-start, async 대기 매처 풍부. CI 캐시 가능. | P5 | 2026-05-05 |
 | 11 | Vitest DOM 환경 | **happy-dom** | jsdom 대비 ~3배 빠른 단위 테스트. 대부분 DOM API 충분 — 본 프로젝트는 R3F 컴포넌트 단위 테스트 거의 없으니 더 적합. | P5 | 2026-05-05 |
 | 12 | Python venv 도구 | **uv** (0.10.0 via Homebrew) | 이미 설치됨. Rust 기반 — venv 생성/패키지 설치 기존 pip 대비 수십배 빠름. `uv run`으로 격리 실행도 깔끔. | P6 | 2026-05-05 |
+| 13 | e2e 의 CI 통합 | **ci.yml 에 포함 (node / python / e2e 3-job 병렬)** | e2e 가 ~3s 로 가벼움. Playwright 캐시 적용. 단일 워크플로 = 단일 진실원, PR 마다 통합 검증. | P7 | 2026-05-05 |
+| 14 | pnpm 버전 핀 | **`packageManager: "pnpm@8.10.2"`** | pnpm-lock.yaml 의 lockfileVersion 6.0 (pnpm 7-8 라인) 과 정합. 사용자 머신 8.10.2 와 매칭. Work 11 폴리시에서 9/10 라인 업그레이드 + 락파일 마이그레이션 검토. | P7 | 2026-05-05 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -74,7 +78,8 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] Python venv 도구: **uv** ✓ (#12)
 
 ### P7에서 결정
-- [ ] e2e를 ci.yml에 포함 / 별도 workflow
+- [x] e2e를 ci.yml에 포함 ✓ (#13)
+- [x] pnpm 버전 핀 ✓ (#14, P7 진행 중 추가 결정)
 
 ### 추후 보류 (Work 1 범위 밖)
 - 상태 관리 라이브러리 (Zustand / Jotai / RxJS) — Work 8 시점에 결정
@@ -235,38 +240,70 @@ phase 종료 시 생성·수정된 주요 파일을 기록.
 - `astro` / `viz` / `notebook` extras는 P6에서 설치하지 않음 — Work 2부터 모듈 추가 시 그 Work의 phase 에서 함께 설치.
 - 향후 lock 파일은 사용 안 함 (간단성 우선). 의존성이 늘면 `uv pip compile` 로 lock 도입 검토.
 
-### P7 — CI Pipeline Skeleton _(예정)_
-- _phase 종료 시 채움_
+### P7 — CI Pipeline Skeleton _(완료 2026-05-05)_
+생성/수정 파일:
+- [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) — 3-job 병렬 파이프라인:
+  - `node`: pnpm/action-setup → setup-node (`.nvmrc` 기반, pnpm cache) → `install --frozen-lockfile` → lint → typecheck → test → build (8 steps)
+  - `python`: setup-uv (cache: pyproject.toml) → `uv venv` + `uv pip install -e ".[dev]"` → ruff → mypy → pytest, working-directory: `tools/python` (6 steps)
+  - `e2e`: pnpm install → Playwright 캐시 (key: `playwright-${OS}-${hashFiles(pnpm-lock)}`) → cold/warm 분기 install → `pnpm test:e2e`, 실패 시 `playwright-report/` 업로드 (9 steps)
+  - 트리거: `push` (main), `pull_request`. concurrency 그룹으로 in-progress 자동 취소.
+  - permissions: `contents: read` (최소).
+- [`package.json`](../../package.json) — `packageManager: "pnpm@8.10.2"` 추가 → pnpm/action-setup 가 자동으로 동일 버전 사용.
+- [`README.md`](../../README.md) — CI 배지 (`https://github.com/barmi/orbitarium/actions/workflows/ci.yml/badge.svg`) 추가.
+
+검증 결과:
+- YAML 파싱 OK (PyYAML 으로 구조 확인: 3 jobs, 8/6/9 steps).
+- 로컬 모든 CI 단계 시뮬레이션 그린:
+  - `pnpm install --frozen-lockfile` ✓ (Lockfile is up to date)
+  - `pnpm lint` / `typecheck` / `format:check` / `test` (4 unit) / `build` ✓
+  - `pnpm test:e2e` ✓ (7 e2e tests)
+  - `uv run ruff check src tests` / `uv run mypy src` / `uv run pytest` (3) ✓
+- 첫 GitHub push 후 Actions 그린 확인 필요 (실 환경 검증).
 
 ## 5. 다음 작업자에게 (For the Next Operator)
 
 > 새 세션이나 다른 작업자가 이어 받을 때 여기를 먼저 본다.
 
-### 다음 작업: P7 — CI Pipeline Skeleton
+### 다음 작업: Work 2 — Astronomy Foundations 진입
 
-**Goal**: GitHub Actions 로 lint / typecheck / test / build (Node + Python) 를 PR/push 시 자동 실행. plan 본체 [§3 Phase 7](work-01-foundation.md#phase-7--ci-pipeline-skeleton) 참조.
+Work 1 가 완료되었으므로 이제 **Work 2 (Astronomy Foundations)** 의 phase 계획을 작성한다 (`work-XX-<name>` 컨벤션).
 
-**Step 1. 결정 라운드**
-§3 의 P7 결정 1개 확정:
-1. e2e 를 ci.yml 에 포함 / 별도 workflow 분리
+**Step 1. 새 phase 계획/handoff 문서 작성**
+- `docs/plan/work-02-astronomy.md` — Work 2 의 phase 정의 / Done 기준
+- `docs/plan/work-02-astronomy-handoff.md` — 진행 상태 / 결정 / 산출물 인덱스
 
-**Step 2. 워크플로 작성**
-- `.github/workflows/ci.yml`
-  - `node` job: setup-node + pnpm action + cache → install → lint → typecheck → test (단위) → build
-  - `python` job: setup-python + uv 설치 + cache → `uv pip install -e ".[dev]"` → ruff → mypy → pytest
-  - `e2e` job (포함 시): Playwright 캐시 → install → `pnpm test:e2e`
-- 트리거: `push` (main), `pull_request`
+**Step 2. Work 2 핵심 범위** ([overview.md §5 Work 2](overview.md#work-2--천문학-기반-astronomy-foundations) 참조)
+- 시간: UTC ↔ TAI ↔ TT ↔ TDB, Julian Date, J2000 epoch
+- 좌표계: ICRF / EME2000 / 황도 / body-fixed (IAU 회전)
+- 변환 행렬, 세차/장동 처리 정책
+- 천문 상수 (AU, GM, c, …)
+- NAIF ID, 카탈로그 모델
+- **Dev Demo**: `/dev/astro` — UTC↔TT↔TDB↔JD 변환기, J2000 경과시간, ICRF↔ecliptic 좌표 변환 입출력 패널
+- **Python**: `orbitarium_tools.time`, `.frames` — astropy 결과와 µs/mas 단위 비교 + 골든값 fixture
 
-**Step 3. 검증**
-- 임시 브랜치 + PR로 CI 그린 확인 (또는 `act`로 로컬 시뮬레이션)
-- README 에 CI 배지 (선택)
+**Step 3. 첫 GitHub push 후 CI 그린 확인** (Work 1 마감 검증)
 
-**Step 4. handoff 갱신** (동일 패턴)
+### Work 1 산출 요약 (참고)
 
-**Notes**
-- pnpm 캐시: `pnpm/action-setup@v4` + `actions/setup-node@v4` 의 `cache: pnpm` 조합 권장.
-- Playwright: `~/.cache/ms-playwright` 캐시 키 = OS + chromium 버전.
-- Python: uv 가 actions/setup-python 결합으로 자동 캐시 가능 (`astral-sh/setup-uv@v4`).
+```
+의존성:
+  TS:     react / react-dom / @react-three/fiber / three / react-router-dom
+          + dev: vite / typescript / vitest / @playwright/test / eslint / prettier 등
+  Python: numpy + dev: pytest / ruff / mypy
+
+스크립트:
+  pnpm dev / build / preview
+  pnpm typecheck / lint / lint:fix / format / format:check
+  pnpm test / test:watch / test:ui / test:e2e / test:e2e:headed / test:e2e:ui
+  uv run orbitarium-tools / ruff / mypy / pytest
+
+라우트:
+  /                    — Canvas + 회전 sphere + FPS + (dev 모드) /dev/index 링크
+  /dev/index, /dev     — 카탈로그 (Work 2~12 placeholder 11개)
+  /dev/<slug>          — Work 별 페이지 (registry.Component 채워지면 활성)
+
+CI:  GitHub Actions — node / python / e2e (병렬, PR/push 시 자동)
+```
 
 ### 빠른 검증 명령 (Work 1 전반)
 
@@ -311,6 +348,7 @@ pytest
 | 2026-05-05 | **P4 완료** — R3F 회전 sphere + 단일 별 + 자체 FPS 오버레이. preview 스크린샷으로 시각 확인 (120 fps 라이브, sphere 렌더). 번들 232 kB → 1113 kB (three.js 추가, Work 11에서 분할 예정). `.claude/launch.json` 추가, `.prettierignore`에 docs/*.md 보호 |
 | 2026-05-05 | **P5 완료** — Vitest + happy-dom 단위 (4 tests) + Playwright + chromium e2e (7 tests). tsconfig.test.json 신설. `pnpm test` / `pnpm test:e2e` 모두 그린. WebGL 픽셀 read는 R3F preserveDrawingBuffer 미설정 이슈로 context 활성 검증으로 대체 |
 | 2026-05-05 | **P6 완료** — `tools/python/.venv` (uv managed Python 3.13.5) + `[dev]` extras (pytest/ruff/mypy/numpy). smoke test 3건. `orbitarium-tools version` / ruff / mypy --strict / pytest 모두 그린 |
+| 2026-05-05 | **P7 완료 + Work 1 완료 🏁** — GitHub Actions 3-job (node/python/e2e) 병렬 파이프라인. `packageManager: pnpm@8.10.2` 핀 (lockfileVersion 6.0 정합). README CI 배지. 모든 CI 단계 로컬 시뮬레이션 그린 (lint/type/format/test/build/e2e/ruff/mypy/pytest). 첫 push 후 GitHub Actions 실 환경 그린 확인 남음 |
 
 ---
 
