@@ -8,5 +8,7 @@
  */
 
 export * from './constants'
+export * from './leapSeconds'
 export * from './naif'
+export * from './time'
 export * from './units'
