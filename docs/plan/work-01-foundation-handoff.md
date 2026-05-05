@@ -10,8 +10,8 @@
 
 | 항목 | 값 |
 |---|---|
-| 현재 phase | **P2 완료** ✓ — 다음은 **P3 (App Shell & Dev Routes)** |
-| 다음 액션 | P3 시작: 라우터 도입 + `/dev/index` 카탈로그 + 프로덕션 빌드 dev 제외 |
+| 현재 phase | **P3 완료** ✓ — 다음은 **P4 (three.js Hello)** |
+| 다음 액션 | P4 시작: `/` 에 회전 sphere + FPS 카운터 + 별 1점 (three.js 파이프라인 검증 수준) |
 | 마지막 갱신 | 2026-05-05 |
 | 블로커 | 없음 |
 
@@ -22,7 +22,7 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 - [x] **P1** — Tech Decisions & Repo Bootstrap _(완료 2026-05-05)_
 - [x] **P2** — Quality Tooling _(완료 2026-05-05)_
-- [ ] **P3** — App Shell & Dev Routes
+- [x] **P3** — App Shell & Dev Routes _(완료 2026-05-05)_
 - [ ] **P4** — three.js Hello
 - [ ] **P5** — Test Frameworks
 - [ ] **P6** — Python Tooling Smoke
@@ -38,6 +38,8 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 4 | 빌드 도구 | **Vite** | Work 1 plan에서 사실상 확정. HMR + ES 모듈 + esbuild. | P1 | 2026-05-05 |
 | 5 | import 정렬 도구 | **eslint-plugin-simple-import-sort** | auto-fix + 제로 설정. 그룹별 정렬(외부 → 내부 → 상대 → 스타일). 소규모 프로젝트에 적합. | P2 | 2026-05-05 |
 | 6 | pre-commit hook | **미도입** | CI(P7)에서 lint/type/test 검증. 쓰기 단계 마찰 최소화. 추후 husky+lint-staged 추가 가능. | P2 | 2026-05-05 |
+| 7 | 라우터 라이브러리 | **React Router (v7 라인)** | 가장 성숙한 생태계. 동적 로드/속도적 navigate 등 확장 용이. v6 API 호환되어 기존 패턴 그대로 사용. | P3 | 2026-05-05 |
+| 8 | 프로덕션 dev 라우트 제외 | **`import.meta.env.DEV` + `lazy()`** | 단일 entry. dev 모드에서만 enableDevRoutes=true → 조건부 lazy import. prod 빌드 시 false 평가로 dynamic import 자체가 dead-code 제거. 설정 최소화. | P3 | 2026-05-05 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -54,8 +56,8 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] pre-commit hook 도입 여부: **미도입** ✓ (#6)
 
 ### P3에서 결정
-- [ ] 라우터: **React Router v6** / Wouter / TanStack Router
-- [ ] 프로덕션 dev 제외 방식: env flag (권장) / 별도 entry
+- [x] 라우터: **React Router** ✓ (#7)
+- [x] 프로덕션 dev 제외 방식: **`import.meta.env.DEV` + `lazy()`** ✓ (#8)
 
 ### P4에서 결정
 - [ ] FPS 표시: 자체 구현 / `stats.js` / R3F 헬퍼
@@ -133,8 +135,29 @@ phase 종료 시 생성·수정된 주요 파일을 기록.
 - `pnpm format:check` ✓ — All matched files use Prettier code style.
 - 룰 위반 시나리오 (5종 위반 코드 삽입): simple-import-sort, no-unused-vars, no-explicit-any, TS2532(noUncheckedIndexedAccess), TS6133 모두 정확히 검출 → 파일 제거 후 재검증 그린.
 
-### P3 — App Shell & Dev Routes _(예정)_
-- _phase 종료 시 채움_
+### P3 — App Shell & Dev Routes _(완료 2026-05-05)_
+설치된 의존성:
+- react-router-dom 7.14.2 (+ history, @remix-run/router, react-router 등 4 패키지)
+
+생성/수정 파일:
+- [`src/routes/Home.tsx`](../../src/routes/Home.tsx) — `/` 라우트. dev 모드에서만 `/dev/index` 링크 노출.
+- [`src/dev/registry.ts`](../../src/dev/registry.ts) — `DevPageEntry[]` 단일 진실원. Work 2~12 placeholder entry 11개. 각 entry는 `Component` 추가 시 자동으로 라우트화.
+- [`src/dev/DevApp.tsx`](../../src/dev/DevApp.tsx) — `/dev/*` sub-router. registry 순회로 동적 라우트 생성, fallback `*` 포함.
+- [`src/dev/DevIndex.tsx`](../../src/dev/DevIndex.tsx) — `/dev`, `/dev/index` 카탈로그. `<DevCard>` 그리드.
+- [`src/dev/DevCard.tsx`](../../src/dev/DevCard.tsx) — `Component` 유무에 따라 `<Link>` (available) vs `<article aria-disabled>` (placeholder).
+- [`src/dev/dev.css`](../../src/dev/dev.css) — dev 페이지 전용 스타일. DevApp이 import → 같은 chunk → prod에서 함께 제외.
+- [`src/App.tsx`](../../src/App.tsx) — 라우터 루트. `enableDevRoutes` 조건부 lazy import.
+- [`src/main.tsx`](../../src/main.tsx) — `<BrowserRouter>` 마운트.
+- [`src/vite-env.d.ts`](../../src/vite-env.d.ts) — `ImportMetaEnv.VITE_ENABLE_DEV_ROUTES` 타입.
+- [`docs/architecture/dev-routes.md`](../../docs/architecture/dev-routes.md) — 새 dev 페이지 추가 절차, 프로덕션 제외 정책 표, 작성 가이드.
+
+검증 결과:
+- `pnpm dev` → `/`, `/dev`, `/dev/index` 모두 HTTP 200, 모든 모듈 로드 ✓
+- `pnpm lint` / `pnpm typecheck` / `pnpm format:check` 모두 그린 ✓
+- **프로덕션 빌드 dev 제외 검증**:
+  - 기본 `pnpm build` → 단일 chunk `index-CXJtCXLZ.js` (232.06 kB), `dist/`에 `Dev*` 시그니처 0건 ✓
+  - `VITE_ENABLE_DEV_ROUTES=true pnpm build` → 별도 chunk `DevApp-*.js` (3.25 kB) + `DevApp-*.css` (1.40 kB) 생성 → 조건부 분기가 빌드 타임에 정확히 평가됨 ✓
+- 번들 크기 변화 (P1 → P3): 190.74 kB → 232.06 kB (+41 kB) — react-router-dom 추가분.
 
 ### P4 — three.js Hello _(예정)_
 - _phase 종료 시 채움_
@@ -152,36 +175,37 @@ phase 종료 시 생성·수정된 주요 파일을 기록.
 
 > 새 세션이나 다른 작업자가 이어 받을 때 여기를 먼저 본다.
 
-### 다음 작업: P3 — App Shell & Dev Routes
+### 다음 작업: P4 — three.js Hello
 
-**Goal**: 라우터 + `/dev/index` 카탈로그 + 프로덕션 빌드 dev 제외. plan 본체 [§3 Phase 3](work-01-foundation.md#phase-3--app-shell--dev-routes) 참조.
+**Goal**: `/` 페이지에서 회전 sphere + FPS 카운터 + 별 1점 → three.js 렌더 파이프라인 검증. plan 본체 [§3 Phase 4](work-01-foundation.md#phase-4--threejs-hello) 참조.
 
 **Step 1. 결정 라운드**
-§3 의 P3 항목 2개 확정:
-1. 라우터: React Router v6 (권장) / Wouter / TanStack Router
-2. 프로덕션 dev 제외 방식: env flag (권장) / 별도 entry
+§3 의 P4 결정 1개 확정:
+1. FPS 표시 방식: 자체 구현 / `stats.js` / `r3f-perf` 또는 R3F 헬퍼
 
-**Step 2. 도구 설치 및 구조 작성**
-```bash
-pnpm add react-router-dom    # 결정 시
-```
-- `src/routes/Home.tsx` — `/` 메인 라우트 (현재 App.tsx 자리)
-- `src/dev/DevIndex.tsx` — `/dev/index` 카탈로그
-- `src/dev/registry.ts` — dev 페이지 등록 메커니즘 (Work 2~12에서 누적)
-- `src/dev/cards/` — Work 2~12 placeholder 카드 11개
-- `index.html` 내 라우트 마운트 정비
-- `vite-env.d.ts` 또는 `src/env.d.ts` — `VITE_ENABLE_DEV_ROUTES` 타입
-- `docs/architecture/dev-routes.md` — 새 dev 페이지 추가 컨벤션
+**Step 2. 구현**
+- `src/render/` 디렉터리 신설 (Work 5에서 확장)
+- `<Canvas>` (R3F) 안에 회전 sphere (`MeshStandardMaterial` 또는 `MeshBasicMaterial`)
+- 간단한 광원 1개 (`<ambientLight>` + `<directionalLight>` 또는 `<pointLight>`)
+- BufferGeometry로 별 1점 (Work 5 starfield 예고)
+- FPS 오버레이
+- 윈도우 리사이즈 — R3F 자동 처리되므로 추가 작업 불필요
 
 **Step 3. 검증**
 ```bash
-pnpm dev          # / 와 /dev/index 양쪽 네비
-pnpm build        # 빌드 산출물에 dev 컴포넌트 미포함 (grep 또는 번들 분석)
-pnpm lint && pnpm typecheck && pnpm format:check    # 그린
+pnpm dev   # / 에 회전 sphere + FPS 표시, 콘솔 에러 없음, 30fps+
+pnpm build && pnpm preview   # 빌드본도 동일 동작
+pnpm lint && pnpm typecheck && pnpm format:check   # 그린
 ```
 
-**Step 4. handoff 갱신**
-- §0 / §1 / §3 / §4 / §7 (P1, P2 패턴과 동일)
+**Step 4. 비범위 (Work 5에서 처리)**
+- HDR / ACES 톤매핑
+- 로그 깊이 버퍼
+- 실제 항성 카탈로그 starfield
+- 텍스처/PBR
+
+**Step 5. handoff 갱신**
+- §0 / §1 / §3 / §4 / §7 (P1~P3 패턴과 동일)
 
 ### 빠른 검증 명령 (Work 1 전반)
 
@@ -220,6 +244,7 @@ pytest
 | 2026-05-05 | 초기 작성 — P0 kickoff 진입 |
 | 2026-05-05 | **P1 완료** — pnpm + React 19 + R3F + Vite 부트스트랩, build/dev 검증 그린 |
 | 2026-05-05 | **P2 완료** — ESLint flat config + Prettier + TS strict 강화 (`noUncheckedIndexedAccess`, `noImplicitOverride`) + 컨벤션 문서. lint/typecheck/format 모두 그린, 룰 위반 5종 검출 검증 |
+| 2026-05-05 | **P3 완료** — react-router-dom 도입 + `/dev/*` sub-router + registry 기반 동적 카드 11개 + dev-routes 컨벤션 문서. prod 빌드에서 dev chunk 완전 제거 양방향 검증 (기본=제외 / VITE_ENABLE_DEV_ROUTES=true=포함) |
 
 ---
 
