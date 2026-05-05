@@ -8,12 +8,12 @@
 
 ## 0. 현재 상태 (Status)
 
-| 항목         | 값                                                                                                                              |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| 현재 phase   | **P5 완료** ✓ — P6 진입 대기                                                                                                    |
-| 다음 액션    | **P6 — Cross-validation & Golden Fixtures (Closeout)** 진입 — fixture README, ephemeris-conventions, CI binary 통합, 회귀 가드 |
-| 마지막 갱신  | 2026-05-06                                                                                                                      |
-| 블로커       | 없음                                                                                                                            |
+| 항목         | 값                                                                                                                                |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| 현재 phase   | **P6 완료** ✓ — Work 3 마감                                                                                                       |
+| 다음 액션    | **Work 3 closeout 마감 처리** — push 후 CI 그린 확인 (DE440 캐시 cold 첫 1회는 ~1분 추가) → Work 4 (Scale System) plan/handoff 작성 |
+| 마지막 갱신  | 2026-05-06                                                                                                                        |
+| 블로커       | 없음                                                                                                                              |
 
 ## 1. 진행 체크리스트
 
@@ -25,7 +25,7 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] **P3** — TS Chebyshev Evaluator _(완료 2026-05-06)_
 - [x] **P4** — Horizons Reference (Python) _(완료 2026-05-06)_
 - [x] **P5** — Dev Demo `/dev/ephemeris` _(완료 2026-05-06)_
-- [ ] **P6** — Cross-validation & Golden Fixtures (Closeout)
+- [x] **P6** — Cross-validation & Golden Fixtures (Closeout) _(완료 2026-05-06)_
 
 > Work 3 마감 = 모든 phase [x] + [plan §1 Definition of Done](work-03-ephemeris.md#1-결과-정의-definition-of-done) 모든 항목 충족.
 
@@ -63,6 +63,10 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 28  | Body picker UI | **radio button group** (11 항목, 자동 wrap) | dropdown 대비 가시성 높고 1-click 전환. 라디오 + 시각 스타일 (segmented 패턴 재사용 변형). | P5 | 2026-05-06 |
 | 29  | Loader 추상화 | **`createWebDe440Loader({ baseUrl })`** for browser, `diskLoader` (test-only, Node fs) — 둘 다 `De440SegmentLoader` 인터페이스 구현 | dev demo 와 unit test 가 같은 evaluator 코드를 공유. baseUrl 기본값 `/data/ephemeris/de440/` (Vite static asset root). 테스트는 인메모리 또는 Node fs. | P5 | 2026-05-06 |
 | 30  | Frame 표시 토글 | **단일 frame 라디오 (ICRF / EME2000 / Ecliptic)** + 라운드트립 잔차 노트 | 동시 표시는 화면 부담. 라디오 전환 즉시 변환 적용 (Work 2 frames 합성). EME2000 선택 시 round-trip 잔차 표시. | P5 | 2026-05-06 |
+| 31  | Fixture 형식 (Work 3) | **JSON** (Work 2 와 동일) — `_` 메타 prefix + Prettier 정렬 | Work 2 P6 #18 결정 그대로 계승. JSONL/Parquet 등은 diff 검토 어려움. | P6 | 2026-05-06 |
+| 32  | Fixture 갱신 정책 (Work 3) | **수동** — `pnpm fixtures:work-03` 후 reviewer 가 diff 검토하고 commit | Work 2 P6 #19 결정 계승. 모델/SPK/Horizons 변경은 의도적 결정이어야 함. CI 자동 갱신 미도입. | P6 | 2026-05-06 |
+| 33  | CI DE440 통합 | **node + e2e job 모두 actions/cache 로 SPK + 사전처리 binary 캐시** (key `de440-spk-1900-2150-v1`) + cold 시 `pnpm de440:preprocess` step | unit/e2e 테스트가 실제 binary 로 검증되도록 (skipIf 가 silent skip 되지 않게). cold 첫 1회는 ~1분 추가, warm 캐시 시 ~수 초. SPK URL 변경 시 cache key 버전업. | P6 | 2026-05-06 |
+| 34  | 회귀 가드 검증 | **TS evaluator position[0] +0.005 m 시프트 → 2 테스트 fail → 원복 → green** | fixture 비교 (de440-states.json 160 entries) + 합성 chain 테스트가 5mm 시프트를 모두 검출. component-wise L_∞ 1mm 톨러런스가 정상 작동 확인. | P6 | 2026-05-06 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -118,9 +122,11 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 ### P6에서 결정
 
-- [ ] Fixture 형식 (JSON / binary / Parquet)
-- [ ] Fixture 갱신 정책 (수동 / CI 자동)
-- [ ] Binary commit 정책 최종 확정 (P2 결정 검증)
+- [x] Fixture 형식: **JSON** ✓ (#31)
+- [x] Fixture 갱신 정책: **수동** ✓ (#32)
+- [x] Binary commit 정책 최종 확정: **build-time download (CI cache + de440:preprocess step)** ✓ (#33)
+- [x] CI 통합: **node + e2e job 모두 SPK 캐시 + preprocess** ✓ (#33)
+- [x] 회귀 가드 검증: **5mm position[0] 시프트로 fail 재현 후 원복** ✓ (#34)
 
 ### 추후 보류 (Work 3 범위 밖)
 
@@ -287,21 +293,45 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 - **fixture URL fallback**: dev 모드에서는 `tests/fixtures/work-03/de440-states.json` 이 Vite 정적 자원 root 에 없음 → fetch 실패. 임시 해결은 fixture 를 `public/fixtures/...` 에 복사하는 대신 ReferenceDiffPanel 이 두 경로 시도 후 silent 실패. P6 에서 더 깔끔한 해결 (fixture 를 public/ 에 mount 하는 vite plugin 또는 별도 endpoint).
 - **모바일 레이아웃 `astro-panel--wide`**: Work 2 패턴 그대로 — `grid-column: 1 / -1` 로 wide 패널 가능. 모바일에서는 자동으로 1열.
 
-### P6 — Cross-validation & Golden Fixtures (Closeout)
+### P6 — Cross-validation & Golden Fixtures (Closeout) _(완료 2026-05-06)_
 
-_미시작_
+생성/수정 파일:
+
+- [`tests/fixtures/work-03/README.md`](../../tests/fixtures/work-03/README.md) — fixture 구성, 재생성 명령, JSON 형식 컨벤션 (de440-states.json + horizons-states.json schema), 톨러런스 정책, 갱신 정책, 회귀 가드 검증 기록.
+- [`docs/architecture/ephemeris-conventions.md`](../../docs/architecture/ephemeris-conventions.md) — Work 3 정책 요약 + Work 4+ 진입 가이드. 단위/카탈로그/SPK 파이프라인/평가 패턴/톨러런스/Horizons/astropy 호환/실패 디버깅/체크리스트.
+- [`package.json`](../../package.json) — `pnpm fixtures:work-03` 스크립트 추가 (CLI generate + Prettier --write).
+- [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) — node 와 e2e 두 job에 (1) uv 설치 (2) Python deps 설치 (3) actions/cache 로 SPK + preprocessed binaries 캐시 (4) cold 시 `pnpm de440:preprocess` step 추가. cache key `de440-spk-1900-2150-v1`.
+- [`docs/plan/work-03-ephemeris-handoff.md`](../../docs/plan/work-03-ephemeris-handoff.md) — 결정 #31~#34, P6 산출물 인덱스, Open Questions checkbox 마감.
+
+검증 결과:
+
+- `pnpm fixtures:work-03` 실행 후 `git diff tests/fixtures/work-03/` 빈 결과 — fixture 재생성 idempotent 확인.
+- 회귀 가드: `de440Evaluator.ts` position[0] 에 `+ 0.005` (5 mm) 시프트 추가 → `pnpm test -- tests/unit/ephemeris/de440Evaluator` 에서 2 testes fail (fixture 비교 + 합성 chain) → 원복 후 23 tests green.
+- `pnpm format:check` ✓ — Prettier auto-format on README/conventions docs.
+- `pnpm lint` / `typecheck` / `test` (334) / `build` ✓
+- `pnpm test:e2e` ✓ — 16 tests, 회귀 없음.
+- `cd tools/python && uv run ruff check / mypy / pytest` ✓ — 88 tests.
+
+설계 결정 + 발견:
+
+- **CI workflow 양쪽 job 갱신**: node job (unit + build) 와 e2e job 모두 SPK + binaries 가 필요. 두 job 이 같은 cache key 를 공유 → 한 번 cold 다운로드 후 다른 job 도 warm 활용. python job 은 자체 download 로직이 있어 별도 cache 처리 안 함 (test_de440 의 fixture scope module + `_have_internet()` skip).
+- **Cache key 버전업 정책**: SPK URL 또는 시간 범위 변경 시 `de440-spk-1900-2150-v1` → `-v2` 로 bump. NAIF 가 DE441 도입 시 (Work 12 검토 결과에 따라) 키 변경.
+- **회귀 가드 magnitude 선택**: 5 mm 시프트는 1mm 톨러런스의 5배 → 마진 충분히 확보하면서 의미 있는 detection. KM_TO_M 변경은 곱셈 비율 → 천체 거리에 따라 mm~km 까지 변동 → 일관된 검증이 어려움. 단순 추가 상수가 더 명료.
+- **Horizons 비교는 단위 테스트에서만**: `test_horizons_matches_local_spiceypy_within_horizons_text_precision` 만 라이브 호출. CI 에서는 `_have_internet()` 으로 graceful skip. fixture (horizons-states.json) 는 P6 closeout 시점에 `pnpm fixtures:work-03` 로 한 번만 갱신 → 매 push 비교 X.
+- **Work 4+ 진입 안내**: ephemeris-conventions.md §10 체크리스트가 Work 3 산출물 사용 패턴을 즉시 따라할 수 있도록 구체적으로 작성됨.
 
 ## 5. 다음 작업자에게 (For the Next Operator)
 
 > 새 세션이나 다른 작업자가 이어 받을 때 여기를 먼저 본다.
 
-### 즉시 액션: P1 — Strategy & Brand Types 진입
+### 즉시 액션: Work 3 마감 → Work 4 (Scale System) 진입 준비
 
-1. [plan §3 P1](work-03-ephemeris.md#phase-1--strategy--brand-types) 의 결정 항목을 먼저 확정 → §2 결정 로그에 기록
-   - 권장값은 [plan §5](work-03-ephemeris.md#5-결정-권장값-recommendations) 참고
-2. `src/ephemeris/{types,constants,index}.ts` 작성 — Brand types + 톨러런스 상수
-3. `tools/python/src/orbitarium_tools/ephemeris.py` placeholder (의미 docstring만)
-4. `tests/unit/ephemeris/types.test.ts` — type-only assertions
+1. Work 3 commit (`[work-03/p6] ...` prefix), push, CI 그린 확인 (DE440 캐시 cold 첫 1회는 ~1분 추가, warm 후 ~수 초).
+2. Work 4 plan + handoff 짝 문서 생성: `docs/plan/work-04-scale.md` + `work-04-scale-handoff.md`.
+   - 거리/크기 분리 스케일 정책 (이중 선형 / 구간별 / 대수)
+   - Work 3 산출물 (`PositionICRF`, `createDe440Evaluator`) 적극 import 해 재사용
+   - dev demo `/dev/scale` 추가 (정책 선택기 + 슬라이더 + 행성 라이너업)
+3. (선택) `overview.md` Work 3 상태를 in-progress → done 으로 갱신할지는 사용자 정책에 따른다 (overview.md 는 큰 그림 유지용).
 
 ### Work 2 산출물 활용 (Work 3 시작 전 점검)
 
@@ -408,6 +438,7 @@ pnpm fixtures:work-03
 | 2026-05-06 | **P3 완료** — TS Chebyshev evaluator + DE440 binary loader. `src/ephemeris/{chebyshev,de440Format,de440Evaluator}.ts` + `de440-states.json` fixture (160 entries). 결정 4건 (#19~#22): async Promise + 주입 가능한 loader / Promise Map 캐시 / L_∞ component-wise 비교 / CI 통합은 P6 deferred. 단위 테스트 17건 추가 (총 334): chebyshev 9 + format parse 5 + evaluator 4 (3 conditional on binary). spiceypy fixtures cross-check max < 1 mm / 1 µm/s component-wise (Neptune bary at 30AU = IEEE 754 한계). format/lint/typecheck/test/build/e2e 그린. |
 | 2026-05-06 | **P4 완료** — Horizons reference (Python only). `orbitarium_tools.horizons` (`query_state` / `query_states` / `cli_describe` / `generate_fixtures`), CLI `horizons --body=... --jd-tdb=...` + `fixtures --work=3` (de440 + horizons). `tests/fixtures/work-03/horizons-states.json` (30 entries). 결정 4건 (#23~#26): AU→m 단위 변환 / refplane='earth' + light-time off / Horizons text precision = 1cm tolerance / TS Horizons client 은 Work 7 deferred / astroquery 내장 cache. 단위 테스트 5건 추가 (총 88). Horizons ↔ spiceypy live cross-check ≤ 6mm / 1µm/s 통과. ruff/mypy/pytest 그린. |
 | 2026-05-06 | **P5 완료** — `/dev/ephemeris` 단일 페이지 dev demo. `src/dev/ephemeris/{EphemerisDemo,StateVectorPanel,ReferenceDiffPanel,PlanetLineupPanel,webLoader,bodies,format}.ts(x)` + ephemeris.css 추가, Work 3 registry 연결. State Vector (11 body radio + UTC + frame 토글 → ICRF/EME2000/Ecliptic 위치/속도 표시), Reference Diff (160 fixture entries vs evaluator L_∞ diff + 요약), Planet Lineup (9 행성 SSB 거리 + 속도). 결정 4건 (#27~#30) 채택. e2e 4건 추가 (총 16). 브라우저 검증: max Δr=9.766e-4 m / Δv=1.091e-11 m/s — 1mm/1µm/s 안. format/lint/typecheck/test(334)/build/e2e(16) 그린. |
+| 2026-05-06 | **P6 완료 / Work 3 마감** — fixture README + `docs/architecture/ephemeris-conventions.md` (Work 4+ 진입 가이드) + `pnpm fixtures:work-03` 스크립트 + CI 워크플로 (node + e2e 양 job 에 SPK 캐시 + de440 preprocess step). 결정 4건 (#31~#34) 채택. 회귀 가드 검증: position[0] +0.005 m 시프트로 2 테스트 fail 재현 → 원복 → green. fixture 재생성 idempotent 확인. format/lint/typecheck/test(334)/build/e2e(16)/ruff/mypy/pytest(88) 전부 그린. |
 
 ---
 

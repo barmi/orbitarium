@@ -29,8 +29,33 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
 
-      - name: Install dependencies
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: tools/python/pyproject.toml
+
+      - name: Install Node dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Install Python deps for DE440 preprocessor
+        working-directory: tools/python
+        run: |
+          uv venv
+          uv pip install -e ".[astro,dev]"
+
+      - name: Cache DE440 SPK kernel + preprocessed binaries
+        id: de440-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            tools/python/.cache/de440
+            public/data/ephemeris/de440
+          key: de440-spk-1900-2150-v1
+
+      - name: Preprocess DE440 (cold cache)
+        if: steps.de440-cache.outputs.cache-hit != 'true'
+        run: pnpm de440:preprocess
 
       - name: Lint
         run: pnpm lint
@@ -88,8 +113,33 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
 
-      - name: Install dependencies
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: tools/python/pyproject.toml
+
+      - name: Install Node dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Install Python deps for DE440 preprocessor
+        working-directory: tools/python
+        run: |
+          uv venv
+          uv pip install -e ".[astro,dev]"
+
+      - name: Cache DE440 SPK kernel + preprocessed binaries
+        id: de440-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            tools/python/.cache/de440
+            public/data/ephemeris/de440
+          key: de440-spk-1900-2150-v1
+
+      - name: Preprocess DE440 (cold cache)
+        if: steps.de440-cache.outputs.cache-hit != 'true'
+        run: pnpm de440:preprocess
 
       - name: Cache Playwright browsers
         id: playwright-cache

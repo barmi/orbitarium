@@ -24,6 +24,7 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
     "fixtures:work-02": "cd tools/python && uv run orbitarium-tools fixtures --work=2 --out=../../tests/fixtures/work-02/ && cd ../.. && prettier --write tests/fixtures/work-02/",
+    "fixtures:work-03": "cd tools/python && uv run orbitarium-tools fixtures --work=3 --out=../../tests/fixtures/work-03/ && cd ../.. && prettier --write tests/fixtures/work-03/",
     "de440:preprocess": "cd tools/python && uv run orbitarium-tools de440 preprocess --start=2415020.5 --end=2506717.5 --out=$PWD/../../public/data/ephemeris/de440"
   },
   "dependencies": {
