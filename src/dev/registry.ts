@@ -35,6 +35,7 @@ export const devPages: DevPageEntry[] = [
     slug: 'render',
     title: 'Rendering Foundation',
     summary: 'log-depth 검증 sphere(1·1e9 동시), HDR exposure, 실제 항성 starfield',
+    Component: lazy(() => import('./render/RenderDemo')),
   },
   {
     workNumber: 6,

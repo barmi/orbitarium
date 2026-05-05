@@ -8,12 +8,12 @@
 
 ## 0. 현재 상태 (Status)
 
-| 항목         | 값                                                                                                |
-| ------------ | ------------------------------------------------------------------------------------------------- |
-| 현재 phase   | **P4 완료** ✓ — **P5 시작 대기**                                                                  |
-| 다음 액션    | P5 — `/dev/render` 단일 페이지 dev demo (Renderer controls / Log-depth / Starfield / Anchor picker) |
-| 마지막 갱신  | 2026-05-06                                                                                        |
-| 블로커       | 없음                                                                                              |
+| 항목         | 값                                                                                                                |
+| ------------ | ----------------------------------------------------------------------------------------------------------------- |
+| 현재 phase   | **P5 완료** ✓ — **P6 시작 대기**                                                                                  |
+| 다음 액션    | P6 — closeout (`tests/fixtures/work-05/README.md`, `public/data/starfield/README.md`, `docs/architecture/render-conventions.md`) |
+| 마지막 갱신  | 2026-05-06                                                                                                        |
+| 블로커       | 없음                                                                                                              |
 
 ## 1. 진행 체크리스트
 
@@ -24,7 +24,7 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] **P2** — Renderer Pipeline (Color & Tone Mapping) _(완료 2026-05-06)_
 - [x] **P3** — Log-Depth & Scene Graph Anchors _(완료 2026-05-06)_
 - [x] **P4** — Starfield Data Pipeline + Mesh _(완료 2026-05-06)_
-- [ ] **P5** — Dev Demo `/dev/render`
+- [x] **P5** — Dev Demo `/dev/render` _(완료 2026-05-06)_
 - [ ] **P6** — Cross-validation & Golden Fixtures (Closeout)
 
 > Work 5 마감 = 모든 phase [x] + [plan §1 Definition of Done](work-05-render.md#1-결과-정의-definition-of-done) 모든 항목 충족.
@@ -71,6 +71,12 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 36  | Starfield TS 모듈 분리 | **`starfield.ts` (decoder + palette + mesh) + `starfieldLoader.ts` (fetch wrapper)** | fetch 의존을 loader 로 격리해 unit test (decoder / palette) 는 vitest 환경 (no network) 에서 그대로 실행 가능. | P4 | 2026-05-06 |
 | 37  | Hipparcos PM 적용 정확도 | **post-PM J2000 명성 위치가 published value 의 60″ 안에 들어옴** (실측 — Sirius / Vega / Polaris / Betelgeuse / Arcturus 5 entries) | 1 mas 목표는 미달 — Hipparcos epoch / cos(δ) / nutation 등 추가 보정 필요 (Work 12 검증). 시각용 60″ 톨러런스 본 Work 충분. | P4 | 2026-05-06 |
 | 38  | Hipparcos `bin` git 정책 | **commit** (~70 KB, vmag≤6.0 → 4 992 stars × 14 B + 16 B header) | 작아서 commit OK + reproducibility (CI 가 download 안 해도 됨) + decode test 가 fixture 처럼 작동. P6 에서 `public/data/starfield/README.md` 로 재생성 명령 문서화. | P4 | 2026-05-06 |
+| 39  | Dev Demo 구조 | **단일 페이지 + 4 패널 + Canvas section** (Work 4 패턴) | RendererControls / StarfieldControls / AnchorPicker / InfoPanel + 캔버스 섹션. CSS grid 2-column (320px sidebar + canvas). | P5 | 2026-05-06 |
+| 40  | log-depth 검증 sphere 모델 | **반경 1 (foreground sphere) + 반경 1e8 (1.5e8 거리)** at fixed positions | 두 sphere 가 동시에 보이지는 않으나 (큰 sphere 는 화면 밖) 이 페어로 광범위 scale span 이 z-fighting 없이 렌더 가능함을 확인. log-depth 토글로 회귀 가드. | P5 | 2026-05-06 |
+| 41  | Starfield magnitude 슬라이더 | **client-side filter** (mesh 재생성 via React `useMemo`) | bin 파일 재load 없이 mag bucket 비교만으로 즉시 필터. 풀 카탈로그 (4 992 stars) 한 번 디코드 후 filter 가 < 5 ms. 슬라이더 vmag 0~6 범위. | P5 | 2026-05-06 |
+| 42  | Anchor reference position 표시 | **DE440 evaluator 로 Sun (NAIF 10) + selected body 의 SSB 좌표 fetch + scientific notation 표시** | 2026-05-06 00:00 UTC 고정 (DEMO_UTC). manifest fail 시 evaluator 에러 표시 (Work 4 P5 동일 폴백). body-centric 선택 시 body picker (Mercury~Neptune) 표시. | P5 | 2026-05-06 |
+| 43  | dev page Canvas 옵션 공유 | **`createRendererProps()` (Home 라우트와 동일)** + log-depth 토글 시 `key` 로 Canvas remount | three.js `logarithmicDepthBuffer` 는 constructor-time → React `key` 트릭으로 toggling 처리. exposure / tone mapping 은 setter 형 → live update. | P5 | 2026-05-06 |
+| 44  | FPS 측정 | **로컬 `useFrame` + 500 ms 윈도우 평균** | `FpsTracker` 컴포넌트가 InfoPanel 의 `fps` state 갱신. Work 1 의 `<FpsOverlay>` 와 무관 (dev page 전용). | P5 | 2026-05-06 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -129,13 +135,14 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] TS 모듈 분리: **`starfield.ts` + `starfieldLoader.ts`** ✓ (#36)
 - [x] 필터링 정책: **position/Vmag NaN row drop** ✓ (#31)
 
-### P5에서 결정
+### P5에서 결정 (6건 모두 완료)
 
-- [ ] Dev Demo 구조 (권장: 단일 페이지 + 4 섹션)
-- [ ] Log-depth 검증 sphere 모델 (권장: 반경 1 + 반경 1e9 동심원 at SSB)
-- [ ] Magnitude slider 처리 (권장: 클라이언트 decode 후 필터)
-- [ ] DE440 evaluator 폴백 정책 (권장: Work 4 P5 패턴 재사용)
-- [ ] Canvas 옵션 공유 (권장: `createRendererProps(RENDER_DEFAULTS)` Home 라우트와 동일)
+- [x] Dev Demo 구조: **단일 페이지 + 4 패널 + Canvas section** ✓ (#39)
+- [x] Log-depth 검증 sphere 모델: **반경 1 + 반경 1e8 spaced** ✓ (#40)
+- [x] Magnitude slider 처리: **client-side filter (useMemo)** ✓ (#41)
+- [x] DE440 evaluator 폴백 정책: **manifest fail 시 evaluatorError 표시 (Work 4 P5 동일)** ✓ (#42)
+- [x] Canvas 옵션 공유: **`createRendererProps()` + log-depth 토글 시 `key` remount** ✓ (#43)
+- [x] FPS 측정: **로컬 `useFrame` 500 ms 윈도우** ✓ (#44)
 
 ### P6에서 결정
 
@@ -319,9 +326,47 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 - **Float32 round-off on 1e9 scale**: 별 위치가 1e9 scene unit → Float32 LSB ~64 m. test 톨러런스 1e4 m 안에서 sphere 위 위치 확인 (4 992 stars 전부).
 - **Palette texture sRGBColorSpace**: GPU 가 sampling 단계에서 sRGB → linear-RGB 자동 변환 → 셰이더 색상이 linear-space lighting 과 호환. tone mapping 후 sRGB output 으로 round-trip 정확.
 
-### P5 — Dev Demo `/dev/render`
+### P5 — Dev Demo `/dev/render` _(완료 2026-05-06)_
 
-_(대기)_
+생성/수정 파일:
+
+- [`src/dev/render/RenderDemo.tsx`](../../src/dev/render/RenderDemo.tsx) — Work 5 dev page shell. 6 useState hooks + DE440 evaluator + starfield loader + anchor reference resolver + FpsTracker. R3F `<Canvas>` 가 `createRendererProps()` 결과 사용, log-depth 토글 시 `key` 트릭으로 remount.
+- [`src/dev/render/RendererControls.tsx`](../../src/dev/render/RendererControls.tsx) — Panel 1: exposure slider [0.1, 4.0] + tone mapping picker (3종) + log-depth checkbox.
+- [`src/dev/render/StarfieldControls.tsx`](../../src/dev/render/StarfieldControls.tsx) — Panel 2: starfield ON/OFF + Vmag cutoff slider [0, 6] + visible/total count + load error.
+- [`src/dev/render/AnchorPicker.tsx`](../../src/dev/render/AnchorPicker.tsx) — Panel 3: SSB / Heliocentric / Body-centric 라디오 + body NAIF picker (8 entries) + reference SSB position 표시.
+- [`src/dev/render/InfoPanel.tsx`](../../src/dev/render/InfoPanel.tsx) — Panel 4: UTC / FPS / tone mapping / exposure / log-depth / anchor 라이브 표시.
+- [`src/dev/render/scene/LogDepthPair.tsx`](../../src/dev/render/scene/LogDepthPair.tsx) — 반경 1 sphere + 반경 1e8 sphere 페어.
+- [`src/dev/render/scene/StarfieldGroup.tsx`](../../src/dev/render/scene/StarfieldGroup.tsx) — magnitude bucket 필터 + `createStarfieldMesh` 결과 R3F primitive.
+- [`src/dev/render/scene/AnchorMarker.tsx`](../../src/dev/render/scene/AnchorMarker.tsx) — 작은 octahedron, anchor kind 별 색.
+- [`src/dev/render/render.css`](../../src/dev/render/render.css) — 2-column grid + canvas panel + control 스타일.
+- [`src/dev/registry.ts`](../../src/dev/registry.ts) — Work 5 entry → `Component: lazy(() => import('./render/RenderDemo'))`.
+- [`src/dev/dev.css`](../../src/dev/dev.css) — `render.css` import 추가.
+
+테스트:
+
+- [`tests/e2e/dev-render.spec.ts`](../../tests/e2e/dev-render.spec.ts) — 6 specs: 4 panel + canvas 렌더, exposure 슬라이더 readout, log-depth toggle readout + overlay, starfield count 표시, vmag cutoff 가 visible count 감소, body-centric 선택 시 body picker 표시.
+- [`tests/e2e/dev-index.spec.ts`](../../tests/e2e/dev-index.spec.ts) — Work 5 available 전환 (available 4 / placeholder 7).
+
+검증 결과:
+
+- `pnpm format` ✓
+- `pnpm lint:fix` ✓
+- `pnpm typecheck` ✓
+- `pnpm test` ✓ — **475 tests** (P4 그대로, dev page 추가는 e2e 영역).
+- `pnpm build` ✓ — 1118 kB.
+- `pnpm test:e2e dev-render + dev-index` ✓ — **11 tests** (5 dev-index + 6 dev-render).
+- preview 시각 확인 — 4 패널 + Canvas (별 + 작은 sphere + 녹색 octahedron anchor marker), 4992/4992 stars, 120 fps. body-centric Earth 선택 시 anchor reference SSB ~`-1e11 m` (Earth orbit) 표시 — DE440 evaluator end-to-end 동작 확인.
+
+설계 결정 + 발견:
+
+- **`key={logDepth ? 'log-on' : 'log-off'}` Canvas remount**: three.js `WebGLRenderer` 의 `logarithmicDepthBuffer` 는 constructor option — runtime 변경 불가. React key 트릭으로 toggle 시 R3F `<Canvas>` 를 통째로 unmount → remount. exposure / tone mapping 은 setter 형이라 live update.
+- **starfield filter 가 `useMemo`**: cutoff 슬라이더를 vmag 단위로 노출하되 내부 비교는 mag bucket (0-255) 으로 — Vmag → bucket 매핑은 동일 공식. mesh 재생성은 < 5 ms (4 992 stars).
+- **DE440 evaluator + 2026-05-06 UTC**: Earth body-centric 선택 시 reference SSB position [-1.068e+11, -9.887e+10, -4.284e+10] m — Earth orbit 단위 정합. Sun (NAIF 10) 위치는 SSB 기준 ~1e9 m (Jupiter 영향) 정합.
+- **`AnchorMarker` 가 anchor kind 별 색**: ssb=녹색 / heliocentric=노랑 / body-centric=빨강 — 사용자가 anchor 변경 시 즉시 시각 피드백 (실제 anchor 좌표 변환 시연은 P5 에서 mesh wiring 까지 확장 가능 — 본 demo 는 reference position 표시만으로 충분).
+- **Hipparcos bin 첫 fetch 확인**: 첫 `loadStarfieldFromUrl` 후 4992 / 4992 stars 표시. Vmag 슬라이더 → 즉시 filter — 시각 차이 명확 (어두운 별 사라짐).
+- **e2e 안정성**: starfield 로드 비동기 → `expect.poll` + 10 s timeout 필요 (`/data/starfield/...` fetch 가 Vite dev server 에서 ~500 ms).
+- **빌드 크기**: 1118 → 1118 kB — 변화 무시할 수준 (lazy import 로 dev chunk 분리).
+- **시각 폴리시**: 본 dev demo 는 Work 5 P5 에서 기능 우선 — 폴리시 (border / hover / responsive) 는 Work 11 책임. 모바일 스택 grid (`@media (max-width: 980px)`) 만 추가.
 
 ### P6 — Cross-validation & Golden Fixtures (Closeout)
 
@@ -491,6 +536,7 @@ THREE.SphereGeometry(args=[sceneRadius, ...])
 | 2026-05-06 | **P2 완료** — `src/render/renderer.ts` (createRendererProps + clampExposure + resolveToneMapping/OutputColorSpace) + `index.ts` re-export + `Home.tsx` / `HomeScene.tsx` 통합 (DirectionalLight → PointLight decay=0 + ambient 0.05) + Python `kelvin_to_rgb_u8` (Tanner Helland 2012) / `palette_index_for_kelvin` / `kelvin_for_palette_index` / `build_palette` (256×RGBA u8 = 1024 B) / `magnitude_to_bucket`. 결정 9건 (#14~#22): ACES+Linear+Cineon 3종 / HDR float buffer defer (Work 11) / antialias MSAA / Tanner Helland T→RGB / sRGB palette + GPU decode / RGBA u8 layout / linear Vmag bucket / Home 모듈 상수 lifted props / PointLight decay 0. 단위 테스트 20 추가 (TS 10 + Python 10, 총 417 / 123). Home e2e 3 tests 그린. preview 시각 확인 — sphere 가 PointLight 음영 표시 (overview Sun 모델 정합).                                                                                                                                                                                |
 | 2026-05-06 | **P3 완료** — `src/render/anchors.ts` (`SceneAnchorContext` discriminated union + 3 factories + `applyAnchor` + `positionToWorld`) + `src/render/world.ts` (`sceneToVector3` / `vector3ToScene` + scalar adapters, three.js Vector3 의존 격리) + index re-export + Python `orbitarium_tools.render_anchors` 미러 + `tests/fixtures/work-05/scene-anchors.json` (3 anchor × 6 sample = 18 rows). 결정 7건 (#23~#29): camera near/far 그대로 / `PositionICRF` payload / `anchors.ts` 위치 / `render_anchors.py` 신설 / DE440 호출자 책임 / world.ts API 형태 / 6×3 fixture. 단위 테스트 22 추가 (TS 14 + Python 8, 총 434 / 131). mypy 13 files. fixture cross-check 3 anchor entries 1 mm 이내 일치.                                                                                                                                                                                                                                                                                                                                       |
 | 2026-05-06 | **P4 완료** — `tools/python/.../starfield.py` 풀 implementation (Ballesteros 2012 + PM + radec→vector + StarRecord / StarfieldData + serialize/deserialize + download/load/preprocess + NamedStarRef + 3 fixture generators) + CLI `starfield preprocess` + `fixtures --work=5` + `src/render/{starfield,starfieldLoader}.ts` (decoder + palette + custom ShaderMaterial + fetch loader) + `package.json` 2 새 스크립트 + `public/data/starfield/hipparcos-vmag6.bin` (~70 KB, 4 992 stars). 결정 9건 (#30~#38): ECSV cache / NaN row drop / TS-Python bit-exact mirror / little-endian 강제 / single celestial sphere / custom shader + sRGB texture / `starfield.ts` + `starfieldLoader.ts` 분리 / 60″ PM 톨러런스 / bin commit. 단위 테스트 41 추가 (TS 22 + Python 9 + Python pytest 통합 10, 총 475 / 141). fixture 12 색온도 + 5 명성 cross-check 그린 (RGB 정확 / palette 정확 / 60″ 안). mypy 13 files. |
+| 2026-05-06 | **P5 완료** — `/dev/render` 단일 페이지 dev demo. `src/dev/render/{RenderDemo,RendererControls,StarfieldControls,AnchorPicker,InfoPanel}.tsx` + `scene/{LogDepthPair,StarfieldGroup,AnchorMarker}.tsx` + `render.css`, registry/dev.css 연결. exposure / tone mapping / log-depth / starfield toggle + magnitude slider / anchor picker (SSB / Heliocentric / Body-centric + body NAIF picker) + DE440 evaluator (Sun + body SSB position) + FPS tracker. log-depth 토글은 Canvas key remount, 다른 옵션은 live update. 결정 6건 (#39~#44) 채택. e2e 6 추가 + dev-index Work 5 available 전환 (총 11 e2e). 사용자 시각 확인 — 4 panel + Canvas (starfield + sphere + anchor marker 녹색 octahedron), 4992/4992 stars 표시, 120 fps. body-centric Earth → anchor reference SSB ~1e11 m 정합. format/lint/typecheck/test(475)/build/test:e2e(11) 그린. |
 
 ---
 
