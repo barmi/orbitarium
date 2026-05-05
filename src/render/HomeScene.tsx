@@ -2,11 +2,18 @@ import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 
+import { RENDER_DEFAULTS } from './constants'
+
 export default function HomeScene() {
   return (
     <>
-      <ambientLight intensity={0.15} />
-      <directionalLight position={[3, 2, 4]} intensity={1.0} color="#ffffff" />
+      <ambientLight intensity={RENDER_DEFAULTS.ambientIntensity} />
+      <pointLight
+        position={[3, 2, 4]}
+        intensity={RENDER_DEFAULTS.sunIntensity}
+        color="#ffffff"
+        decay={0}
+      />
       <RotatingSphere />
       <SingleStar />
     </>

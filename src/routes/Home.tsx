@@ -3,15 +3,19 @@ import './home.css'
 import { Canvas } from '@react-three/fiber'
 import { Link } from 'react-router-dom'
 
+import { createRendererProps } from '../render'
 import FpsOverlay from '../render/FpsOverlay'
 import HomeScene from '../render/HomeScene'
+
+const RENDERER_PROPS = createRendererProps()
 
 export default function Home() {
   return (
     <main className="home">
       <Canvas
         className="home__canvas"
-        camera={{ position: [0, 0, 5], fov: 50, near: 0.1, far: 1000 }}
+        gl={RENDERER_PROPS.gl}
+        camera={RENDERER_PROPS.camera}
         dpr={[1, 2]}
       >
         <HomeScene />

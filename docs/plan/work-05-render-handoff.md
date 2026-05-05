@@ -8,12 +8,12 @@
 
 ## 0. 현재 상태 (Status)
 
-| 항목         | 값                                                                                         |
-| ------------ | ------------------------------------------------------------------------------------------ |
-| 현재 phase   | **P1 완료** ✓ — **P2 시작 대기**                                                           |
-| 다음 액션    | P2 — `src/render/renderer.ts` (createRendererProps) + Home 라우트 통합 + Python 색온도 변환 |
-| 마지막 갱신  | 2026-05-06                                                                                 |
-| 블로커       | 없음                                                                                       |
+| 항목         | 값                                                                                                  |
+| ------------ | --------------------------------------------------------------------------------------------------- |
+| 현재 phase   | **P2 완료** ✓ — **P3 시작 대기**                                                                    |
+| 다음 액션    | P3 — `src/render/anchors.ts` (SceneAnchorContext + applyAnchor + positionToWorld) + `world.ts` thin adapter + Python `render_anchors.py` 미러 |
+| 마지막 갱신  | 2026-05-06                                                                                          |
+| 블로커       | 없음                                                                                                |
 
 ## 1. 진행 체크리스트
 
@@ -21,7 +21,7 @@
 phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 - [x] **P1** — Render Strategy & Scene Graph Types _(완료 2026-05-06)_
-- [ ] **P2** — Renderer Pipeline (Color & Tone Mapping)
+- [x] **P2** — Renderer Pipeline (Color & Tone Mapping) _(완료 2026-05-06)_
 - [ ] **P3** — Log-Depth & Scene Graph Anchors
 - [ ] **P4** — Starfield Data Pipeline + Mesh
 - [ ] **P5** — Dev Demo `/dev/render`
@@ -46,6 +46,15 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 11  | 색온도 변환 공식 | **Ballesteros 2012**: `T = 4600 * (1/(0.92 BV + 1.7) + 1/(0.92 BV + 0.62))` | 단순 + 결정론. TS/Python 동일 공식 → bit-exact mirror. B-V 누락 시 Sun-like 5778 K fallback. | P1 | 2026-05-06 |
 | 12  | 별 거리 처리 default | **단일 celestial sphere (`STARFIELD_SCENE_RADIUS = 1e9`)** | parallax-based 깊이는 Work 9/11 (LOD) 후보. 본 Work 는 단순 sphere shell. | P1 | 2026-05-06 |
 | 13  | 별 frame | **ICRF / J2000** + Hipparcos 에포크 J1991.25 → J2000 proper motion 적용 | Hipparcos 는 ICRS 기준. 빠른 별 (Barnard's Star, Vega) 1 mas 정밀도 위해 PM 필수. | P1 | 2026-05-06 |
+| 14  | 톤매핑 옵션 set | **ACES Filmic + Linear + Cineon 3종 picker** | three.js 표준 톤매핑 3종 (PI 기반 r150+ 컨벤션 호환). AgX / Neutral / Reinhard 는 Work 11 검토. | P2 | 2026-05-06 |
+| 15  | HDR float buffer | **disabled (Work 11 deferred)** | 본 Work 는 LDR + ACES 로 overview "HDR linear-space" 충족. RGBA16F 도입 시 GPU 호환성 / 메모리 / postprocess 설계 변경 — Work 11 polish 일관 처리. | P2 | 2026-05-06 |
+| 16  | `antialias` | **true (MSAA)** | 데스크톱 / 모바일 GPU 표준 지원. Work 11 에서 FXAA / SMAA postprocess 와 비교 후 재선택 가능. | P2 | 2026-05-06 |
+| 17  | 색온도 → RGB 알고리즘 | **Tanner Helland 2012 piecewise approximation** (Kelvin → 8-bit sRGB triple) | 결정론 + 단순. plan §3 P2 의 "Ballesteros + 256-palette precompute" 메모는 B-V → T (Ballesteros) 와 T → RGB (Tanner Helland) 두 단계로 분리됨을 명시. P4 에서 B-V 단계 추가. | P2 | 2026-05-06 |
+| 18  | Palette interpolation 공간 | **sRGB 8-bit 직접 저장 (Tanner Helland output)** + GPU sRGB texture decode | "linear in linear-RGB" 결정 (#palette interpolation) 은 셰이더 시점 처리: 팔레트는 sRGB 인덱스로 저장, GPU 가 sampler 단계에서 linearize → linear-space lighting math 와 정합. | P2 | 2026-05-06 |
+| 19  | Palette 메모리 레이아웃 | **256 entries × RGBA u8 = 1024 bytes** (R/G/B + 1 byte pad) | RGB 만 (3 bytes) 보다 텍스처 stride 4 바이트가 WebGL Uint8 texture 친화. 1 KB 작아 비용 무시. alpha 는 항상 255. | P2 | 2026-05-06 |
+| 20  | `magnitude_to_bucket` 알고리즘 | **linear in Vmag, [-2, 8] → [0, 255], clamp** | overview Vmag ≤ 6.0 cutoff + Sirius (-1.46) / 그 너머 [-2] safety margin. Bucket 인덱스가 작을수록 밝은 별 — shader 에서 `(255 - bucket) / 255` 로 size 계수. | P2 | 2026-05-06 |
+| 21  | Home 라우트 통합 | **`createRendererProps()` 한 곳에서 옵션 객체 생성, `<Canvas gl={...} camera={...}>` 로 전달** | Home + Dev 가 같은 옵션 공유 — DRY + 회귀 가드. lifted module-level constant 로 Canvas re-render 시 props identity 안정. | P2 | 2026-05-06 |
+| 22  | HomeScene Sun 조명 모델 | **PointLight (decay 0) + AmbientLight (intensity 0.05)** — DirectionalLight 교체 | P1 #7 (Sun PointLight) 적용. decay 0 으로 단순 거리 무관 조명 (Work 6 PBR 검증 시 r²-decay 재도입 검토). | P2 | 2026-05-06 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -67,13 +76,17 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] 별 거리 처리 default: **단일 celestial sphere (1e9)** ✓ (#12)
 - [x] 별 frame: **ICRF, Hipparcos epoch → J2000 proper motion 적용** ✓ (#13)
 
-### P2에서 결정
+### P2에서 결정 (9건 모두 완료)
 
-- [ ] 톤매핑 옵션 set (권장: ACES + Linear + Cineon 3종)
-- [ ] HDR float buffer 사용 (권장: disabled, Work 11 로)
-- [ ] `antialias` (권장: true MSAA)
-- [ ] 색온도 → RGB 정밀도 (권장: 8-bit)
-- [ ] Palette interpolation 공간 (권장: linear in linear-RGB)
+- [x] 톤매핑 옵션 set: **ACES + Linear + Cineon** ✓ (#14)
+- [x] HDR float buffer: **disabled (Work 11 deferred)** ✓ (#15)
+- [x] `antialias`: **true (MSAA)** ✓ (#16)
+- [x] 색온도 → RGB 알고리즘: **Tanner Helland 2012 piecewise** ✓ (#17)
+- [x] Palette interpolation 공간: **sRGB 8-bit + GPU sRGB texture decode** ✓ (#18)
+- [x] Palette 메모리 레이아웃: **256 × RGBA u8 = 1024 bytes** ✓ (#19)
+- [x] `magnitude_to_bucket` 알고리즘: **linear, [-2, 8] → [0, 255], clamp** ✓ (#20)
+- [x] Home 라우트 통합: **`createRendererProps()` 모듈 상수** ✓ (#21)
+- [x] HomeScene Sun 조명 교체: **PointLight (decay 0) + ambient 0.05** ✓ (#22)
 
 ### P3에서 결정
 
@@ -170,9 +183,42 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 - **`SCENE_TO_THREE_UNIT_RATIO` 상수 분리**: 1:1 매핑이지만 단일 진실원으로 분리 — Work 6+ mesh radius / camera distance 환산 시 import.
 - **`exposureSlider.tsx` P2 로 미루기**: P1 plan 은 선택 항목으로 두었음. dev demo controls (P5) 와 함께 R3F 컴포넌트로 구현 — P1 에는 순수 데이터/타입만 두어 happy-dom test 가능.
 
-### P2 — Renderer Pipeline (Color & Tone Mapping)
+### P2 — Renderer Pipeline (Color & Tone Mapping) _(완료 2026-05-06)_
 
-_(대기)_
+생성/수정 파일:
+
+- [`src/render/renderer.ts`](../../src/render/renderer.ts) — `createRendererProps(settings, cameraOverrides)` (R3F `<Canvas gl + camera>` 친화 객체) + `clampExposure` + `resolveToneMapping` / `resolveOutputColorSpace`. 톤매핑은 `'aces-filmic' | 'linear' | 'cineon'` 3종, output color space `'srgb'`. `DEFAULT_CAMERA_FOV = 50`, `DEFAULT_CAMERA_POSITION = [0, 0, 5]`.
+- [`src/render/index.ts`](../../src/render/index.ts) — `renderer` re-export 추가.
+- [`src/routes/Home.tsx`](../../src/routes/Home.tsx) — `<Canvas gl={...} camera={...}>` 가 `createRendererProps()` 결과를 사용. module-level 상수로 lift.
+- [`src/render/HomeScene.tsx`](../../src/render/HomeScene.tsx) — `directionalLight` → `pointLight (decay 0)` 교체, `ambientLight` 강도를 `RENDER_DEFAULTS.ambientIntensity` 로 통일.
+- [`tools/python/src/orbitarium_tools/starfield.py`](../../tools/python/src/orbitarium_tools/starfield.py) — `kelvin_to_rgb_u8` (Tanner Helland 2012), `palette_index_for_kelvin` / `kelvin_for_palette_index` (log-uniform), `build_palette` (256 × RGBA u8), `magnitude_to_bucket`.
+
+테스트:
+
+- [`tests/unit/render/renderer.test.ts`](../../tests/unit/render/renderer.test.ts) — 10 tests: tone mapping resolver (3종), color space resolver, exposure clamp (within / outside / NaN), `createRendererProps` defaults (gl 6 props + camera 4 props), settings overrides, exposure clamp via overrides, camera overrides (fov/position) keeping settings near/far, near/far overrides bypass.
+- [`tools/python/tests/test_starfield.py`](../../tools/python/tests/test_starfield.py) — 추가 10 tests: `kelvin_to_rgb` 범위 + Sun-like 5778 K + 30000 K cool blue + 2000 K warm red, palette index round-trip 양 끝점 + clamp + within-1-bucket, `build_palette` 크기 + 양 끝 색, `magnitude_to_bucket` clamp + Sirius/Vega/Polaris/sun-like monotonic.
+
+검증 결과:
+
+- `pnpm format` ✓ (`renderer.test.ts` Prettier 한 줄 단축)
+- `pnpm lint:fix` ✓ (eslint autofix 자동)
+- `pnpm typecheck` ✓
+- `pnpm test` ✓ — **417 tests** (P1 407 → P2 +10).
+- `pnpm build` ✓ — 1114 kB.
+- `pnpm test:e2e tests/e2e/home.spec.ts` ✓ — 3 tests (Home 시각 회귀 없음).
+- `cd tools/python && uv run ruff check src tests` ✓ (RUF046 / SIM108 / N806 4 + 4 autofix 후)
+- `uv run mypy src` ✓ — 12 source files.
+- `uv run pytest` ✓ — **123 tests** (P1 113 → P2 +10).
+
+설계 결정 + 발견:
+
+- **R3F gl prop 객체 형식**: `WebGLRendererParameters` 의 `antialias` / `logarithmicDepthBuffer` (constructor-time) 와 setter 형 `outputColorSpace` / `toneMapping` / `toneMappingExposure` 를 한 객체에 묶음. R3F 가 양쪽 모두 적용 — 별도 `onCreated` 콜백 불필요.
+- **`createRendererProps()` 시그니처 default**: `RENDER_DEFAULTS` 를 default arg 로 받아 호출처 단순화 (`createRendererProps()` 가 가장 짧음). 오버라이드는 두 번째 인자로 카메라만 분리.
+- **Tanner Helland 2012 piecewise 변환**: Ballesteros 2012 는 B-V → T (P4 추가 예정), T → RGB 는 Tanner Helland — plan §3 P2 의 두 단계 정합. Sun-like 5778 K → (255, 248, 245) 근방 warm white. 2000 K → red dominant, 30000 K → blue dominant. 단위 테스트로 가드.
+- **Palette index log-uniform vs linear**: 색온도 [2000, 30000] K 가 한 자리수 차 — log scale 이 시각 자연. round-trip은 ±1 bucket 안에서 안정.
+- **PointLight decay 0**: r150+ 에서 default decay = 2 (r²-decay). 본 Work 의 Home scene 은 거리 무관 단순 조명을 원함 → `decay={0}` 명시. Work 6 PBR 검증 시 r²-decay + intensity 재계산.
+- **시각 회귀**: Home 렌더 결과 — RotatingSphere 가 PointLight 의 명암 그라데이션을 받음 (이전 DirectionalLight 의 균일 조명에서 변경, 의도된 Work 5 P1 #7 결정 적용). 시각적 차이는 overview "Sun PointLight" 모델 정합.
+- **빌드 크기 변화**: 1113 → 1114 kB (+1 kB) — renderer.ts 추가 + index.ts re-export 영향. 무시할 수준.
 
 ### P3 — Log-Depth & Scene Graph Anchors
 
@@ -350,7 +396,8 @@ THREE.SphereGeometry(args=[sceneRadius, ...])
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-05-06 | 초기 작성 — P0 kickoff. Plan 본체와 함께 6 phase 구조 확정 (Strategy → Renderer Pipeline → Log-Depth + Anchors → Starfield → Dev Demo → Closeout). P1 결정 ~12건 대기. Work 4 산출물 (`PositionScene` / distance·size policy) 적극 활용 예정. `src/render/`, `src/dev/render/`, `orbitarium_tools.starfield` 신설 예정.                                                                |
 | 2026-05-06 | **P0 점검 — overview §7 폴더 구조 vs 실제 비교**. 폴더 구조 / 모듈 위치 / Python 패키지 구성은 overview 와 일치. Work 5 plan 의 두 갭 보강: ① "HDR linear-space" 의미 명확화 (§1 DoD + §6 위험), ② "태양 영역 광원 근사" P1 결정 항목 추가 (본 Work 미도입 / Work 6/11 defer, §1/§3/§5/§6). P1 결정 항목 12 → 13. Tycho-2 deferred 정당화 §6 추가. 무관 cleanup 후보 2건 (`tools/python/public/` 빈 폴더 / `dev-routes.md` stale 표기) §3 추후 보류 + §6 알려진 이슈 기록 — 별도 spawn task 권장.                                                                                                                                                                                                                                                                                                                |
-| 2026-05-06 | **P1 완료** — `src/render/{types,constants,anchors,starfield,index}.ts` + Python `orbitarium_tools.starfield` placeholder + 21 단위 테스트 (TS 12 + Python 9). 결정 13건 (#1~#13) 모두 권장값 채택: 1:1 unit / sRGB+ACES+linear / exposure 1.0 / log-depth ON / near 1e-3 ~ far 1e10 / string literal anchor + context payload / Sun PointLight + ambient 0.05 / area light defer (Work 6/11) / `(p, policy, anchor)→Vector3` / Hipparcos Vmag≤6.0 / Ballesteros 2012 / single celestial sphere 1e9 / ICRF + Hipparcos PM. format/lint/typecheck/test(407)/build/ruff/mypy(12 files)/pytest(113) 전부 그린. `anchors.ts` / `starfield.ts` 는 P3/P4 placeholder 로 index.ts 에서 export 하지 않음. |
+| 2026-05-06 | **P1 완료** — `src/render/{types,constants,anchors,starfield,index}.ts` + Python `orbitarium_tools.starfield` placeholder + 21 단위 테스트 (TS 12 + Python 9). 결정 13건 (#1~#13) 모두 권장값 채택: 1:1 unit / sRGB+ACES+linear / exposure 1.0 / log-depth ON / near 1e-3 ~ far 1e10 / string literal anchor + context payload / Sun PointLight + ambient 0.05 / area light defer (Work 6/11) / `(p, policy, anchor)→Vector3` / Hipparcos Vmag≤6.0 / Ballesteros 2012 / single celestial sphere 1e9 / ICRF + Hipparcos PM. format/lint/typecheck/test(407)/build/ruff/mypy(12 files)/pytest(113) 전부 그린. `anchors.ts` / `starfield.ts` 는 P3/P4 placeholder 로 index.ts 에서 export 하지 않음.                                                                                                                                                                                       |
+| 2026-05-06 | **P2 완료** — `src/render/renderer.ts` (createRendererProps + clampExposure + resolveToneMapping/OutputColorSpace) + `index.ts` re-export + `Home.tsx` / `HomeScene.tsx` 통합 (DirectionalLight → PointLight decay=0 + ambient 0.05) + Python `kelvin_to_rgb_u8` (Tanner Helland 2012) / `palette_index_for_kelvin` / `kelvin_for_palette_index` / `build_palette` (256×RGBA u8 = 1024 B) / `magnitude_to_bucket`. 결정 9건 (#14~#22): ACES+Linear+Cineon 3종 / HDR float buffer defer (Work 11) / antialias MSAA / Tanner Helland T→RGB / sRGB palette + GPU decode / RGBA u8 layout / linear Vmag bucket / Home 모듈 상수 lifted props / PointLight decay 0. 단위 테스트 20 추가 (TS 10 + Python 10, 총 417 / 123). Home e2e 3 tests 그린. preview 시각 확인 — sphere 가 PointLight 음영 표시 (overview Sun 모델 정합). |
 
 ---
 
