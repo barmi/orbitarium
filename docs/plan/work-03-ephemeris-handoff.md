@@ -8,19 +8,19 @@
 
 ## 0. 현재 상태 (Status)
 
-| 항목         | 값                                                                                                                                    |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 현재 phase   | **P0 kickoff** — plan/handoff 짝 작성 완료, P1 진입 대기                                                                              |
-| 다음 액션    | **P1 — Strategy & Brand Types** 진입 — DE440 평가 전략 / 시간 범위 / 톨러런스 결정 후 §2 결정 로그 기록 + 타입 모듈 작성              |
-| 마지막 갱신  | 2026-05-05                                                                                                                            |
-| 블로커       | 없음 — Work 2 P6 closeout 완료 (commit/push는 사용자 정책)                                                                            |
+| 항목         | 값                                                                                                                                                          |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 현재 phase   | **P1 완료** ✓ — P2 진입 대기                                                                                                                                |
+| 다음 액션    | **P2 — DE440 Preprocessing (Python)** 진입 — `orbitarium_tools.de440` 작성, SPK 커널 → Chebyshev binary + manifest, spiceypy `spkezr` 비트 동일 self-test |
+| 마지막 갱신  | 2026-05-05                                                                                                                                                  |
+| 블로커       | 없음                                                                                                                                                        |
 
 ## 1. 진행 체크리스트
 
 각 phase의 Done 기준은 [plan §3](work-03-ephemeris.md#3-phase-정의) 참조.
 phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
-- [ ] **P1** — Strategy & Brand Types
+- [x] **P1** — Strategy & Brand Types _(완료 2026-05-05)_
 - [ ] **P2** — DE440 Preprocessing (Python)
 - [ ] **P3** — TS Chebyshev Evaluator
 - [ ] **P4** — Horizons Reference (Python)
@@ -33,7 +33,16 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 | #   | 항목 | 결정 | 이유 / 비고 | Phase | 결정일 |
 | --- | ---- | ---- | ----------- | ----- | ------ |
-| _(P1 진입 시 채움)_ |
+| 1   | DE440 평가 전략 | **Chebyshev 직접 평가** (사전 처리 binary, 브라우저) | cspice WASM(~3MB) 대비 코드 단순/사이즈 절감, 백엔드 의존성 회피. P3에서 spiceypy `spkezr`과 1mm/1µm/s 안 일치 검증. | P1 | 2026-05-05 |
+| 2   | 커널 | **DE440** (1550-2650) | DE441(±27kyr)는 시각화 timeline에 과잉. Work 12에서 필요 시 재평가. | P1 | 2026-05-05 |
+| 3   | 사전 처리 시간 범위 | **1900-2150** (250 yr) | 보이저(1977)~미래 100년 커버. 사이즈 측정 후 P2에서 필요 시 조정. | P1 | 2026-05-05 |
+| 4   | 천체 범위 (본 Work) | **Sun(10) + 9 planet barycenters(1..9) + 9 planet bodies(199..999) + Moon(301) = 20 entries** | DE440이 native 제공하는 set. 갈릴레이/토성 위성은 별도 SPK (Work 6). | P1 | 2026-05-05 |
+| 5   | State vector 모델 | **`{ naifId, jdTdb, position: PositionICRF, velocity: VelocityICRF }` 분리 객체** | 6-tuple은 인덱스 혼동 위험. 분리 객체는 IDE 자동완성 + 타입 안전 + 가독성. | P1 | 2026-05-05 |
+| 6   | 시간 입력 단위 | **`JdTdb`** (Work 2 brand 재사용) | DE440이 native TDB. UTC/TT 입력은 caller가 `utcToJdTdb` 등으로 변환. | P1 | 2026-05-05 |
+| 7   | 좌표 출력 | **ICRF (m, m/s)** | DE440 native frame. EME2000/Ecliptic은 caller가 Work 2 frames로 변환. | P1 | 2026-05-05 |
+| 8   | 위치 톨러런스 | **1 mm** (`EPHEMERIS_TOL_M = 1e-3`) | 1 AU에서 1 mm ≈ 6.7e-15 rad (~1.4e-9 mas) — 각도 mas보다 ~6 orders 엄격. spiceypy reference의 IEEE 754 한계까지 추적. | P1 | 2026-05-05 |
+| 9   | 속도 톨러런스 | **1 µm/s** (`EPHEMERIS_TOL_VEL_M_S = 1e-6`) | 지구 공전 속도 ~30 km/s 대비 3.3e-11 상대 정밀도. Chebyshev derivative borderline 가능 — P3 측정 후 조정 가능. | P1 | 2026-05-05 |
+| 10  | Brand types | **`PositionICRF`/`VelocityICRF`** (Vec3-shape phantom on `Meters`/`MetersPerSecond`), **`StateVectorICRF`** dataclass | Work 2 unit brand 위에 frame-aware tuple 합성. factory `positionICRF(x,y,z)` / `velocityICRF(...)` 제공. Python에서는 `tuple[float, float, float]` + `@dataclass(frozen, slots)`. | P1 | 2026-05-05 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -41,16 +50,16 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 ### P1에서 결정
 
-- [ ] DE440 평가 전략 (Chebyshev 직접 / cspice WASM / 백엔드)
-- [ ] 커널 (DE440 / DE441)
-- [ ] 사전 처리 시간 범위 (1900-2150 / 1700-2300 / 1550-2650)
-- [ ] 천체 범위 (Sun + 8 planets + Moon / + 위성)
-- [ ] State vector 모델 (`{position, velocity}` / 6-tuple)
-- [ ] 시간 입력 (JdTdb / UTC)
-- [ ] 좌표 출력 (ICRF / EME2000)
-- [ ] 위치 톨러런스 (1 mm / 1 cm / 1 m)
-- [ ] 속도 톨러런스 (1 µm/s / 1 mm/s)
-- [ ] Brand types (PositionICRF / VelocityICRF / StateVectorICRF)
+- [x] DE440 평가 전략: **Chebyshev 직접 평가** ✓ (#1)
+- [x] 커널: **DE440** ✓ (#2)
+- [x] 사전 처리 시간 범위: **1900-2150** ✓ (#3)
+- [x] 천체 범위: **20 entries (Sun + 9 bary + 9 body + Moon)** ✓ (#4)
+- [x] State vector 모델: **`{ naifId, jdTdb, position, velocity }`** ✓ (#5)
+- [x] 시간 입력: **JdTdb** ✓ (#6)
+- [x] 좌표 출력: **ICRF (m, m/s)** ✓ (#7)
+- [x] 위치 톨러런스: **1 mm** ✓ (#8)
+- [x] 속도 톨러런스: **1 µm/s** ✓ (#9)
+- [x] Brand types: **PositionICRF / VelocityICRF / StateVectorICRF** ✓ (#10)
 
 ### P2에서 결정
 
@@ -100,9 +109,25 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한 줄 메모.
 
-### P1 — Strategy & Brand Types
+### P1 — Strategy & Brand Types _(완료 2026-05-05)_
 
-_미시작_
+생성/수정 파일:
+- [`src/ephemeris/types.ts`](../../src/ephemeris/types.ts) — `PositionICRF`/`VelocityICRF` (Vec3-shape phantom on Work 2 `Meters`/`MetersPerSecond`), `StateVectorICRF` interface, factory `positionICRF()`/`velocityICRF()`.
+- [`src/ephemeris/constants.ts`](../../src/ephemeris/constants.ts) — `EPHEMERIS_TOL_M = 1e-3`, `EPHEMERIS_TOL_VEL_M_S = 1e-6`, `DE440_KERNEL_NAME`/`SOURCE`/`TIME_RANGE_*`, `DE440_BODY_NAIF_IDS` (20 ids tuple), `De440BodyNaifId` type.
+- [`src/ephemeris/index.ts`](../../src/ephemeris/index.ts) — re-exports.
+- [`tools/python/src/orbitarium_tools/ephemeris.py`](../../tools/python/src/orbitarium_tools/ephemeris.py) — Python placeholder mirror, `StateVectorICRF` `@dataclass(frozen, slots)`, 같은 상수.
+
+테스트:
+- [`tests/unit/ephemeris/types.test.ts`](../../tests/unit/ephemeris/types.test.ts) — 6 tests: 톨러런스, DE440 시간 범위, body NAIF 카탈로그(20), factory smoke, StateVectorICRF 구조.
+- [`tools/python/tests/test_ephemeris.py`](../../tools/python/tests/test_ephemeris.py) — 4 tests (TS와 동일 구조).
+
+검증 결과:
+- `pnpm format:check` ✓
+- `pnpm lint` ✓ — 초기 simple-import-sort 1건 → autofix.
+- `pnpm typecheck` ✓
+- `pnpm test` ✓ — **317 tests** (Work 2 P6 311 → P1 +6).
+- `pnpm build` ✓ — 1113.46 kB.
+- `uv run ruff check / mypy / pytest` ✓ — 75 tests (Work 2 71 → +4).
 
 ### P2 — DE440 Preprocessing (Python)
 
@@ -236,6 +261,7 @@ pnpm fixtures:work-03
 | 날짜       | 변경                                                                                                                                                                  |
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-05-05 | 초기 작성 — P0 kickoff. Plan 본체와 함께 6 phase 구조 확정 (Strategy → Preprocessing → TS Evaluator → Horizons Reference → Dev Demo → Closeout). P1 결정 ~10건 대기. |
+| 2026-05-05 | **P1 완료** — `src/ephemeris/{types,constants,index}.ts` + Python 미러 + 10 단위 테스트. 결정 10건 (#1~#10) 모두 권장값 채택: Chebyshev 직접 평가 / DE440 1900-2150 / 20 entries (Sun + 9 bary + 9 body + Moon) / `{position, velocity}` 분리 객체 / JdTdb 입력 / ICRF (m, m/s) 출력 / 1mm·1µm/s 톨러런스 / `PositionICRF`/`VelocityICRF`/`StateVectorICRF` brand 합성. format/lint/typecheck/test(317)/build/ruff/mypy/pytest(75) 전부 그린. ESLint simple-import-sort 1건 autofix. |
 
 ---
 
