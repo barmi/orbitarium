@@ -1,3 +1,5 @@
+export * from './anchors'
 export * from './constants'
 export * from './renderer'
 export * from './types'
+export * from './world'

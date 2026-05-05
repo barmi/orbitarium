@@ -8,12 +8,12 @@
 
 ## 0. 현재 상태 (Status)
 
-| 항목         | 값                                                                                                  |
-| ------------ | --------------------------------------------------------------------------------------------------- |
-| 현재 phase   | **P2 완료** ✓ — **P3 시작 대기**                                                                    |
-| 다음 액션    | P3 — `src/render/anchors.ts` (SceneAnchorContext + applyAnchor + positionToWorld) + `world.ts` thin adapter + Python `render_anchors.py` 미러 |
-| 마지막 갱신  | 2026-05-06                                                                                          |
-| 블로커       | 없음                                                                                                |
+| 항목         | 값                                                                                                                                |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| 현재 phase   | **P3 완료** ✓ — **P4 시작 대기**                                                                                                  |
+| 다음 액션    | P4 — Hipparcos 다운로드 + 필터링 + 색온도 매핑 + 바이너리 직렬화 (`tools/python/.../starfield.py` + `src/render/starfield.ts` 풀구현) |
+| 마지막 갱신  | 2026-05-06                                                                                                                        |
+| 블로커       | 없음                                                                                                                              |
 
 ## 1. 진행 체크리스트
 
@@ -22,7 +22,7 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 - [x] **P1** — Render Strategy & Scene Graph Types _(완료 2026-05-06)_
 - [x] **P2** — Renderer Pipeline (Color & Tone Mapping) _(완료 2026-05-06)_
-- [ ] **P3** — Log-Depth & Scene Graph Anchors
+- [x] **P3** — Log-Depth & Scene Graph Anchors _(완료 2026-05-06)_
 - [ ] **P4** — Starfield Data Pipeline + Mesh
 - [ ] **P5** — Dev Demo `/dev/render`
 - [ ] **P6** — Cross-validation & Golden Fixtures (Closeout)
@@ -55,6 +55,13 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 20  | `magnitude_to_bucket` 알고리즘 | **linear in Vmag, [-2, 8] → [0, 255], clamp** | overview Vmag ≤ 6.0 cutoff + Sirius (-1.46) / 그 너머 [-2] safety margin. Bucket 인덱스가 작을수록 밝은 별 — shader 에서 `(255 - bucket) / 255` 로 size 계수. | P2 | 2026-05-06 |
 | 21  | Home 라우트 통합 | **`createRendererProps()` 한 곳에서 옵션 객체 생성, `<Canvas gl={...} camera={...}>` 로 전달** | Home + Dev 가 같은 옵션 공유 — DRY + 회귀 가드. lifted module-level constant 로 Canvas re-render 시 props identity 안정. | P2 | 2026-05-06 |
 | 22  | HomeScene Sun 조명 모델 | **PointLight (decay 0) + AmbientLight (intensity 0.05)** — DirectionalLight 교체 | P1 #7 (Sun PointLight) 적용. decay 0 으로 단순 거리 무관 조명 (Work 6 PBR 검증 시 r²-decay 재도입 검토). | P2 | 2026-05-06 |
+| 23  | log-depth 활성 시 camera near/far 검증 | **P1 #5 그대로 (1e-3 / 1e10)** | 13 orders span 안정. P5 의 반경 1 + 반경 1e9 sphere 동시 렌더 시 z-fighting 해소 검증. | P3 | 2026-05-06 |
+| 24  | Body-centric anchor 의 body 표현 | **`PositionICRF` (m) 직접** payload 보관 | NAIF id payload 보다 단순 + body 식별은 호출자 책임 (Work 6/9 와 분리). evaluator 가 임의 body 의 SSB position 을 반환하면 그대로 anchor context 생성. | P3 | 2026-05-06 |
+| 25  | `SceneAnchorContext` 모듈 위치 | **`src/render/anchors.ts`** (P1 #6 약속 따름) | 별도 anchors 도메인 폴더 분리 안 함. types.ts 가 `SceneAnchor` literal 만 노출, 컨텍스트 (payload 포함) 는 anchors.ts. | P3 | 2026-05-06 |
+| 26  | Python anchor 미러 모듈 | **`orbitarium_tools/render_anchors.py`** 신설 (별도 파일) | `starfield.py` 와 책임 분리 — anchor / starfield 두 도메인이 P4/P6 에서 독립 진화. | P3 | 2026-05-06 |
+| 27  | DE440 evaluator 와 anchor wiring | **호출자 책임** (anchor 함수는 PositionICRF 만 받음) | evaluator 호출은 Dev Demo / 메인 앱에서. anchor / world 모듈은 evaluator 의존 없이 단위 테스트 가능 (vitest happy-dom 친화). | P3 | 2026-05-06 |
+| 28  | `world.ts` API 형태 | **`sceneToVector3` / `vector3ToScene` + scalar `sceneScalarToWorld` / `worldScalarToScene`** | three.js Vector3 의존을 `world.ts` 한 파일에 격리. anchors.ts 가 sceneToVector3 import 해서 positionToWorld 합성. | P3 | 2026-05-06 |
+| 29  | Anchor fixture 샘플 | **6 위치 (zero / sun_ssb / earth_ssb / mars / jupiter / pluto) × 3 anchor (ssb / heliocentric / body-centric_earth)** | 외행성 + 0 vector + reference body 자체까지 — 각 anchor 의 corner case 커버. JSON fixture 로 TS / Python 교차 검증. | P3 | 2026-05-06 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -88,13 +95,15 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] Home 라우트 통합: **`createRendererProps()` 모듈 상수** ✓ (#21)
 - [x] HomeScene Sun 조명 교체: **PointLight (decay 0) + ambient 0.05** ✓ (#22)
 
-### P3에서 결정
+### P3에서 결정 (7건 모두 완료)
 
-- [ ] log-depth 활성 시 camera near/far 검증 (P1 결정 그대로)
-- [ ] Body-centric anchor 의 body 표현 (권장: `PositionICRF` (m) 직접)
-- [ ] `SceneAnchorContext` 모듈 위치 (권장: `src/render/anchors.ts`)
-- [ ] Python anchor 미러 위치 (권장: `render_anchors.py` 신설 vs `starfield.py` 내)
-- [ ] DE440 evaluator wiring 정책 (권장: 호출자 책임, anchor 함수는 PositionICRF 만 받음)
+- [x] log-depth 활성 시 camera near/far 검증: **P1 #5 그대로 (1e-3 / 1e10)** ✓ (#23)
+- [x] Body-centric anchor 의 body 표현: **`PositionICRF` (m) 직접 payload** ✓ (#24)
+- [x] `SceneAnchorContext` 모듈 위치: **`src/render/anchors.ts`** ✓ (#25)
+- [x] Python anchor 미러 위치: **`render_anchors.py` 신설** ✓ (#26)
+- [x] DE440 evaluator wiring 정책: **호출자 책임** ✓ (#27)
+- [x] `world.ts` API 형태: **`sceneToVector3` / `vector3ToScene` + scalar adapters** ✓ (#28)
+- [x] Anchor fixture 샘플: **6 위치 × 3 anchor (ssb / heliocentric / body-centric_earth)** ✓ (#29)
 
 ### P4에서 결정
 
@@ -220,9 +229,41 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 - **시각 회귀**: Home 렌더 결과 — RotatingSphere 가 PointLight 의 명암 그라데이션을 받음 (이전 DirectionalLight 의 균일 조명에서 변경, 의도된 Work 5 P1 #7 결정 적용). 시각적 차이는 overview "Sun PointLight" 모델 정합.
 - **빌드 크기 변화**: 1113 → 1114 kB (+1 kB) — renderer.ts 추가 + index.ts re-export 영향. 무시할 수준.
 
-### P3 — Log-Depth & Scene Graph Anchors
+### P3 — Log-Depth & Scene Graph Anchors _(완료 2026-05-06)_
 
-_(대기)_
+생성/수정 파일:
+
+- [`src/render/anchors.ts`](../../src/render/anchors.ts) — `SceneAnchorContext` discriminated union (`'ssb'` / `'heliocentric'` / `'body-centric'`), factories `ssbAnchor` / `heliocentricAnchor` / `bodyCentricAnchor`, `applyAnchor`, `anchorKind`, `positionToWorld(p, policy, anchor)` 합성 함수. `SSB_ANCHOR` 싱글턴.
+- [`src/render/world.ts`](../../src/render/world.ts) — `sceneToVector3` / `vector3ToScene` + scalar `sceneScalarToWorld` / `worldScalarToScene`. three.js `Vector3` 의존을 한 곳에 격리.
+- [`src/render/index.ts`](../../src/render/index.ts) — `anchors` / `world` re-export 추가.
+- [`tools/python/src/orbitarium_tools/render_anchors.py`](../../tools/python/src/orbitarium_tools/render_anchors.py) — Python 미러: `SceneAnchorContext` dataclass + 3 factories + `apply_anchor` + `generate_anchor_fixtures`. `SAMPLE_SUN_SSB_M` / `SAMPLE_EARTH_SSB_M` / `SAMPLE_POSITIONS` (6 entries).
+
+테스트 + fixture:
+
+- [`tests/fixtures/work-05/scene-anchors.json`](../../tests/fixtures/work-05/scene-anchors.json) — 3 anchor × 6 sample = 18 rows. `_tolerance_mm = 1.0`. Prettier 정렬.
+- [`tests/unit/render/anchors.test.ts`](../../tests/unit/render/anchors.test.ts) — 11 tests: anchorKind / SSB identity / heliocentric subtract + Sun-at-own-anchor → origin / body-centric subtract + round-trip / `positionToWorld` 3 케이스 + fixture cross-check (3 anchor entries).
+- [`tests/unit/render/world.test.ts`](../../tests/unit/render/world.test.ts) — 3 tests: `sceneToVector3` Vector3 instance + axis mapping + round-trip, scalar adapter pass-through + round-trip, `SCENE_TO_THREE_UNIT_RATIO` invariant.
+- [`tools/python/tests/test_render_anchors.py`](../../tools/python/tests/test_render_anchors.py) — 8 tests: SSB identity / heliocentric subtract + Sun → origin / body-centric subtract + round-trip / missing reference 가드 / fixture 구조 + idempotent.
+
+검증 결과:
+
+- `pnpm format` ✓ (Prettier auto-format on 2 files after first run)
+- `pnpm lint` ✓ (eslint autofix)
+- `pnpm typecheck` ✓
+- `pnpm test` ✓ — **434 tests** (P2 417 → P3 +17).
+- `pnpm build` ✓.
+- `cd tools/python && uv run ruff check src tests` ✓.
+- `uv run mypy src` ✓ — 13 source files (P2 12 → +1 render_anchors).
+- `uv run pytest` ✓ — **131 tests** (P2 123 → P3 +8).
+
+설계 결정 + 발견:
+
+- **Discriminated union with payload**: `SceneAnchorContext` 가 anchor kind 별 보조 데이터 (sun position / body position) 를 함께 캡슐화 — 호출처 단순 (`positionToWorld(p, policy, anchor)`). switch case 가 컴파일러 exhaustive check.
+- **`positionToWorld` = `applyAnchor` ∘ `positionToScene` ∘ `sceneToVector3`**: 세 단계 명시적 합성. 각 단계 단위 테스트 가능.
+- **`Vector3` import in `anchors.ts` only as type**: anchors.ts 가 `import type { Vector3 } from 'three'` 만 — runtime import 는 `world.ts` (sceneToVector3) 에서. tree-shake 친화 + 의존 격리.
+- **Python `apply_anchor` Sequence type**: `Sequence[float]` 로 numpy array / tuple / list 모두 수용. `tuple` 출력으로 immutable.
+- **fixture sample 위치 선정**: zero (corner case), sun_ssb / earth_ssb (reference body 자신), mars / jupiter / pluto (외행성 다양한 축). heliocentric_anchor(sun_ssb) 로 sample sun_ssb 시 origin (0,0,0) 검증 — Sun-at-its-own-anchor 케이스.
+- **`generate_anchor_fixtures` idempotent**: 동일 입력 → 동일 byte 출력. P6 의 fixture diff guard 와 호환.
 
 ### P4 — Starfield Data Pipeline + Mesh
 
@@ -397,7 +438,8 @@ THREE.SphereGeometry(args=[sceneRadius, ...])
 | 2026-05-06 | 초기 작성 — P0 kickoff. Plan 본체와 함께 6 phase 구조 확정 (Strategy → Renderer Pipeline → Log-Depth + Anchors → Starfield → Dev Demo → Closeout). P1 결정 ~12건 대기. Work 4 산출물 (`PositionScene` / distance·size policy) 적극 활용 예정. `src/render/`, `src/dev/render/`, `orbitarium_tools.starfield` 신설 예정.                                                                |
 | 2026-05-06 | **P0 점검 — overview §7 폴더 구조 vs 실제 비교**. 폴더 구조 / 모듈 위치 / Python 패키지 구성은 overview 와 일치. Work 5 plan 의 두 갭 보강: ① "HDR linear-space" 의미 명확화 (§1 DoD + §6 위험), ② "태양 영역 광원 근사" P1 결정 항목 추가 (본 Work 미도입 / Work 6/11 defer, §1/§3/§5/§6). P1 결정 항목 12 → 13. Tycho-2 deferred 정당화 §6 추가. 무관 cleanup 후보 2건 (`tools/python/public/` 빈 폴더 / `dev-routes.md` stale 표기) §3 추후 보류 + §6 알려진 이슈 기록 — 별도 spawn task 권장.                                                                                                                                                                                                                                                                                                                |
 | 2026-05-06 | **P1 완료** — `src/render/{types,constants,anchors,starfield,index}.ts` + Python `orbitarium_tools.starfield` placeholder + 21 단위 테스트 (TS 12 + Python 9). 결정 13건 (#1~#13) 모두 권장값 채택: 1:1 unit / sRGB+ACES+linear / exposure 1.0 / log-depth ON / near 1e-3 ~ far 1e10 / string literal anchor + context payload / Sun PointLight + ambient 0.05 / area light defer (Work 6/11) / `(p, policy, anchor)→Vector3` / Hipparcos Vmag≤6.0 / Ballesteros 2012 / single celestial sphere 1e9 / ICRF + Hipparcos PM. format/lint/typecheck/test(407)/build/ruff/mypy(12 files)/pytest(113) 전부 그린. `anchors.ts` / `starfield.ts` 는 P3/P4 placeholder 로 index.ts 에서 export 하지 않음.                                                                                                                                                                                       |
-| 2026-05-06 | **P2 완료** — `src/render/renderer.ts` (createRendererProps + clampExposure + resolveToneMapping/OutputColorSpace) + `index.ts` re-export + `Home.tsx` / `HomeScene.tsx` 통합 (DirectionalLight → PointLight decay=0 + ambient 0.05) + Python `kelvin_to_rgb_u8` (Tanner Helland 2012) / `palette_index_for_kelvin` / `kelvin_for_palette_index` / `build_palette` (256×RGBA u8 = 1024 B) / `magnitude_to_bucket`. 결정 9건 (#14~#22): ACES+Linear+Cineon 3종 / HDR float buffer defer (Work 11) / antialias MSAA / Tanner Helland T→RGB / sRGB palette + GPU decode / RGBA u8 layout / linear Vmag bucket / Home 모듈 상수 lifted props / PointLight decay 0. 단위 테스트 20 추가 (TS 10 + Python 10, 총 417 / 123). Home e2e 3 tests 그린. preview 시각 확인 — sphere 가 PointLight 음영 표시 (overview Sun 모델 정합). |
+| 2026-05-06 | **P2 완료** — `src/render/renderer.ts` (createRendererProps + clampExposure + resolveToneMapping/OutputColorSpace) + `index.ts` re-export + `Home.tsx` / `HomeScene.tsx` 통합 (DirectionalLight → PointLight decay=0 + ambient 0.05) + Python `kelvin_to_rgb_u8` (Tanner Helland 2012) / `palette_index_for_kelvin` / `kelvin_for_palette_index` / `build_palette` (256×RGBA u8 = 1024 B) / `magnitude_to_bucket`. 결정 9건 (#14~#22): ACES+Linear+Cineon 3종 / HDR float buffer defer (Work 11) / antialias MSAA / Tanner Helland T→RGB / sRGB palette + GPU decode / RGBA u8 layout / linear Vmag bucket / Home 모듈 상수 lifted props / PointLight decay 0. 단위 테스트 20 추가 (TS 10 + Python 10, 총 417 / 123). Home e2e 3 tests 그린. preview 시각 확인 — sphere 가 PointLight 음영 표시 (overview Sun 모델 정합).                                                                                                                                                                                |
+| 2026-05-06 | **P3 완료** — `src/render/anchors.ts` (`SceneAnchorContext` discriminated union + 3 factories + `applyAnchor` + `positionToWorld`) + `src/render/world.ts` (`sceneToVector3` / `vector3ToScene` + scalar adapters, three.js Vector3 의존 격리) + index re-export + Python `orbitarium_tools.render_anchors` 미러 + `tests/fixtures/work-05/scene-anchors.json` (3 anchor × 6 sample = 18 rows). 결정 7건 (#23~#29): camera near/far 그대로 / `PositionICRF` payload / `anchors.ts` 위치 / `render_anchors.py` 신설 / DE440 호출자 책임 / world.ts API 형태 / 6×3 fixture. 단위 테스트 22 추가 (TS 14 + Python 8, 총 434 / 131). mypy 13 files. fixture cross-check 3 anchor entries 1 mm 이내 일치. |
 
 ---
 
