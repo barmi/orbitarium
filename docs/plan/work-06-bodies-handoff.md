@@ -8,19 +8,19 @@
 
 ## 0. 현재 상태 (Status)
 
-| 항목         | 값                                                                                                               |
-| ------------ | ---------------------------------------------------------------------------------------------------------------- |
-| 현재 phase   | **P0 kickoff** — plan/handoff 짝 작성 직후, **P1 시작 대기**                                                     |
-| 다음 액션    | P1 권장값 ~12건 사용자 컨펌 → `src/bodies/{types,catalog,index}.ts` + `tools/python/.../bodies.py` placeholder + 텍스처 README |
-| 마지막 갱신  | 2026-05-06                                                                                                       |
-| 블로커       | 없음                                                                                                             |
+| 항목         | 값                                                                                                                 |
+| ------------ | ------------------------------------------------------------------------------------------------------------------ |
+| 현재 phase   | **P1 완료** ✓ — **P2 시작 대기**                                                                                   |
+| 다음 액션    | P2 — `src/astro/rotationData.ts` 11+ bodies 확장 + Python `IAU_MODELS` mirror + SPICE PCK eval 과 mas 비교         |
+| 마지막 갱신  | 2026-05-06                                                                                                         |
+| 블로커       | 없음                                                                                                               |
 
 ## 1. 진행 체크리스트
 
 각 phase 의 Done 기준은 [plan §3](work-06-bodies.md#3-phase-정의) 참조.
 phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 
-- [ ] **P1** — Body Strategy & Catalog Types
+- [x] **P1** — Body Strategy & Catalog Types _(완료 2026-05-06)_
 - [ ] **P2** — IAU Rotation Models Extension
 - [ ] **P3** — Body Mesh Pipeline (Sun + 9 planets + Moon)
 - [ ] **P4** — Saturn Rings + Major Moons
@@ -33,26 +33,37 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 | #   | 항목 | 결정 | 이유 / 비고 | Phase | 결정일 |
 | --- | ---- | ---- | ----------- | ----- | ------ |
-| —   | (P1 결정 대기) | | | P1 | |
+| 1   | BodyKind 모델 | **string union `'sun' \| 'planet' \| 'moon' \| 'pluto-system'`** + `BODY_KINDS` const | Work 5 SceneAnchor 패턴 일관. enum 보다 단순 + tree-shake 친화. | P1 | 2026-05-06 |
+| 2   | BodyDefinition 식별자 | **`naifId` (정수) + `slug` (kebab-case)** 두 채널 | URL 라우팅은 slug, 데이터 lookup 은 naifId. 두 ReadonlyMap 으로 O(1) lookup. | P1 | 2026-05-06 |
+| 3   | radius source | **Work 4 `BODY_MEAN_EQUATORIAL_RADIUS_M` 재사용 + 위성 9 entries 신규 (`MOON_MEAN_EQUATORIAL_RADIUS_M`)** | 11 (Work 4) + 9 (위성) = 20 entries. 단위 테스트로 catalog ↔ source 일치 가드. | P1 | 2026-05-06 |
+| 4   | 위성 radius 출처 | **IAU WGCCRE 2015 (Archinal et al. 2018)** mean equatorial | Work 4 #9 동일 출처. Io / Europa / Ganymede / Callisto / Mimas / Enceladus / Rhea / Titan / Iapetus 9 entries. | P1 | 2026-05-06 |
+| 5   | 텍스처 소스 | **Solar System Scope CC4** (`https://www.solarsystemscope.com/textures/`) | Sun + 8 planets + Moon + Saturn rings + Galilean + Titan 모두 CC4 제공. attribution 은 README. | P1 | 2026-05-06 |
+| 6   | 텍스처 포맷 / 해상도 | **JPEG 2K (행성) + JPEG 1K (위성) + PNG (Saturn rings + sun-halo)** | KTX2 / Basis 압축은 Work 11. 본 Work 는 단순 JPEG. | P1 | 2026-05-06 |
+| 7   | 텍스처 커밋 정책 | **`public/data/textures/` 직접 commit** (~5 MB target) | Work 5 starfield bin (70 KB) 패턴 — reproducibility + CI 다운로드 회피. P3/P4 에서 실제 파일 추가. | P1 | 2026-05-06 |
+| 8   | 위성 텍스처 fallback | **단색 회색 (`#999999` ~ `#dddddd` 사이 individual)** + `textureUrl: null` | Mimas / Enceladus / Rhea / Iapetus 4 entries. Work 11 high-res 시 textureUrl 채움. | P1 | 2026-05-06 |
+| 9   | mesh geometry resolution | **`SphereGeometry(r, 64, 32)` default** (P3 implementation) | 행성 / 위성 일관. Work 11 LOD 도입 시 수정. | P1 | 2026-05-06 |
+| 10  | `atmosphere` flag 노출 | **boolean only** — Work 11 hint, 본 Work mesh 영향 없음 | Venus / Earth / Mars / 4 gas giants / Titan = 8 entries `true`. Work 11 atmospheric scattering 진입점. | P1 | 2026-05-06 |
+| 11  | `src/bodies/` 모듈 위치 | **신설 도메인 폴더** (`src/render/bodies/` 가 아닌 top-level `src/bodies/`) | Work 5 `src/render/` 와 분리 — body 카탈로그는 truth-layer (`@/scale` 와 비슷), mesh 는 display 레이어. 본 Work 가 mesh + 카탈로그 모두 가지지만 분리는 Work 11 polish 에서. | P1 | 2026-05-06 |
+| 12  | Charon (NAIF 901) | **Work 6 범위 밖 — defer** | Work 2 NAIF_CATALOG 에 미존재. Charon 추가는 Work 2 modification. plan §1 의 "Pluto + Charon" 약속은 Pluto only 로 축소 — handoff §3 추후 보류 추가. | P1 | 2026-05-06 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
 ## 3. 미결정 / 보류 (Open Questions)
 
-### P1에서 결정 (예정 ~12건)
+### P1에서 결정 (12건 모두 완료)
 
-- [ ] BodyKind 모델 (권장: string union `'sun' | 'planet' | 'moon' | 'pluto-system'`)
-- [ ] BodyDefinition 식별자 (권장: `naifId` + `slug`)
-- [ ] radius source (권장: Work 4 `BODY_MEAN_EQUATORIAL_RADIUS_M` 재사용 + 위성 신규 entries)
-- [ ] 위성 radius 출처 (권장: IAU WGCCRE 2015)
-- [ ] 텍스처 소스 (권장: Solar System Scope CC4)
-- [ ] 텍스처 포맷 / 해상도 (권장: JPEG 2K 행성 / 1K 위성)
-- [ ] 텍스처 커밋 정책 (권장: `public/data/textures/` 직접 commit, ~5 MB)
-- [ ] 위성 텍스처 fallback (권장: 단색 회색 0.6)
-- [ ] mesh geometry resolution (권장: `SphereGeometry(r, 64, 32)`)
-- [ ] BodyDefinition `atmosphere` flag 노출 (권장: boolean only — Work 11 에서 활용)
-- [ ] `src/bodies/` 모듈 위치 (권장: 신설 도메인 폴더)
-- [ ] BodyDefinition 가 Work 4 `BODY_MEAN_EQUATORIAL_RADIUS_M` 와 충돌 시 가드 (권장: 단위 테스트로 일치성 보장)
+- [x] BodyKind 모델: **string union + `BODY_KINDS` const** ✓ (#1)
+- [x] BodyDefinition 식별자: **`naifId` + `slug`** ✓ (#2)
+- [x] radius source: **Work 4 + 위성 9 신규** ✓ (#3)
+- [x] 위성 radius 출처: **IAU WGCCRE 2015** ✓ (#4)
+- [x] 텍스처 소스: **Solar System Scope CC4** ✓ (#5)
+- [x] 텍스처 포맷 / 해상도: **JPEG 2K + 1K + PNG** ✓ (#6)
+- [x] 텍스처 커밋 정책: **직접 commit** ✓ (#7)
+- [x] 위성 텍스처 fallback: **단색 + textureUrl=null** ✓ (#8)
+- [x] mesh geometry resolution: **`SphereGeometry(r, 64, 32)`** ✓ (#9)
+- [x] `atmosphere` flag: **boolean, Work 11 hint** ✓ (#10)
+- [x] `src/bodies/` 모듈 위치: **신설 도메인 폴더** ✓ (#11)
+- [x] Charon: **Work 6 범위 밖 defer (Work 2 NAIF_CATALOG 확장 필요)** ✓ (#12)
 
 ### P2에서 결정
 
@@ -101,6 +112,7 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 ### 추후 보류 (Work 6 범위 밖)
 
+- **Charon (NAIF 901)** — Work 2 NAIF_CATALOG 확장 필요. Pluto-Charon 시스템 시각화는 Work 11 polish 또는 별도 cleanup task. (P1 #12)
 - 대기 산란 셰이더 (Earth / Venus / Titan) → Work 11 polish
 - Sun corona / CME / 표면 활동 셰이더 → Work 11
 - Self-shadow / planet shadow on rings (Saturn) / eclipse → Work 11
@@ -118,9 +130,41 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한 줄 메모.
 
-### P1 — Body Strategy & Catalog Types
+### P1 — Body Strategy & Catalog Types _(완료 2026-05-06)_
 
-_(대기)_
+생성/수정 파일:
+
+- [`src/bodies/types.ts`](../../src/bodies/types.ts) — `BodyKind` literal union + `BODY_KINDS` const, `RingsConfig` (innerRadiusM / outerRadiusM / textureUrl, m + Saturn-only), `BodyDefinition` interface (naifId / slug / label / kind / radiusM / rotationModelKey / textureUrl / fallbackColor / rings / atmosphere).
+- [`src/bodies/catalog.ts`](../../src/bodies/catalog.ts) — `MOON_MEAN_EQUATORIAL_RADIUS_M` (9 entries, IAU WGCCRE 2015), Saturn ring inner/outer radii (74.5M / 136.775M m), `BODY_CATALOG` (20 entries: Sun + 8 planets + Pluto + Moon + 4 Galilean + 5 Saturn major), `getBodyByNaifId` / `getBodyBySlug` (O(1) Map lookup).
+- [`src/bodies/index.ts`](../../src/bodies/index.ts) — re-exports.
+- [`tools/python/src/orbitarium_tools/bodies.py`](../../tools/python/src/orbitarium_tools/bodies.py) — Python mirror (`BodyKind` Literal + `BodyDefinition` dataclass + `BODY_CATALOG` 20 entries + lookup helpers).
+- [`public/data/textures/README.md`](../../public/data/textures/README.md) — Solar System Scope CC4 attribution + 파일 표 (P3/P4 에 채워질 17 textures) + 갱신 절차 + 포맷 컨벤션.
+
+테스트:
+
+- [`tests/unit/bodies/types.test.ts`](../../tests/unit/bodies/types.test.ts) — 19 tests: BodyKind union (2) + BODY_CATALOG 구성 검증 (10: count / Sun / 8 planets + Saturn rings / Pluto / 10 moons / unique slug+id / kebab-case / radius source / rotation key pattern / atmosphere set / hex color / no-texture moons) + Saturn rings 가드 (2) + lookup helpers (3 + roundtrip).
+- [`tools/python/tests/test_bodies.py`](../../tools/python/tests/test_bodies.py) — 16 tests (TS와 동일 구조 + Python mirror lookup roundtrip).
+
+검증 결과:
+
+- `pnpm format` ✓ (Prettier auto-format on `types.ts` / `catalog.ts` / `types.test.ts` after first run)
+- `pnpm lint:fix` ✓
+- `pnpm typecheck` ✓
+- `pnpm test` ✓ — **494 tests** (Work 5 P6 475 → P1 +19).
+- `pnpm build` ✓
+- `cd tools/python && uv run ruff check src tests` ✓
+- `uv run mypy src` ✓ — 14 source files (Work 5 13 → +1 bodies).
+- `uv run pytest` ✓ — **157 tests** (Work 5 P6 141 → P1 +16).
+
+설계 결정 + 발견:
+
+- **Work 4 radius 재사용 vs. 신규 정의**: `BODY_MEAN_EQUATORIAL_RADIUS_M[10..999]` 11 entries 가 그대로 `BodyDefinition.radiusM` 으로 들어감 + `MOON_MEAN_EQUATORIAL_RADIUS_M` 가 위성 9 추가. 단위 테스트가 source ↔ catalog 일치 가드.
+- **Charon 부재 — defer**: Work 2 NAIF_CATALOG 에 901 미존재. plan 의 "Pluto + Charon" 은 Pluto only 로 축소. 추후 Work 11 polish 또는 별도 cleanup task 로 처리.
+- **Mimas / Enceladus / Rhea / Iapetus 텍스처 부재**: textureUrl=null + fallback color 만. Work 11 high-res asset 도입 시 채움.
+- **`atmosphere` flag 8 entries**: Venus / Earth / Mars / 4 gas giants + Titan. Mars 는 매우 얇은 대기지만 Work 11 atmospheric scattering 의 가드 신호로 true.
+- **Saturn ring inner radius (74.5M m) > Saturn radius (60.3M m)**: ~1.236× 적도 반지름 — D ring inner edge. 단위 테스트로 invariant 보장.
+- **Python `_planet` / `_moon` factory 함수**: dataclass entry 작성 시 boilerplate 감소. Sun / Pluto 만 직접 dataclass (kind='sun' / 'pluto-system' 특수).
+- **`BODY_CATALOG` 가 truth-layer**: Work 5 `src/render/` 와 분리. P3 의 mesh / material 은 별도 모듈로 들어와 `bodies` 가 받게 될 것.
 
 ### P2 — IAU Rotation Models Extension
 
@@ -329,7 +373,8 @@ THREE.Quaternion                           ← Body mesh.quaternion
 
 | 날짜       | 변경                                                                                                                                                                                                                                                                                                                       |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-05-06 | 초기 작성 — P0 kickoff. Plan 본체와 함께 6 phase 구조 확정 (Strategy → IAU Rotation Extension → Mesh Pipeline → Saturn Rings + Moons → Dev Demo → Closeout). P1 결정 ~12건 대기. Work 4 `BODY_MEAN_EQUATORIAL_RADIUS_M` + Work 5 `positionToWorld` / `radiusToScene` / `bodyCentricAnchor` 적극 활용 예정. `src/bodies/`, `src/dev/body/`, `orbitarium_tools.bodies` 신설 예정. |
+| 2026-05-06 | 초기 작성 — P0 kickoff. Plan 본체와 함께 6 phase 구조 확정 (Strategy → IAU Rotation Extension → Mesh Pipeline → Saturn Rings + Moons → Dev Demo → Closeout). P1 결정 ~12건 대기. Work 4 `BODY_MEAN_EQUATORIAL_RADIUS_M` + Work 5 `positionToWorld` / `radiusToScene` / `bodyCentricAnchor` 적극 활용 예정. `src/bodies/`, `src/dev/body/`, `orbitarium_tools.bodies` 신설 예정.                                                                                                                                                                                                                |
+| 2026-05-06 | **P1 완료** — `src/bodies/{types,catalog,index}.ts` + Python `orbitarium_tools.bodies` mirror + `public/data/textures/README.md` + 35 단위 테스트 (TS 19 + Python 16). 결정 12건 (#1~#12) 모두 권장값 채택: string union BodyKind / naifId+slug / Work4 radius 재사용 + 위성 9 신규 / IAU WGCCRE 2015 / Solar System Scope CC4 / JPEG 2K+1K+PNG / 직접 commit / 단색 fallback / SphereGeometry 64×32 / atmosphere boolean / `src/bodies/` 신설 / Charon defer. format/lint/typecheck/test(494)/build/ruff/mypy(14 files)/pytest(157) 전부 그린. |
 
 ---
 
