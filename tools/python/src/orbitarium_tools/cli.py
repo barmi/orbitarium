@@ -41,6 +41,23 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Output directory (e.g. tests/fixtures/work-02/).",
     )
 
+    p_hz = sub.add_parser(
+        "horizons",
+        help="Query JPL Horizons for an SSB-centered state vector.",
+    )
+    p_hz.add_argument(
+        "--body",
+        type=str,
+        required=True,
+        help="NAIF id or major-body name (e.g. 399, mars, 'Earth').",
+    )
+    p_hz.add_argument(
+        "--jd-tdb",
+        type=float,
+        required=True,
+        help="Julian Date in TDB scale (e.g. 2451545.0 for J2000).",
+    )
+
     p_de = sub.add_parser(
         "de440",
         help="DE440 SPK kernel utilities.",
@@ -86,8 +103,39 @@ def _run_fixtures(args: argparse.Namespace) -> int:
         for out_file in (gen_time(args.out), gen_frames(args.out), gen_rotation(args.out)):
             print(f"Generated {out_file}")
         return 0
+    if args.work == 3:
+        from orbitarium_tools.de440 import generate_fixtures as gen_de440
+        from orbitarium_tools.horizons import generate_fixtures as gen_horizons
+
+        print(f"Generated {gen_de440(args.out)}")
+        print(f"Generated {gen_horizons(args.out)}")
+        return 0
     print(f"Work {args.work} fixtures not implemented", file=sys.stderr)
     return 1
+
+
+def _run_horizons(args: argparse.Namespace) -> int:
+    from orbitarium_tools.horizons import cli_describe, query_state
+
+    body_arg: str = args.body
+    try:
+        naif_id = int(body_arg)
+    except ValueError:
+        # Map common name to NAIF id via the catalog
+        from orbitarium_tools.naif import NAIF_CATALOG
+
+        normalized = body_arg.lower().replace(" ", "_")
+        entry = next(
+            (NAIF_CATALOG[k] for k in NAIF_CATALOG if k == normalized),
+            None,
+        )
+        if entry is None:
+            print(f"Unknown body: {body_arg}", file=sys.stderr)
+            return 2
+        naif_id = entry.id
+    result = query_state(naif_id, args.jd_tdb)
+    print(cli_describe(result))
+    return 0
 
 
 def _run_de440(args: argparse.Namespace) -> int:
@@ -123,6 +171,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "fixtures":
         return _run_fixtures(args)
+    if args.command == "horizons":
+        return _run_horizons(args)
     if args.command == "de440":
         return _run_de440(args)
 

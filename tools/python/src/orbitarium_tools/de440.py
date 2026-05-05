@@ -323,10 +323,10 @@ def preprocess(
 def generate_fixtures(out_dir: Path, spk_path: Path | None = None) -> Path:
     """Generate ``de440-states.json`` cross-validation fixture for TS tests.
 
-    Bodies × representative JDs → SSB-centered state vector via spiceypy
-    ``spkezr``. The TS evaluator must match these to within 1 mm / 1 µm/s.
+    Bodies x representative JDs -> SSB-centered state vector via spiceypy
+    ``spkezr``. The TS evaluator must match these to within 1 mm / 1 us/s.
     """
-    import spiceypy as sp
+    import spiceypy as sp  # type: ignore[import-untyped]
 
     out_dir.mkdir(parents=True, exist_ok=True)
 

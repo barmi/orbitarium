@@ -8,12 +8,12 @@
 
 ## 0. 현재 상태 (Status)
 
-| 항목         | 값                                                                                              |
-| ------------ | ----------------------------------------------------------------------------------------------- |
-| 현재 phase   | **P3 완료** ✓ — P4 진입 대기                                                                    |
-| 다음 액션    | **P4 — Horizons Reference (Python)** 진입 — `orbitarium_tools.horizons` astroquery wrapper 작성 |
-| 마지막 갱신  | 2026-05-06                                                                                      |
-| 블로커       | 없음 (CI에서 DE440 preprocess는 P6에서 통합)                                                    |
+| 항목         | 값                                                                                                                  |
+| ------------ | ------------------------------------------------------------------------------------------------------------------- |
+| 현재 phase   | **P4 완료** ✓ — P5 진입 대기                                                                                        |
+| 다음 액션    | **P5 — Dev Demo `/dev/ephemeris`** 진입 — body × 시각 입력 → state vector 표시 + Horizons diff 패널, registry 연결 |
+| 마지막 갱신  | 2026-05-06                                                                                                          |
+| 블로커       | 없음 (CI에서 DE440 preprocess는 P6에서 통합)                                                                        |
 
 ## 1. 진행 체크리스트
 
@@ -23,7 +23,7 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] **P1** — Strategy & Brand Types _(완료 2026-05-05)_
 - [x] **P2** — DE440 Preprocessing (Python) _(완료 2026-05-06)_
 - [x] **P3** — TS Chebyshev Evaluator _(완료 2026-05-06)_
-- [ ] **P4** — Horizons Reference (Python)
+- [x] **P4** — Horizons Reference (Python) _(완료 2026-05-06)_
 - [ ] **P5** — Dev Demo `/dev/ephemeris`
 - [ ] **P6** — Cross-validation & Golden Fixtures (Closeout)
 
@@ -55,6 +55,10 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 20  | Segment 캐시 정책 | **Promise 단위 LRU없음 (Map 그대로 누적)** — chunk 단위 ~수 MB → 14개 합쳐도 25MB | LRU eviction은 메모리 한계 도달 시 의미 — 14 segments * 평균 1.8MB는 항상 인메모리에서 OK. Work 11 폴리시에서 lazy unload 검토. | P3 | 2026-05-06 |
 | 21  | Position diff 비교 방식 | **L_∞ (component-wise max)** — 1 mm 톨러런스 | L2 norm은 sqrt(3) 배 누적 → 30AU(=4.5e12m) 거리에서 IEEE 754 LSB ≈ 1mm/axis × √3 ≈ 1.7mm. axis별 1mm 보장이 더 의미 있고 측정 가능. | P3 | 2026-05-06 |
 | 22  | DE440 binary CI 통합 | **P6 closeout에서 CI 워크플로 추가** | 현재 TS evaluator 테스트는 `describe.skipIf(!dataAvailable)` — public/data/ephemeris/de440/manifest.json 부재 시 스킵. 로컬에서는 `pnpm de440:preprocess` 한 줄 실행. | P3 | 2026-05-06 |
+| 23  | Horizons 단위 변환 | **AU → m (`AU` from `constants.py`), AU/day → m/s (`/86400`)** | refplane='earth' (J2000 mean equator), location='@0' (SSB), light-time off. spiceypy `spkezr` 와 같은 frame. | P4 | 2026-05-06 |
+| 24  | Horizons text precision tolerance | **위치 1 cm, 속도 1 µm/s** — Horizons API 자체 한계 | Horizons 응답이 AU 단위 14-자리 sig fig 텍스트 → 1 AU 거리에서 IEEE 754 LSB ≈ 1cm. 우리 evaluator (P3 < 1mm) vs Horizons 비교는 Horizons API 의 텍스트 한계가 절대 floor. 의미 있는 cross-check은 spiceypy ↔ Horizons 일치 (확인 완료, < 6mm). | P4 | 2026-05-06 |
+| 25  | TS Horizons client | **Work 7로 deferred** | 본 Work는 Python reference 채널만. CORS proxy / browser 캐싱 / asteroid 추가는 Work 7 (Orbits) 에서 본격 도입. CLI `orbitarium-tools horizons` 와 P6 fixture 생성으로 충분. | P4 | 2026-05-06 |
+| 26  | Horizons cache | **astroquery 내장 cache** (HTTP-level, `~/.astropy/cache/`) | 별도 디스크 cache 필요 없음. fixture 재생성 시 자동 활용 → 2번째 실행 빠름. CI는 매 실행 fresh download (캐시 cold) — 작은 grid (30 queries) 라 OK. | P4 | 2026-05-06 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -95,10 +99,11 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 ### P4에서 결정
 
-- [ ] Horizons 출력 단위 변환 (m, m/s)
-- [ ] light-time correction (off / on)
-- [ ] Cache 위치
-- [ ] TS Horizons client (본 Work / Work 7로 deferred)
+- [x] Horizons 출력 단위 변환: **AU → m, AU/day → m/s** (constants.py `AU` 사용) ✓ (#23)
+- [x] light-time correction: **off (geometric)** ✓ (#23)
+- [x] Cache 위치: **astroquery 내장 cache** ✓ (#26)
+- [x] TS Horizons client: **Work 7로 deferred** ✓ (#25)
+- [x] Horizons text precision tolerance: **1 cm 위치 / 1 µm/s 속도** ✓ (#24)
 
 ### P5에서 결정
 
@@ -215,9 +220,31 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 - **L_∞ vs L_2**: 처음 L2 norm 으로 비교 시 Neptune barycenter (30AU = 4.5e12m) 에서 1.008 mm 측정 — IEEE 754 LSB(per-axis) ≈ 1mm × √3 누적. component-wise L_∞ 비교가 본질적으로 의미 있고 IEEE 754 한계 안. 결정 #21 추가.
 - **CI 통합 deferred**: 현재 TS evaluator 테스트는 `describe.skipIf(!dataAvailable)` — CI에서 silent skip. P6 closeout 에서 (1) SPK 커널 캐시 + 다운로드 step (2) `pnpm de440:preprocess` step 추가 + (3) skipIf 제거 또는 `expectDataAvailable()` 강제.
 
-### P4 — Horizons Reference (Python)
+### P4 — Horizons Reference (Python) _(완료 2026-05-06)_
 
-_미시작_
+생성/수정 파일:
+
+- [`tools/python/src/orbitarium_tools/horizons.py`](../../tools/python/src/orbitarium_tools/horizons.py) — `query_state(naif_id, jd_tdb) → HorizonsQueryResult`, `query_states` 배치, `cli_describe`, `generate_fixtures(out_dir)` (10 planets × 3 JDs = 30 entries). astroquery `Horizons` 래핑, refplane='earth' (J2000 mean equator), location='@0' (SSB). 외행성 alias (`PLANET_BODY_ALIASES` 재사용).
+- [`tools/python/src/orbitarium_tools/cli.py`](../../tools/python/src/orbitarium_tools/cli.py) — `horizons --body=<id|name> --jd-tdb=<jd>` 서브커맨드 + name → NAIF lookup. `fixtures --work=3` 분기 추가 (de440 + horizons 모두 생성).
+
+테스트 + fixture:
+
+- [`tests/fixtures/work-03/horizons-states.json`](../../tests/fixtures/work-03/horizons-states.json) — 30 cross-validation 엔트리 (Sun + 9 planet barycenters × J2000/2026-05-05/2150-12-31). `_tolerance_m=1e-2`, `_tolerance_vel_m_s=1e-6`.
+- [`tools/python/tests/test_horizons.py`](../../tools/python/tests/test_horizons.py) — 5 tests: SI 단위 sanity (Earth |r| ~ 1AU), 외행성 alias routing, Horizons ↔ local spiceypy ≤ 1cm/1µm/s, cli_describe 포맷 (alias / no-alias). 네트워크 미가용 시 graceful skip.
+
+검증 결과:
+
+- `uv run ruff check src tests` ✓
+- `uv run mypy src` ✓ — 10 source files
+- `uv run pytest -q` ✓ — **88 tests** (Work 2 75 + P1 4 + P2 8 + P4 5 = 92? — 보니 P3에서 fixture는 TS만 추가. 정확한 카운트는 88 — P3에는 Python 추가 0건이고 P4 +5 한 결과)
+- CLI smoke: `uv run orbitarium-tools horizons --body=mars --jd-tdb=2461165.5008007577` → 정상 출력 (Mars bary alias 표시 포함).
+
+설계 결정 + 발견:
+
+- **Horizons는 DE440 internally**: JPL Horizons는 2020년 이래 DE440 사용 → 우리 local DE440 evaluator 와 본질적으로 동일 ephemeris. 차이는 (1) Horizons의 텍스트 응답이 ~14 sig fig AU → 1 AU 거리에서 mm-cm 정밀도 floor, (2) refplane / location 변환만.
+- **astroquery의 cache**: HTTP-level caching → fixture 재생성 시 두 번째 호출부터 빠름. CI 환경은 cold cache 이지만 30 queries 라 ~수십 초로 충분.
+- **CLI 이름 → NAIF 매핑**: `--body=mars` 같은 입력을 `NAIF_CATALOG` 의 키로 lower+underscore 정규화하여 lookup. 숫자 입력은 NAIF id 직접 사용.
+- **의도적으로 TS Horizons 미구현**: Work 7 진입 시 소행성/혜성/우주선 ephemeris 가 본격 필요해질 때 CORS 프록시 + 캐싱과 함께 구현. Work 3 의 P5 dev demo 는 fixture 기반 비교만 표시.
 
 ### P5 — Dev Demo `/dev/ephemeris`
 
@@ -342,6 +369,7 @@ pnpm fixtures:work-03
 | 2026-05-05 | **P1 완료** — `src/ephemeris/{types,constants,index}.ts` + Python 미러 + 10 단위 테스트. 결정 10건 (#1~#10) 모두 권장값 채택: Chebyshev 직접 평가 / DE440 1900-2150 / 20 entries (Sun + 9 bary + 9 body + Moon) / `{position, velocity}` 분리 객체 / JdTdb 입력 / ICRF (m, m/s) 출력 / 1mm·1µm/s 톨러런스 / `PositionICRF`/`VelocityICRF`/`StateVectorICRF` brand 합성. format/lint/typecheck/test(317)/build/ruff/mypy/pytest(75) 전부 그린. ESLint simple-import-sort 1건 autofix. |
 | 2026-05-06 | **P2 완료** — `orbitarium_tools.de440` (`crop_segment`/`evaluate_segment`/`write_segment_binary`/`preprocess`/`resolve_chain` + `De440Segment`), CLI `de440 preprocess`, `pnpm de440:preprocess`, jplephem 2.24 의존성. 결정 8건 (#11~#18): jplephem 라이브러리 / 14 native segments + 6 alias / Float64 LE 헤더 `<iiiidd>` / native intervals / 무압축 / `public/data/ephemeris/de440/` build-time 생성. 단위 테스트 8건 추가 (총 83). 14 segments × 4 JDs 비교: jplephem max diff < 0.49 mm / 0.007 µm/s, spiceypy SSB chain max diff < 0.1 mm / 4 µm/s — 모두 1mm/1µm/s 톨러런스 통과. ruff/mypy/pytest 모두 그린. |
 | 2026-05-06 | **P3 완료** — TS Chebyshev evaluator + DE440 binary loader. `src/ephemeris/{chebyshev,de440Format,de440Evaluator}.ts` + `de440-states.json` fixture (160 entries). 결정 4건 (#19~#22): async Promise + 주입 가능한 loader / Promise Map 캐시 / L_∞ component-wise 비교 / CI 통합은 P6 deferred. 단위 테스트 17건 추가 (총 334): chebyshev 9 + format parse 5 + evaluator 4 (3 conditional on binary). spiceypy fixtures cross-check max < 1 mm / 1 µm/s component-wise (Neptune bary at 30AU = IEEE 754 한계). format/lint/typecheck/test/build/e2e 그린. |
+| 2026-05-06 | **P4 완료** — Horizons reference (Python only). `orbitarium_tools.horizons` (`query_state` / `query_states` / `cli_describe` / `generate_fixtures`), CLI `horizons --body=... --jd-tdb=...` + `fixtures --work=3` (de440 + horizons). `tests/fixtures/work-03/horizons-states.json` (30 entries). 결정 4건 (#23~#26): AU→m 단위 변환 / refplane='earth' + light-time off / Horizons text precision = 1cm tolerance / TS Horizons client 은 Work 7 deferred / astroquery 내장 cache. 단위 테스트 5건 추가 (총 88). Horizons ↔ spiceypy live cross-check ≤ 6mm / 1µm/s 통과. ruff/mypy/pytest 그린. |
 
 ---
 
