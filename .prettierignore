@@ -1,0 +1,13 @@
+dist
+build
+coverage
+node_modules
+pnpm-lock.yaml
+public/data
+tools/python
+.idea
+*.tsbuildinfo
+
+# Plan/handoff docs use intentionally hand-tuned bilingual formatting;
+# Prettier reflows tables/lists in unwanted ways. Architecture docs may be formatted.
+docs/plan
