@@ -10,8 +10,8 @@
 
 | 항목         | 값                                                                                                            |
 | ------------ | ------------------------------------------------------------------------------------------------------------- |
-| 현재 phase   | **P4 완료** ✓ — P5 진입 대기                                                                                  |
-| 다음 액션    | **P5 — Dev Demo `/dev/scale`** 진입 — 정책 picker + 1D 행성 라이너업 + 정책 곡선 + adaptive zoom 슬라이더 |
+| 현재 phase   | **P5 완료** ✓ — P6 진입 대기                                                                                  |
+| 다음 액션    | **P6 — Cross-validation & Golden Fixtures (Closeout)** 진입 — fixture/doc closeout + 전체 검증              |
 | 마지막 갱신  | 2026-05-06                                                                                                    |
 | 블로커       | 없음                                                                                                          |
 
@@ -24,7 +24,7 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] **P2** — Distance Scale Functions _(완료 2026-05-06)_
 - [x] **P3** — Body Size Scale Functions _(완료 2026-05-06)_
 - [x] **P4** — Adaptive Scale Interface _(완료 2026-05-06)_
-- [ ] **P5** — Dev Demo `/dev/scale`
+- [x] **P5** — Dev Demo `/dev/scale` _(완료 2026-05-06)_
 - [ ] **P6** — Cross-validation & Golden Fixtures (Closeout)
 
 > Work 4 마감 = 모든 phase [x] + [plan §1 Definition of Done](work-04-scale.md#1-결과-정의-definition-of-done) 모든 항목 충족.
@@ -55,6 +55,9 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 20  | Adaptive lerp 함수 | **smoothstep (cubic Hermite, `t² (3 - 2t)`)** | linear 보다 줌 전환이 자연스러움 (양 끝점에서 도함수 0). edge0==edge1 케이스는 step function 으로 fallback. | P4 | 2026-05-06 |
 | 21  | Adaptive inverse 방식 | **binary search (bisection)** with bracket `[min, max]` of 두 base inverse | 정책 lerp 가 monotonic 합성이라 두 base inverse 사이에 정확 root 가 존재. value tol = 1e-15, **bracket tol = 1e-6 m (1µm)** — scene tol 만 쓰면 lerp slope 0.5 시 input 에서 0.3m 오차 발생. max 200 iter (실제 ~50). | P4 | 2026-05-06 |
 | 22  | t==0 / t==1 short-circuit | **base policy inverse 직접 호출** — bisect 우회 | 양 끝 zoom 에서는 정확한 base 정책 inverse 사용 (LSB 한계 외 불일치 없음). 0 < t < 1 만 bisect. | P4 | 2026-05-06 |
+| 23  | Dev Demo 구조 | **단일 페이지 + 4 섹션** (`PolicyPicker`, `PlanetLineup1D`, `PolicyCurves`, `RoundTripPanel`) | P1~P4 산출물을 한 화면에서 동시에 확인 가능. 탭 전환 없이 정책 선택 → 라인업/곡선/round-trip 변화를 바로 비교. | P5 | 2026-05-06 |
+| 24  | 1D 라이너업 렌더링 | **SVG** | 축 tick, body marker, tooltip, 테이블 동시 제공이 간단. Canvas 대비 e2e/접근성 확인도 쉬움. | P5 | 2026-05-06 |
+| 25  | Adaptive zoom demo wiring | **active policy wrapper**: 거리 `selected -> logarithmic`, 크기 `uniform -> selected` 를 `ZoomLevel` 로 보간 | P4 interface 가 실제 UI 변화로 드러나도록 slider 값을 라인업/곡선/round-trip 계산 경로에 직접 연결. Work 9 카메라 wiring 전의 기능 검증용. | P5 | 2026-05-06 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -96,9 +99,9 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 ### P5에서 결정
 
-- [ ] Dev Demo 구조 (단일 페이지 / 탭)
-- [ ] 1D 라이너업 렌더링 (SVG / Canvas)
-- [ ] 정책 곡선 렌더링 옵션 (log-log 토글)
+- [x] Dev Demo 구조: **단일 페이지 + 4 섹션** ✓ (#23)
+- [x] 1D 라이너업 렌더링: **SVG** ✓ (#24)
+- [x] 정책 곡선 렌더링 옵션: **SVG active curve, x=AU log scale / y=scene linear** ✓ (#25)
 
 ### P6에서 결정
 
@@ -236,7 +239,36 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 
 ### P5 — Dev Demo `/dev/scale`
 
-_미시작_
+생성/수정 파일:
+
+- [`src/dev/scale/ScaleDemo.tsx`](../../src/dev/scale/ScaleDemo.tsx) — Work 4 dev page shell. 정책 picker 상태, DE440 web evaluator, P4 adaptive active policy wrapper 연결. 거리 active policy 는 `selected -> logarithmic`, 크기 active policy 는 `uniform -> selected` 를 현재 `ZoomLevel` 로 보간.
+- [`src/dev/scale/PolicyPicker.tsx`](../../src/dev/scale/PolicyPicker.tsx) — 거리/크기 정책 radio + `log10(AU)` adaptive zoom slider.
+- [`src/dev/scale/PlanetLineup1D.tsx`](../../src/dev/scale/PlanetLineup1D.tsx) — 현재 시각 DE440 10-body SSB 거리 → active distance policy/size policy 적용. SVG 1D 라인업 + scene/AU axis ticks + 테이블.
+- [`src/dev/scale/PolicyCurves.tsx`](../../src/dev/scale/PolicyCurves.tsx) — active distance policy 곡선 SVG (AU log x-axis, scene y-axis).
+- [`src/dev/scale/RoundTripPanel.tsx`](../../src/dev/scale/RoundTripPanel.tsx) — 임의 AU 입력의 forward/inverse/diff sanity.
+- [`src/dev/scale/scale.css`](../../src/dev/scale/scale.css) — Work 4 dev page controls/SVG 스타일.
+- [`src/dev/registry.ts`](../../src/dev/registry.ts) — Work 4 entry `Component: lazy(() => import('./scale/ScaleDemo'))` 연결.
+- [`src/dev/dev.css`](../../src/dev/dev.css) — `scale.css` import 추가.
+
+테스트:
+
+- [`tests/e2e/dev-scale.spec.ts`](../../tests/e2e/dev-scale.spec.ts) — 5 specs: 페이지/4패널 렌더, round-trip diff, zoom slider가 readout+forward 값 갱신, DE440 data 있을 때 10-body lineup, distance policy 변경 시 curve label 갱신.
+- [`tests/e2e/dev-index.spec.ts`](../../tests/e2e/dev-index.spec.ts) — Work 4 카드 available 전환 기대값 갱신 (available 3 / placeholder 8).
+
+검증 결과:
+
+- `pnpm format:check` ✓
+- `pnpm typecheck` ✓
+- `pnpm lint` ✓
+- `pnpm test` ✓ — **395 tests**
+- `pnpm build` ✓
+- `pnpm test:e2e` ✓ — **21 tests** (P5 targeted: 5 tests)
+
+설계 결정 + 발견:
+
+- **zoom slider 실제 wiring**: 초기 구현은 readout 만 바뀌고 라인업 계산에는 영향이 없었다. P5 마감에서 active policy wrapper 를 추가해 라인업/곡선/round-trip 모두 zoom 변화에 반응하도록 연결.
+- **라이너업 축**: SVG 하단에 scene tick + active inverse 로 계산한 AU tick 을 함께 표시. 실제 수치는 table 에도 유지.
+- **DE440 data fallback**: manifest 로드 실패 시 기존 Work 3 web loader 패턴처럼 에러를 표시하고 evaluator 의존 UI는 비운다. e2e 의 lineup spec 은 manifest 존재 시 실행.
 
 ### P6 — Cross-validation & Golden Fixtures (Closeout)
 
@@ -246,13 +278,12 @@ _미시작_
 
 > 새 세션이나 다른 작업자가 이어 받을 때 여기를 먼저 본다.
 
-### 즉시 액션: P1 — Strategy & Brand Types 진입
+### 즉시 액션: P6 — Cross-validation & Golden Fixtures (Closeout) 진입
 
-1. [plan §3 P1](work-04-scale.md#phase-1--strategy--brand-types) 의 결정 항목을 먼저 확정 → §2 결정 로그에 기록
-   - 권장값은 [plan §5](work-04-scale.md#5-결정-권장값-recommendations) 참고
-2. `src/scale/{types,constants,index}.ts` 작성 — Brand types + 행성 반지름 데이터 + 톨러런스
-3. `tools/python/src/orbitarium_tools/scaling.py` placeholder (의미 docstring만)
-4. `tests/unit/scale/types.test.ts` — type-only assertions + 상수 검증
+1. [plan §3 P6](work-04-scale.md#phase-6--cross-validation--golden-fixtures-closeout) 의 fixture/doc closeout 항목 확인.
+2. `tests/fixtures/work-04/README.md` 와 `docs/architecture/scale-conventions.md` 작성.
+3. `pnpm fixtures:work-04` 로 distance/size fixture 재생성 경로 검증. adaptive fixture 는 P6에서 추가 여부 결정.
+4. 전체 검증: `pnpm format:check / lint / typecheck / test / build / test:e2e`, Python `ruff / mypy / pytest`.
 
 ### Work 2/3 산출물 활용 (Work 4 시작 전 점검)
 
@@ -298,7 +329,7 @@ Python 모듈:
 
 Dev 라우트:
   src/dev/registry.ts 의 entry 에 Component 채우면 자동 라우트화
-  Work 4 entry slug: 'scale' (placeholder 이미 있음)
+  Work 4 entry slug: 'scale' (P5에서 available 전환 완료)
 
 CI:
   .github/workflows/ci.yml 자동 커버 (Work 3 P6 에서 DE440 캐시 통합 완료)
@@ -350,6 +381,7 @@ pnpm fixtures:work-04
 | 2026-05-06 | **P2 완료** — `src/scale/{distancePolicies,position}.ts` + Python 미러 + `tests/fixtures/work-04/distance-policies.json` + `pnpm fixtures:work-04` + CLI Work 4 분기. 결정 5건 (#10~#14): break points [0.4, 5, 50] AU → [0.4, 1.5, 3.0] scene / Linear baseline + Logarithmic / r0=1AU / 30 AU 까지 1mm 절대 round-trip + relative 1e-14 / 방향 보존 + 0 벡터 가드. 단위 테스트 20건 추가 (TS 19 + Python 7). 모든 정책 monotonic + cosine 1.0 + fixture cross-check 그린. format/lint/typecheck/test(362)/build/ruff/mypy/pytest(99) 그린. |
 | 2026-05-06 | **P3 완료** — `src/scale/sizePolicies.ts` + Python 미러 + `tests/fixtures/work-04/size-policies.json` (3 정책 × 11 bodies). 결정 4건 (#15~#18): Uniform baseline + MinMaxClamp / LogMag 공식 base + k*log10(1+r/r0) (r0=Earth, k=0.5, base=0.005) / MinMaxClamp [0.005, 5] scene log10 normalize / 카탈로그 11 entries 1mm round-trip. 단위 테스트 18건 추가 (TS 14 + Python 4). format/lint/typecheck/test(376)/build/ruff/mypy/pytest(103) 그린. |
 | 2026-05-06 | **P4 완료** — `src/scale/adaptive.ts`: `ZoomLevel` (log10 AU) brand, `ZOOM_INNER = -0.4 / ZOOM_OUTER = 1.7`, smoothstep cubic Hermite, `lerpDistancePolicy / lerpSizePolicy` 두 base 정책 줌 보간, t=0/t=1 short-circuit + 0<t<1 binary-search inverse (value tol 1e-15, bracket tol 1µm). 결정 4건 (#19~#22) 채택. 단위 테스트 19건 추가 (총 395). bisect bracket tol 트랩 발견 (value-only tol 시 lerp slope 0.5 → input 0.3 m 오차) → bracket tol 추가로 해결. format/lint/typecheck/test/build 그린. |
+| 2026-05-06 | **P5 완료** — `/dev/scale` 단일 페이지 dev demo. `src/dev/scale/{ScaleDemo,PolicyPicker,PlanetLineup1D,PolicyCurves,RoundTripPanel}.tsx` + `scale.css`, registry/dev.css 연결. 정책 picker + adaptive zoom slider, DE440 현재 시각 10-body SVG lineup/table, active distance curve, round-trip sanity 구현. 결정 3건 (#23~#25) 채택. e2e 5건 추가/갱신, dev index Work 4 available 전환. format/lint/typecheck/test(395)/build/e2e(21) 그린. |
 
 ---
 

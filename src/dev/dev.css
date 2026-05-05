@@ -1,5 +1,6 @@
 @import './astro/astro.css';
 @import './ephemeris/ephemeris.css';
+@import './scale/scale.css';
 
 .dev-index {
   min-height: 100vh;

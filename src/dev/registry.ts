@@ -28,6 +28,7 @@ export const devPages: DevPageEntry[] = [
     slug: 'scale',
     title: 'Scale System',
     summary: '거리/크기 분리 스케일 정책 (이중 선형 / 구간별 / 대수) 비교',
+    Component: lazy(() => import('./scale/ScaleDemo')),
   },
   {
     workNumber: 5,

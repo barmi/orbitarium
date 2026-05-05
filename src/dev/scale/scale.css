@@ -1,0 +1,42 @@
+.scale-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: end;
+}
+
+.scale-zoom-slider {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.scale-zoom-slider span {
+  color: #a7b0ad;
+  font-size: 0.78rem;
+}
+
+.scale-zoom-slider strong {
+  color: #ffd166;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+.scale-zoom-slider input[type='range'] {
+  width: 100%;
+  accent-color: #8fb8ff;
+}
+
+.scale-lineup-svg,
+.scale-curve-svg {
+  width: 100%;
+  height: auto;
+  background: #050807;
+  border: 1px solid #1f2826;
+  border-radius: 6px;
+  margin-top: 0.6rem;
+}
+
+@media (max-width: 780px) {
+  .scale-controls {
+    grid-template-columns: 1fr;
+  }
+}
