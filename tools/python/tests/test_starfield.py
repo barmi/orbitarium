@@ -135,3 +135,113 @@ def test_magnitude_to_bucket_monotonic_for_typical_stars() -> None:
     polaris = magnitude_to_bucket(1.97)
     sun_like = magnitude_to_bucket(4.83)
     assert sirius < vega < polaris < sun_like
+
+
+from orbitarium_tools.starfield import (  # noqa: E402
+    HIPPARCOS_EPOCH_TO_J2000_YEARS,
+    StarRecord,
+    apply_proper_motion,
+    bv_to_kelvin,
+    deserialize_starfield_bin,
+    radec_to_unit_vector,
+    serialize_starfield_bin,
+    stars_to_starfield,
+)
+
+
+def test_bv_to_kelvin_sun_like_5840k() -> None:
+    assert 5700 < bv_to_kelvin(0.65) < 5900
+
+
+def test_bv_to_kelvin_nan_or_extreme_falls_back() -> None:
+    import math as _math
+
+    assert bv_to_kelvin(_math.nan) == FALLBACK_COLOR_TEMP_K
+    assert bv_to_kelvin(-1.0) == FALLBACK_COLOR_TEMP_K
+    assert bv_to_kelvin(3.0) == FALLBACK_COLOR_TEMP_K
+
+
+def test_apply_proper_motion_zero_pm_passthrough() -> None:
+    assert apply_proper_motion(180.0, 30.0, 0.0, 0.0, 100.0) == (180.0, 30.0)
+
+
+def test_apply_proper_motion_dec_linear() -> None:
+    _, dec = apply_proper_motion(0.0, 0.0, 0.0, 1000.0, 1.0)
+    assert abs(dec - 1000.0 / 3_600_000.0) < 1e-12
+
+
+def test_hipparcos_epoch_delta_8_75_years() -> None:
+    assert HIPPARCOS_EPOCH_TO_J2000_YEARS == 8.75
+
+
+def test_radec_to_unit_vector_axis_conventions() -> None:
+    x, y, z = radec_to_unit_vector(0.0, 0.0)
+    assert abs(x - 1.0) < 1e-12 and abs(y) < 1e-12 and abs(z) < 1e-12
+    _, _, zn = radec_to_unit_vector(0.0, 90.0)
+    assert abs(zn - 1.0) < 1e-12
+
+
+def test_radec_to_unit_vector_norm_is_one() -> None:
+    import math as _math
+
+    for ra in (10.0, 90.0, 180.0, 270.0):
+        for dec in (-60.0, 0.0, 30.0, 80.0):
+            x, y, z = radec_to_unit_vector(ra, dec)
+            assert abs(_math.sqrt(x * x + y * y + z * z) - 1.0) < 1e-12
+
+
+def test_serialize_deserialize_round_trip() -> None:
+    stars = [
+        StarRecord(
+            hip=1,
+            ra_deg=10.0,
+            dec_deg=20.0,
+            vmag=3.0,
+            bv=0.5,
+            pmra_mas_per_yr=0.0,
+            pmdec_mas_per_yr=0.0,
+        ),
+        StarRecord(
+            hip=2,
+            ra_deg=120.0,
+            dec_deg=-45.0,
+            vmag=1.0,
+            bv=-0.2,
+            pmra_mas_per_yr=10.0,
+            pmdec_mas_per_yr=-5.0,
+        ),
+    ]
+    data = stars_to_starfield(stars, scene_radius=STARFIELD_SCENE_RADIUS)
+    blob = serialize_starfield_bin(data)
+    decoded = deserialize_starfield_bin(blob)
+    assert decoded.scene_radius == STARFIELD_SCENE_RADIUS
+    assert len(decoded.positions) == len(data.positions)
+    for a, b in zip(decoded.positions, data.positions, strict=True):
+        for av, bv in zip(a, b, strict=True):
+            assert abs(av - bv) < max(1.0, abs(bv) * 1e-6)
+    assert decoded.color_idx == data.color_idx
+    assert decoded.mag_bucket == data.mag_bucket
+
+
+def test_serialize_rejects_length_mismatch() -> None:
+    import pytest as _pytest
+
+    from orbitarium_tools.starfield import StarfieldData
+
+    bad = StarfieldData(
+        scene_radius=STARFIELD_SCENE_RADIUS,
+        positions=[(0.0, 0.0, 0.0)],
+        color_idx=[1, 2],
+        mag_bucket=[3],
+    )
+    with _pytest.raises(ValueError, match="length mismatch"):
+        serialize_starfield_bin(bad)
+
+
+def test_deserialize_rejects_bad_magic() -> None:
+    import pytest as _pytest
+
+    bad = bytearray(STARFIELD_HEADER_BYTES + 14)
+    bad[0:4] = b"BAD!"
+    with _pytest.raises(ValueError, match="magic"):
+        deserialize_starfield_bin(bytes(bad))

@@ -91,6 +91,35 @@ def _build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Path to DE440 SPK; if missing, downloaded into a default cache.",
     )
+
+    p_sf = sub.add_parser(
+        "starfield",
+        help="Hipparcos starfield utilities.",
+    )
+    sf_sub = p_sf.add_subparsers(dest="sf_command", metavar="<starfield-command>")
+    p_sf_pre = sf_sub.add_parser(
+        "preprocess",
+        help="Download Hipparcos and serialize a starfield binary for the browser.",
+    )
+    p_sf_pre.add_argument(
+        "--catalog",
+        type=str,
+        default="hipparcos",
+        choices=["hipparcos"],
+        help="Source catalog (Tycho-2 deferred to Work 11).",
+    )
+    p_sf_pre.add_argument(
+        "--vmag",
+        type=float,
+        default=6.0,
+        help="Visual magnitude cutoff (default 6.0 ~ 9 100 stars).",
+    )
+    p_sf_pre.add_argument(
+        "--out",
+        type=Path,
+        required=True,
+        help="Output bin path (e.g. public/data/starfield/hipparcos-vmag6.bin).",
+    )
     return parser
 
 
@@ -114,6 +143,14 @@ def _run_fixtures(args: argparse.Namespace) -> int:
         from orbitarium_tools.scaling import generate_fixtures as gen_scaling
 
         for out_file in gen_scaling(args.out):
+            print(f"Generated {out_file}")
+        return 0
+    if args.work == 5:
+        from orbitarium_tools.render_anchors import generate_anchor_fixtures
+        from orbitarium_tools.starfield import generate_fixtures as gen_starfield
+
+        print(f"Generated {generate_anchor_fixtures(args.out)}")
+        for out_file in gen_starfield(args.out):
             print(f"Generated {out_file}")
         return 0
     print(f"Work {args.work} fixtures not implemented", file=sys.stderr)
@@ -142,6 +179,17 @@ def _run_horizons(args: argparse.Namespace) -> int:
     result = query_state(naif_id, args.jd_tdb)
     print(cli_describe(result))
     return 0
+
+
+def _run_starfield(args: argparse.Namespace) -> int:
+    if args.sf_command == "preprocess":
+        from orbitarium_tools.starfield import preprocess
+
+        out_path = preprocess(args.out, vmag_cutoff=args.vmag)
+        print(f"Wrote {out_path} ({out_path.stat().st_size} bytes)")
+        return 0
+    print("usage: orbitarium-tools starfield preprocess ...", file=sys.stderr)
+    return 1
 
 
 def _run_de440(args: argparse.Namespace) -> int:
@@ -181,6 +229,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run_horizons(args)
     if args.command == "de440":
         return _run_de440(args)
+    if args.command == "starfield":
+        return _run_starfield(args)
 
     parser.print_help()
     return 0

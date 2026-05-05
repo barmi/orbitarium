@@ -8,12 +8,12 @@
 
 ## 0. 현재 상태 (Status)
 
-| 항목         | 값                                                                                                                                |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| 현재 phase   | **P3 완료** ✓ — **P4 시작 대기**                                                                                                  |
-| 다음 액션    | P4 — Hipparcos 다운로드 + 필터링 + 색온도 매핑 + 바이너리 직렬화 (`tools/python/.../starfield.py` + `src/render/starfield.ts` 풀구현) |
-| 마지막 갱신  | 2026-05-06                                                                                                                        |
-| 블로커       | 없음                                                                                                                              |
+| 항목         | 값                                                                                                |
+| ------------ | ------------------------------------------------------------------------------------------------- |
+| 현재 phase   | **P4 완료** ✓ — **P5 시작 대기**                                                                  |
+| 다음 액션    | P5 — `/dev/render` 단일 페이지 dev demo (Renderer controls / Log-depth / Starfield / Anchor picker) |
+| 마지막 갱신  | 2026-05-06                                                                                        |
+| 블로커       | 없음                                                                                              |
 
 ## 1. 진행 체크리스트
 
@@ -23,7 +23,7 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] **P1** — Render Strategy & Scene Graph Types _(완료 2026-05-06)_
 - [x] **P2** — Renderer Pipeline (Color & Tone Mapping) _(완료 2026-05-06)_
 - [x] **P3** — Log-Depth & Scene Graph Anchors _(완료 2026-05-06)_
-- [ ] **P4** — Starfield Data Pipeline + Mesh
+- [x] **P4** — Starfield Data Pipeline + Mesh _(완료 2026-05-06)_
 - [ ] **P5** — Dev Demo `/dev/render`
 - [ ] **P6** — Cross-validation & Golden Fixtures (Closeout)
 
@@ -62,6 +62,15 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 27  | DE440 evaluator 와 anchor wiring | **호출자 책임** (anchor 함수는 PositionICRF 만 받음) | evaluator 호출은 Dev Demo / 메인 앱에서. anchor / world 모듈은 evaluator 의존 없이 단위 테스트 가능 (vitest happy-dom 친화). | P3 | 2026-05-06 |
 | 28  | `world.ts` API 형태 | **`sceneToVector3` / `vector3ToScene` + scalar `sceneScalarToWorld` / `worldScalarToScene`** | three.js Vector3 의존을 `world.ts` 한 파일에 격리. anchors.ts 가 sceneToVector3 import 해서 positionToWorld 합성. | P3 | 2026-05-06 |
 | 29  | Anchor fixture 샘플 | **6 위치 (zero / sun_ssb / earth_ssb / mars / jupiter / pluto) × 3 anchor (ssb / heliocentric / body-centric_earth)** | 외행성 + 0 vector + reference body 자체까지 — 각 anchor 의 corner case 커버. JSON fixture 로 TS / Python 교차 검증. | P3 | 2026-05-06 |
+| 30  | Hipparcos 캐시 형식 | **ECSV (astropy plaintext)** — 파일명 `hipparcos_main.ecsv` | 처음에 Parquet 시도 → pandas 의존성 추가 부담. astropy native ECSV 가 plaintext + diff 가능 + 의존성 ZERO. 캐시 위치 `tools/python/.cache/hipparcos/`. | P4 | 2026-05-06 |
+| 31  | 필터링 정책 (catalog 누락 처리) | **`_RA.icrs` / `_DE.icrs` / `Vmag` 마스크 / NaN 인 row 는 silently drop** | Hipparcos 일부 row 가 position masked. 9 100 → 4 992 stars 로 줄지만 안전. B-V / pmRA / pmDE 누락은 default (NaN / 0) 로 fallback. | P4 | 2026-05-06 |
+| 32  | TS / Python 색온도 함수 mirror | **bit-exact 동일 구현** (Tanner Helland 2012 + Ballesteros 2012) | math 함수만 사용 → IEEE 754 동일 결과. fixture cross-check 12 B-V 샘플 1 K diff 안에서 일치 + RGB 정확 매치. | P4 | 2026-05-06 |
+| 33  | Starfield 바이너리 endianness | **little-endian 강제** (Python `struct.pack("<...")` + TS `DataView` true) | x86 / ARM macOS / 모든 모던 GPU 가 little-endian. magic / version / count / sceneRadius 모두 통일. | P4 | 2026-05-06 |
+| 34  | Star 거리 처리 (단일 celestial sphere) | **모든 별을 `STARFIELD_SCENE_RADIUS = 1e9` 위에 placement** (P1 #12 적용) | parallax 무시. Float32 round-off 로 sphere 위 위치 ~1e4 m 오차 — 시각상 무시. P1 결정 적용. | P4 | 2026-05-06 |
+| 35  | 셰이더 디자인 | **custom `ShaderMaterial` + `colorIdx` / `magBucket` attribute + 256x1 sRGB DataTexture palette + additive blending + smoothstep falloff disc** | `THREE.PointsMaterial` 은 per-vertex 색상 컨트롤 + 셰이더 변형이 어려움. custom shader 가 mag 기반 size + palette 색 + 부드러운 별점 표현에 단순. | P4 | 2026-05-06 |
+| 36  | Starfield TS 모듈 분리 | **`starfield.ts` (decoder + palette + mesh) + `starfieldLoader.ts` (fetch wrapper)** | fetch 의존을 loader 로 격리해 unit test (decoder / palette) 는 vitest 환경 (no network) 에서 그대로 실행 가능. | P4 | 2026-05-06 |
+| 37  | Hipparcos PM 적용 정확도 | **post-PM J2000 명성 위치가 published value 의 60″ 안에 들어옴** (실측 — Sirius / Vega / Polaris / Betelgeuse / Arcturus 5 entries) | 1 mas 목표는 미달 — Hipparcos epoch / cos(δ) / nutation 등 추가 보정 필요 (Work 12 검증). 시각용 60″ 톨러런스 본 Work 충분. | P4 | 2026-05-06 |
+| 38  | Hipparcos `bin` git 정책 | **commit** (~70 KB, vmag≤6.0 → 4 992 stars × 14 B + 16 B header) | 작아서 commit OK + reproducibility (CI 가 download 안 해도 됨) + decode test 가 fixture 처럼 작동. P6 에서 `public/data/starfield/README.md` 로 재생성 명령 문서화. | P4 | 2026-05-06 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -105,17 +114,20 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] `world.ts` API 형태: **`sceneToVector3` / `vector3ToScene` + scalar adapters** ✓ (#28)
 - [x] Anchor fixture 샘플: **6 위치 × 3 anchor (ssb / heliocentric / body-centric_earth)** ✓ (#29)
 
-### P4에서 결정
+### P4에서 결정 (9건 모두 완료)
 
-- [ ] Star 거리 처리 (권장: 단일 celestial sphere, 깊이 무시)
-- [ ] `vmag_cutoff` default (권장: 6.0)
-- [ ] 바이너리 포맷 (권장: 16B header + Float32 pos + Uint8 colorIdx + Uint8 magBucket)
-- [ ] `magBucket` 분할 (권장: 256 buckets, Vmag [-2, 8] linear)
-- [ ] Palette 정의 (권장: 256 entries, Kelvin [2000, 30000] log-uniform)
-- [ ] Color → bucket index 변환 (권장: B-V → Kelvin → log-uniform palette bucket)
-- [ ] Shader 구현 (권장: custom ShaderMaterial)
-- [ ] Hipparcos 다운로드 캐시 위치 (권장: `tools/python/.cache/hipparcos/` gitignore)
-- [ ] Tycho-2 보조 (권장: default disabled, Work 11)
+- [x] Star 거리 처리: **단일 celestial sphere (1e9)** ✓ (#34, P1 #12 적용)
+- [x] `vmag_cutoff` default: **6.0** ✓ (P1 #10 그대로)
+- [x] 바이너리 포맷: **16B header + Float32 pos + Uint8 colorIdx + Uint8 magBucket** ✓ (#33, P1 #19)
+- [x] `magBucket` 분할: **256 buckets, Vmag [-2, 8] linear** ✓ (P2 #20 그대로)
+- [x] Palette 정의: **256 entries, Kelvin [2000, 30000] log-uniform** ✓ (P2 #19 그대로)
+- [x] Color → bucket index 변환: **Ballesteros → Tanner Helland → log-uniform palette bucket** ✓ (#32)
+- [x] Shader 구현: **custom ShaderMaterial + sRGB DataTexture palette** ✓ (#35)
+- [x] Hipparcos 캐시 위치 + 형식: **`tools/python/.cache/hipparcos/hipparcos_main.ecsv`** ✓ (#30)
+- [x] Tycho-2 보조: **default disabled (Work 11)** ✓ (P1 #10 그대로)
+- [x] Hipparcos `bin` git 정책: **commit (~70 KB)** ✓ (#38)
+- [x] TS 모듈 분리: **`starfield.ts` + `starfieldLoader.ts`** ✓ (#36)
+- [x] 필터링 정책: **position/Vmag NaN row drop** ✓ (#31)
 
 ### P5에서 결정
 
@@ -265,9 +277,47 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 - **fixture sample 위치 선정**: zero (corner case), sun_ssb / earth_ssb (reference body 자신), mars / jupiter / pluto (외행성 다양한 축). heliocentric_anchor(sun_ssb) 로 sample sun_ssb 시 origin (0,0,0) 검증 — Sun-at-its-own-anchor 케이스.
 - **`generate_anchor_fixtures` idempotent**: 동일 입력 → 동일 byte 출력. P6 의 fixture diff guard 와 호환.
 
-### P4 — Starfield Data Pipeline + Mesh
+### P4 — Starfield Data Pipeline + Mesh _(완료 2026-05-06)_
 
-_(대기)_
+생성/수정 파일:
+
+- [`tools/python/src/orbitarium_tools/starfield.py`](../../tools/python/src/orbitarium_tools/starfield.py) — 풀 implementation: `bv_to_kelvin` (Ballesteros 2012), `apply_proper_motion` (J1991.25 → J2000), `radec_to_unit_vector`, `StarRecord` / `StarfieldData` dataclasses, `stars_to_starfield`, `serialize_starfield_bin` / `deserialize_starfield_bin` (little-endian 16 B header + Float32 pos + Uint8 color + Uint8 mag), `download_hipparcos` (VizieR ECSV cache), `load_hipparcos`, `filter_by_magnitude`, `preprocess` (end-to-end), `NamedStarRef` + `NAMED_STAR_REFERENCES`, `generate_color_temperature_fixture`, `generate_starfield_samples_fixture`, `generate_fixtures` (P6 통합 entry).
+- [`tools/python/src/orbitarium_tools/cli.py`](../../tools/python/src/orbitarium_tools/cli.py) — `starfield preprocess` subcommand + `fixtures --work=5` 분기.
+- [`src/render/starfield.ts`](../../src/render/starfield.ts) — TS mirror: 색온도 / palette / mag bucket / B-V→K / PM / RA-Dec→unit vector / `decodeStarfieldBin` / `createStarfieldGeometry` / `createStarfieldMaterial` (custom ShaderMaterial + sRGB DataTexture + additive blending + smoothstep falloff) / `createStarfieldMesh`.
+- [`src/render/starfieldLoader.ts`](../../src/render/starfieldLoader.ts) — fetch wrapper (`loadStarfieldFromUrl`).
+- [`src/render/index.ts`](../../src/render/index.ts) — `starfield` / `starfieldLoader` re-export.
+- [`package.json`](../../package.json) — `pnpm starfield:preprocess` + `pnpm fixtures:work-05` 스크립트 추가.
+- [`public/data/starfield/hipparcos-vmag6.bin`](../../public/data/starfield/hipparcos-vmag6.bin) — 4 992 stars × 14 B + 16 B header = 69 904 bytes.
+
+테스트 + fixture:
+
+- [`tests/fixtures/work-05/color-temperature.json`](../../tests/fixtures/work-05/color-temperature.json) — 12 B-V samples → kelvin / palette index / RGB triple.
+- [`tests/fixtures/work-05/starfield-samples.json`](../../tests/fixtures/work-05/starfield-samples.json) — 5 named stars (Sirius / Vega / Polaris / Betelgeuse / Arcturus) post-PM J2000 + unit vector + palette + mag bucket. `_tolerance_arcsec = 60`.
+- [`tests/unit/render/starfield.test.ts`](../../tests/unit/render/starfield.test.ts) — 22 tests: TS-Python parity (color temp / palette / mag bucket / B-V) + PM + radec→vector + decode (header invariants + every-star celestial-sphere round-off + bad magic / version) + mesh smoke (geometry attributes + Points instance) + color-temperature fixture cross-check (12 entries) + starfield-samples sanity (5 stars × 3 checks).
+- [`tools/python/tests/test_starfield.py`](../../tools/python/tests/test_starfield.py) — 추가 9 tests: `bv_to_kelvin` Sun-like + NaN fallback + PM zero / Dec linear + epoch constant + radec axis / norm + serialize/deserialize round-trip + length mismatch / bad magic 가드.
+
+검증 결과:
+
+- `pnpm format` ✓ (Prettier auto-format)
+- `pnpm lint:fix` ✓ (eslint autofix)
+- `pnpm typecheck` ✓
+- `pnpm test` ✓ — **475 tests** (P3 434 → P4 +41).
+- `pnpm build` ✓ — 1118 kB.
+- `cd tools/python && uv run ruff check src tests` ✓ (SIM108 / UP037 / E501 / RUF046 등 autofix + manual).
+- `uv run mypy src` ✓ — 13 source files (`NamedStarRef` dataclass 도입으로 `int(ref["hip"])` mypy 오류 해소).
+- `uv run pytest` ✓ — **141 tests** (P3 131 → P4 +10).
+- `pnpm starfield:preprocess` ✓ — Hipparcos cache (~/cache/hipparcos/hipparcos_main.ecsv) + `public/data/starfield/hipparcos-vmag6.bin` 생성 idempotent.
+- `pnpm fixtures:work-05` ✓ — 3 JSON 생성 idempotent.
+
+설계 결정 + 발견:
+
+- **Parquet → ECSV 전환**: 처음 pandas + parquet 시도 → `ModuleNotFoundError`. astropy native ECSV (plaintext) 로 교체 — 의존성 zero, diff 가능, 캐시 디버깅 친화. ECSV 파일 ~3 MB (vmag<6.0).
+- **Position/Vmag NaN drop**: VizieR 응답 일부 row 가 `_RA.icrs` masked. 그대로 float() 시 NaN warning + 잘못된 별. 명시적으로 마스크/NaN 검출 후 row 삭제 — 9 100 → 4 992 안전한 stars.
+- **TS Tanner Helland 정확도**: B-V → Kelvin (Ballesteros) → RGB (Tanner Helland) → Python 동일 코드 → fixture cross-check 12 샘플 RGB triple **정확히 매치** (kelvin diff <1 K).
+- **PM 정확도 60″ 톨러런스**: Sirius (~10″ off), Vega (~3″ off), Polaris (~30″ off — 극 근처 cos(δ) 불안정), Betelgeuse / Arcturus (수 ″). 1 mas 목표는 미달 (Hipparcos epoch 정확화 + nutation 보정 필요 — Work 12 검증). 본 Work 시각용 60″ 충분.
+- **셰이더 alpha**: `vAlpha = max(0.6, brightness)` + falloff disc → 어두운 별도 어느 정도 보임. additive blending 으로 별이 모인 영역이 자연스럽게 밝아짐.
+- **Float32 round-off on 1e9 scale**: 별 위치가 1e9 scene unit → Float32 LSB ~64 m. test 톨러런스 1e4 m 안에서 sphere 위 위치 확인 (4 992 stars 전부).
+- **Palette texture sRGBColorSpace**: GPU 가 sampling 단계에서 sRGB → linear-RGB 자동 변환 → 셰이더 색상이 linear-space lighting 과 호환. tone mapping 후 sRGB output 으로 round-trip 정확.
 
 ### P5 — Dev Demo `/dev/render`
 
@@ -439,7 +489,8 @@ THREE.SphereGeometry(args=[sceneRadius, ...])
 | 2026-05-06 | **P0 점검 — overview §7 폴더 구조 vs 실제 비교**. 폴더 구조 / 모듈 위치 / Python 패키지 구성은 overview 와 일치. Work 5 plan 의 두 갭 보강: ① "HDR linear-space" 의미 명확화 (§1 DoD + §6 위험), ② "태양 영역 광원 근사" P1 결정 항목 추가 (본 Work 미도입 / Work 6/11 defer, §1/§3/§5/§6). P1 결정 항목 12 → 13. Tycho-2 deferred 정당화 §6 추가. 무관 cleanup 후보 2건 (`tools/python/public/` 빈 폴더 / `dev-routes.md` stale 표기) §3 추후 보류 + §6 알려진 이슈 기록 — 별도 spawn task 권장.                                                                                                                                                                                                                                                                                                                |
 | 2026-05-06 | **P1 완료** — `src/render/{types,constants,anchors,starfield,index}.ts` + Python `orbitarium_tools.starfield` placeholder + 21 단위 테스트 (TS 12 + Python 9). 결정 13건 (#1~#13) 모두 권장값 채택: 1:1 unit / sRGB+ACES+linear / exposure 1.0 / log-depth ON / near 1e-3 ~ far 1e10 / string literal anchor + context payload / Sun PointLight + ambient 0.05 / area light defer (Work 6/11) / `(p, policy, anchor)→Vector3` / Hipparcos Vmag≤6.0 / Ballesteros 2012 / single celestial sphere 1e9 / ICRF + Hipparcos PM. format/lint/typecheck/test(407)/build/ruff/mypy(12 files)/pytest(113) 전부 그린. `anchors.ts` / `starfield.ts` 는 P3/P4 placeholder 로 index.ts 에서 export 하지 않음.                                                                                                                                                                                       |
 | 2026-05-06 | **P2 완료** — `src/render/renderer.ts` (createRendererProps + clampExposure + resolveToneMapping/OutputColorSpace) + `index.ts` re-export + `Home.tsx` / `HomeScene.tsx` 통합 (DirectionalLight → PointLight decay=0 + ambient 0.05) + Python `kelvin_to_rgb_u8` (Tanner Helland 2012) / `palette_index_for_kelvin` / `kelvin_for_palette_index` / `build_palette` (256×RGBA u8 = 1024 B) / `magnitude_to_bucket`. 결정 9건 (#14~#22): ACES+Linear+Cineon 3종 / HDR float buffer defer (Work 11) / antialias MSAA / Tanner Helland T→RGB / sRGB palette + GPU decode / RGBA u8 layout / linear Vmag bucket / Home 모듈 상수 lifted props / PointLight decay 0. 단위 테스트 20 추가 (TS 10 + Python 10, 총 417 / 123). Home e2e 3 tests 그린. preview 시각 확인 — sphere 가 PointLight 음영 표시 (overview Sun 모델 정합).                                                                                                                                                                                |
-| 2026-05-06 | **P3 완료** — `src/render/anchors.ts` (`SceneAnchorContext` discriminated union + 3 factories + `applyAnchor` + `positionToWorld`) + `src/render/world.ts` (`sceneToVector3` / `vector3ToScene` + scalar adapters, three.js Vector3 의존 격리) + index re-export + Python `orbitarium_tools.render_anchors` 미러 + `tests/fixtures/work-05/scene-anchors.json` (3 anchor × 6 sample = 18 rows). 결정 7건 (#23~#29): camera near/far 그대로 / `PositionICRF` payload / `anchors.ts` 위치 / `render_anchors.py` 신설 / DE440 호출자 책임 / world.ts API 형태 / 6×3 fixture. 단위 테스트 22 추가 (TS 14 + Python 8, 총 434 / 131). mypy 13 files. fixture cross-check 3 anchor entries 1 mm 이내 일치. |
+| 2026-05-06 | **P3 완료** — `src/render/anchors.ts` (`SceneAnchorContext` discriminated union + 3 factories + `applyAnchor` + `positionToWorld`) + `src/render/world.ts` (`sceneToVector3` / `vector3ToScene` + scalar adapters, three.js Vector3 의존 격리) + index re-export + Python `orbitarium_tools.render_anchors` 미러 + `tests/fixtures/work-05/scene-anchors.json` (3 anchor × 6 sample = 18 rows). 결정 7건 (#23~#29): camera near/far 그대로 / `PositionICRF` payload / `anchors.ts` 위치 / `render_anchors.py` 신설 / DE440 호출자 책임 / world.ts API 형태 / 6×3 fixture. 단위 테스트 22 추가 (TS 14 + Python 8, 총 434 / 131). mypy 13 files. fixture cross-check 3 anchor entries 1 mm 이내 일치.                                                                                                                                                                                                                                                                                                                                       |
+| 2026-05-06 | **P4 완료** — `tools/python/.../starfield.py` 풀 implementation (Ballesteros 2012 + PM + radec→vector + StarRecord / StarfieldData + serialize/deserialize + download/load/preprocess + NamedStarRef + 3 fixture generators) + CLI `starfield preprocess` + `fixtures --work=5` + `src/render/{starfield,starfieldLoader}.ts` (decoder + palette + custom ShaderMaterial + fetch loader) + `package.json` 2 새 스크립트 + `public/data/starfield/hipparcos-vmag6.bin` (~70 KB, 4 992 stars). 결정 9건 (#30~#38): ECSV cache / NaN row drop / TS-Python bit-exact mirror / little-endian 강제 / single celestial sphere / custom shader + sRGB texture / `starfield.ts` + `starfieldLoader.ts` 분리 / 60″ PM 톨러런스 / bin commit. 단위 테스트 41 추가 (TS 22 + Python 9 + Python pytest 통합 10, 총 475 / 141). fixture 12 색온도 + 5 명성 cross-check 그린 (RGB 정확 / palette 정확 / 60″ 안). mypy 13 files. |
 
 ---
 

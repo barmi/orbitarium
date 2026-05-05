@@ -1,0 +1,80 @@
+{
+  "_comment": "B-V -> Kelvin (Ballesteros 2012) -> palette index + RGB 8-bit. Re-run: orbitarium-tools fixtures --work=5 --out=tests/fixtures/work-05/",
+  "_source": "Ballesteros 2012 + Tanner Helland 2012 piecewise + log-uniform palette.",
+  "_palette_size": 256,
+  "_kelvin_range": [2000.0, 30000.0],
+  "samples": [
+    {
+      "bv": -0.3,
+      "kelvin": 16602.4301019075,
+      "palette_index": 199,
+      "rgb_u8": [177, 203, 255]
+    },
+    {
+      "bv": -0.1,
+      "kelvin": 11572.817729534148,
+      "palette_index": 165,
+      "rgb_u8": [193, 213, 255]
+    },
+    {
+      "bv": 0.0,
+      "kelvin": 10125.237191650855,
+      "palette_index": 153,
+      "rgb_u8": [201, 218, 255]
+    },
+    {
+      "bv": 0.15,
+      "kelvin": 8571.321931318025,
+      "palette_index": 137,
+      "rgb_u8": [214, 225, 255]
+    },
+    {
+      "bv": 0.3,
+      "kelvin": 7461.863794100636,
+      "palette_index": 124,
+      "rgb_u8": [231, 235, 255]
+    },
+    {
+      "bv": 0.5,
+      "kelvin": 6388.888888888889,
+      "palette_index": 109,
+      "rgb_u8": [255, 252, 247]
+    },
+    {
+      "bv": 0.65,
+      "kelvin": 5778.423731066208,
+      "palette_index": 100,
+      "rgb_u8": [255, 242, 231]
+    },
+    {
+      "bv": 0.8,
+      "kelvin": 5280.671926994783,
+      "palette_index": 91,
+      "rgb_u8": [255, 233, 215]
+    },
+    {
+      "bv": 1.0,
+      "kelvin": 4742.7381778526815,
+      "palette_index": 81,
+      "rgb_u8": [255, 223, 197]
+    },
+    {
+      "bv": 1.3,
+      "kelvin": 4121.437437632341,
+      "palette_index": 68,
+      "rgb_u8": [255, 209, 172]
+    },
+    {
+      "bv": 1.6,
+      "kelvin": 3649.041927573727,
+      "palette_index": 57,
+      "rgb_u8": [255, 197, 149]
+    },
+    {
+      "bv": 2.0,
+      "kelvin": 3169.3537274355795,
+      "palette_index": 43,
+      "rgb_u8": [255, 183, 121]
+    }
+  ]
+}
