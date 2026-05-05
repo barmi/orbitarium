@@ -62,7 +62,7 @@ jobs:
       - name: Create venv & install deps
         run: |
           uv venv
-          uv pip install -e ".[dev]"
+          uv pip install -e ".[astro,dev]"
 
       - name: Ruff
         run: uv run ruff check src tests
