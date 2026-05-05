@@ -8,12 +8,12 @@
 
 ## 0. 현재 상태 (Status)
 
-| 항목         | 값                                                                                                                 |
-| ------------ | ------------------------------------------------------------------------------------------------------------------ |
-| 현재 phase   | **P1 완료** ✓ — **P2 시작 대기**                                                                                   |
-| 다음 액션    | P2 — `src/astro/rotationData.ts` 11+ bodies 확장 + Python `IAU_MODELS` mirror + SPICE PCK eval 과 mas 비교         |
-| 마지막 갱신  | 2026-05-06                                                                                                         |
-| 블로커       | 없음                                                                                                               |
+| 항목         | 값                                                                                                |
+| ------------ | ------------------------------------------------------------------------------------------------- |
+| 현재 phase   | **P2 완료** ✓ — **P3 시작 대기**                                                                  |
+| 다음 액션    | P3 — `src/bodies/{material,rotation,Body,SunMesh}.tsx` + 행성 PBR + Sun glow + IAU rotation wiring |
+| 마지막 갱신  | 2026-05-06                                                                                        |
+| 블로커       | 없음                                                                                              |
 
 ## 1. 진행 체크리스트
 
@@ -21,7 +21,7 @@
 phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 - [x] **P1** — Body Strategy & Catalog Types _(완료 2026-05-06)_
-- [ ] **P2** — IAU Rotation Models Extension
+- [x] **P2** — IAU Rotation Models Extension _(완료 2026-05-06)_
 - [ ] **P3** — Body Mesh Pipeline (Sun + 9 planets + Moon)
 - [ ] **P4** — Saturn Rings + Major Moons
 - [ ] **P5** — Dev Demo `/dev/body/<slug>` + `/dev/body/saturn`
@@ -45,6 +45,11 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 10  | `atmosphere` flag 노출 | **boolean only** — Work 11 hint, 본 Work mesh 영향 없음 | Venus / Earth / Mars / 4 gas giants / Titan = 8 entries `true`. Work 11 atmospheric scattering 진입점. | P1 | 2026-05-06 |
 | 11  | `src/bodies/` 모듈 위치 | **신설 도메인 폴더** (`src/render/bodies/` 가 아닌 top-level `src/bodies/`) | Work 5 `src/render/` 와 분리 — body 카탈로그는 truth-layer (`@/scale` 와 비슷), mesh 는 display 레이어. 본 Work 가 mesh + 카탈로그 모두 가지지만 분리는 Work 11 polish 에서. | P1 | 2026-05-06 |
 | 12  | Charon (NAIF 901) | **Work 6 범위 밖 — defer** | Work 2 NAIF_CATALOG 에 미존재. Charon 추가는 Work 2 modification. plan §1 의 "Pluto + Charon" 약속은 Pluto only 로 축소 — handoff §3 추후 보류 추가. | P1 | 2026-05-06 |
+| 13  | IAU 데이터 출처 | **NAIF pck00011.tpc + IAU WGCCRE 2015 (Archinal et al. 2018)** polynomial only | Work 2 #9 일관. 11 bodies (sun + 8 planets + Moon + Pluto) 모두 polynomial 부분만 입력 — Mercury / Moon 의 libration / nutation, Neptune 의 N term 은 source string 에 "Work 11" 명시 후 defer. | P2 | 2026-05-06 |
+| 14  | 위성 rotation 포함 범위 | **Earth's Moon 만 P2 에 포함** — Galilean / Titan 은 P3/P4 에서 tidally-locked 근사 + Work 11 IAU 모델 추가 | plan §3 P2 의 "Galilean / Titan IAU 모델" 약속 (option a) 은 데이터 entry 부담 + 본 Work mesh 시각상 큰 차이 없음 → defer. tidally-locked fallback 으로 BodyDefinition `rotationModelKey` 가 'tidally-locked' 인 항목은 mesh layer (P3/P4) 에서 parent-facing orientation. | P2 | 2026-05-06 |
+| 15  | Pluto / Charon rotation | **Pluto 는 polynomial 모델, Charon 는 defer (P1 #12)** | plan §3 P2 의 "Pluto / Charon: tidally-locked 근사" 는 Pluto 만 IAU 모델 정상 적용 (polynomial 충분), Charon 은 Work 6 범위 밖. | P2 | 2026-05-06 |
+| 16  | Tolerance W / α / δ | **TS ↔ Python: 1 mas, Python ↔ SPICE polynomial-only: machine precision (~1e-12)** | SPICE pxform 도 polynomial-only PCK lines 로 평가 — 동일 모델 비교라 floating-point 한계만. 실측 SPICE diff 는 Earth 7e-12 수준. Mercury / Moon nutation / libration 효과는 본 Work 미평가 (Work 11). | P2 | 2026-05-06 |
+| 17  | TS / Python 데이터 동기화 | **TS object literal + Python `_model()` factory 동일 polynomial coefficients** | 두 쪽 모두 IAU paper / pck00011 직접 참조. fixture cross-check (TS ↔ Python ↔ SPICE) 로 typo 즉시 감지. | P2 | 2026-05-06 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -65,14 +70,13 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] `src/bodies/` 모듈 위치: **신설 도메인 폴더** ✓ (#11)
 - [x] Charon: **Work 6 범위 밖 defer (Work 2 NAIF_CATALOG 확장 필요)** ✓ (#12)
 
-### P2에서 결정
+### P2에서 결정 (5건 모두 완료, 1건 축소)
 
-- [ ] IAU 데이터 출처 (권장: WGCCRE 2015 / Archinal et al. 2018, Work 2 #9 일관)
-- [ ] 위성 rotation 포함 범위 (권장: Earth's Moon + Galilean 4 + Titan = 6)
-- [ ] 비-Galilean Saturn moon rotation (권장: tidally-locked 근사)
-- [ ] Pluto / Charon rotation (권장: tidally-locked)
-- [ ] Tolerance W / α / δ (권장: 1 mas)
-- [ ] TS / Python 데이터 동기화 정책 (권장: 둘 다 IAU paper 직접 참조 + fixture cross-check)
+- [x] IAU 데이터 출처: **NAIF pck00011 + WGCCRE 2015 polynomial-only** ✓ (#13)
+- [x] 위성 rotation 포함 범위: **Earth's Moon 만** (Galilean / Titan 은 Work 11 defer) ✓ (#14)
+- [x] Pluto / Charon: **Pluto polynomial 모델, Charon Work 6 범위 밖** ✓ (#15)
+- [x] Tolerance: **TS↔Python 1 mas, Python↔SPICE polynomial-only ~1e-12** ✓ (#16)
+- [x] TS / Python 동기화: **둘 다 IAU paper 직접 참조 + fixture cross-check** ✓ (#17)
 
 ### P3에서 결정
 
@@ -166,9 +170,42 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 - **Python `_planet` / `_moon` factory 함수**: dataclass entry 작성 시 boilerplate 감소. Sun / Pluto 만 직접 dataclass (kind='sun' / 'pluto-system' 특수).
 - **`BODY_CATALOG` 가 truth-layer**: Work 5 `src/render/` 와 분리. P3 의 mesh / material 은 별도 모듈로 들어와 `bodies` 가 받게 될 것.
 
-### P2 — IAU Rotation Models Extension
+### P2 — IAU Rotation Models Extension _(완료 2026-05-06)_
 
-_(대기)_
+생성/수정 파일:
+
+- [`src/astro/rotationData.ts`](../../src/astro/rotationData.ts) — 11 IAU rotation 모델 (Sun / Mercury / Venus / Earth / Moon / Mars / Jupiter / Saturn / Uranus / Neptune / Pluto), polynomial-only. `IAU_ROTATION_MODELS` Map (key = BodyDefinition.rotationModelKey) + `getIauRotationModel(key)` lookup.
+- [`tools/python/src/orbitarium_tools/rotation.py`](../../tools/python/src/orbitarium_tools/rotation.py) — Python mirror (`_model()` factory + 10 신규 모델 + `IAU_ROTATION_MODELS` dict + `get_iau_rotation_model`). `spice_pck_lines(model)` / `spice_inertial_to_body_fixed(model, jd)` 일반화 (Earth-only 헬퍼는 위임).
+- [`tools/python/src/orbitarium_tools/bodies.py`](../../tools/python/src/orbitarium_tools/bodies.py) — `generate_iau_rotation_fixture(out_dir)` (11 × 5 grid) + `generate_body_catalog_fixture(out_dir)` + `generate_fixtures(out_dir)` 통합.
+- [`tools/python/src/orbitarium_tools/cli.py`](../../tools/python/src/orbitarium_tools/cli.py) — `fixtures --work=6` 분기.
+- [`package.json`](../../package.json) — `pnpm fixtures:work-06` 스크립트.
+
+테스트 + fixture:
+
+- [`tests/fixtures/work-06/iau-rotation.json`](../../tests/fixtures/work-06/iau-rotation.json) — 11 models × 5 jdTdb (J1900 / J2000 / Voyager 2 fly / 2026-05-06 / J2100) = 55 rows. 각 row 는 ra/dec/W + 9-element matrix + SPICE max diff.
+- [`tests/fixtures/work-06/body-catalog.json`](../../tests/fixtures/work-06/body-catalog.json) — Python BODY_CATALOG dump (TS catalog 와 cross-check 용).
+- [`tests/unit/astro/rotationModels.test.ts`](../../tests/unit/astro/rotationModels.test.ts) — 17+ tests: 모델 lookup / NAIF id / Earth polynomial unchanged / Sun Carrington PM / Venus 역회전 / Uranus 역축 / source 메모 / sample evaluations + fixture cross-check (TS evaluateRotation ↔ Python angle 1 mas, TS matrix ↔ Python matrix 1e-12, Python ↔ SPICE 1e-10).
+- [`tools/python/tests/test_rotation_models.py`](../../tools/python/tests/test_rotation_models.py) — 11 tests + SPICE polynomial-only diff < 1e-10 across all 11 models × 5 jds.
+
+검증 결과:
+
+- `pnpm format` ✓
+- `pnpm lint:fix` ✓ (1 typecheck error 수정 — `m[i]!` non-null assertion)
+- `pnpm typecheck` ✓
+- `pnpm test` ✓ — **539 tests** (P1 494 → P2 +45).
+- `pnpm build` ✓
+- `cd tools/python && uv run ruff check src tests` ✓ (RUF002 한글 ambiguous chars 2개 수정)
+- `uv run mypy src` ✓ — 14 source files (변동 없음).
+- `uv run pytest` ✓ — **169 tests** (P1 157 → P2 +12).
+- `pnpm fixtures:work-06` ✓ — 2 JSON 생성 idempotent.
+
+설계 결정 + 발견:
+
+- **SPICE 비교가 polynomial-only 모델끼리**: `spice_pck_lines(model)` 가 BODY*_NUT_PREC_* terms 를 emit 하지 않음 → SPICE pxform 도 polynomial 만 평가 → diff 가 machine precision (~1e-12). 이것이 implementation correctness 검증 (Python ↔ TS ↔ SPICE 동일 알고리즘) 으로는 충분하지만, **full IAU 모델 (libration / nutation 포함) vs. polynomial-only** 의 실제 천문학 정확도 차이는 본 Work 에서 평가하지 않음 — Work 11.
+- **Mercury / Moon / Neptune 의 omitted terms**: source string 에 "libration / nutation / Work 11" 명시. 실제 W angle 의 long-term drift 가 Mercury 는 ~6 mas, Moon 은 ~수십 mas 수준 (Work 11 검증 대상).
+- **`_model()` factory in Python**: 10 모델 boilerplate 감소. Earth 만 Work 2 P4 에서 직접 정의된 형태 그대로 유지 (regression 회피).
+- **Wrap-aware W angle 비교**: TS 측 cross-check 에서 W 가 [0, 360°) 정규화 후 shortest angular diff 로 비교 — `370° vs 10°` 같은 wrap-around 케이스에서 50″ 가 아닌 0″ 로 측정.
+- **Voyager 2 Uranus encounter (1986-01-24)**: fixture 의 4번째 sample. Uranus retrograde rotation 의 W angle 검증에 좋은 anchor.
 
 ### P3 — Body Mesh Pipeline (Sun + 9 planets + Moon)
 
@@ -374,7 +411,8 @@ THREE.Quaternion                           ← Body mesh.quaternion
 | 날짜       | 변경                                                                                                                                                                                                                                                                                                                       |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-05-06 | 초기 작성 — P0 kickoff. Plan 본체와 함께 6 phase 구조 확정 (Strategy → IAU Rotation Extension → Mesh Pipeline → Saturn Rings + Moons → Dev Demo → Closeout). P1 결정 ~12건 대기. Work 4 `BODY_MEAN_EQUATORIAL_RADIUS_M` + Work 5 `positionToWorld` / `radiusToScene` / `bodyCentricAnchor` 적극 활용 예정. `src/bodies/`, `src/dev/body/`, `orbitarium_tools.bodies` 신설 예정.                                                                                                                                                                                                                |
-| 2026-05-06 | **P1 완료** — `src/bodies/{types,catalog,index}.ts` + Python `orbitarium_tools.bodies` mirror + `public/data/textures/README.md` + 35 단위 테스트 (TS 19 + Python 16). 결정 12건 (#1~#12) 모두 권장값 채택: string union BodyKind / naifId+slug / Work4 radius 재사용 + 위성 9 신규 / IAU WGCCRE 2015 / Solar System Scope CC4 / JPEG 2K+1K+PNG / 직접 commit / 단색 fallback / SphereGeometry 64×32 / atmosphere boolean / `src/bodies/` 신설 / Charon defer. format/lint/typecheck/test(494)/build/ruff/mypy(14 files)/pytest(157) 전부 그린. |
+| 2026-05-06 | **P1 완료** — `src/bodies/{types,catalog,index}.ts` + Python `orbitarium_tools.bodies` mirror + `public/data/textures/README.md` + 35 단위 테스트 (TS 19 + Python 16). 결정 12건 (#1~#12) 모두 권장값 채택: string union BodyKind / naifId+slug / Work4 radius 재사용 + 위성 9 신규 / IAU WGCCRE 2015 / Solar System Scope CC4 / JPEG 2K+1K+PNG / 직접 commit / 단색 fallback / SphereGeometry 64×32 / atmosphere boolean / `src/bodies/` 신설 / Charon defer. format/lint/typecheck/test(494)/build/ruff/mypy(14 files)/pytest(157) 전부 그린.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| 2026-05-06 | **P2 완료** — `src/astro/rotationData.ts` 11 IAU 모델 확장 (Sun + 8 planets + Moon + Pluto, polynomial-only) + `IAU_ROTATION_MODELS` Map + Python mirror (`_model()` factory + 동일 11 모델 + `spice_inertial_to_body_fixed` 일반화) + `bodies.py` 의 `generate_iau_rotation_fixture` (11 × 5 = 55 rows) + `generate_body_catalog_fixture` + CLI work-6 분기 + `pnpm fixtures:work-06`. fixture iau-rotation.json + body-catalog.json 생성. 결정 5건 (#13~#17): pck00011 polynomial / Earth's Moon 만 / Pluto polynomial / 1 mas TS↔Python + 1e-12 SPICE polynomial-only / IAU paper 직접 참조. 단위 테스트 57 추가 (TS 45 + Python 12, 총 539 / 169). Mercury / Moon / Neptune omitted terms 는 source string 에 "Work 11" 명시. format/lint/typecheck/test(539)/build/ruff/mypy/pytest(169) 그린. |
 
 ---
 

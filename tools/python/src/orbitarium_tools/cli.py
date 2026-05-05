@@ -153,6 +153,12 @@ def _run_fixtures(args: argparse.Namespace) -> int:
         for out_file in gen_starfield(args.out):
             print(f"Generated {out_file}")
         return 0
+    if args.work == 6:
+        from orbitarium_tools.bodies import generate_fixtures as gen_bodies
+
+        for out_file in gen_bodies(args.out):
+            print(f"Generated {out_file}")
+        return 0
     print(f"Work {args.work} fixtures not implemented", file=sys.stderr)
     return 1
 

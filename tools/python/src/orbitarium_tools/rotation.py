@@ -76,6 +76,135 @@ EARTH_IAU_ROTATION: Final[IAURotationModel] = IAURotationModel(
 )
 
 
+_PCK = "NAIF pck00011.tpc; IAU WGCCRE 2015 (Archinal et al. 2018)"
+
+
+def _model(
+    naif_id: int,
+    name: str,
+    frame_name: str,
+    source: str,
+    pole_ra: tuple[float, float, float],
+    pole_dec: tuple[float, float, float],
+    pm: tuple[float, float, float],
+    pm_variable: IAURotationTimeVariable = "d",
+) -> IAURotationModel:
+    return IAURotationModel(
+        naif_id=naif_id,
+        name=name,
+        frame_name=frame_name,
+        source=source,
+        pole_ra=IAUAngleModel(IAUPolynomialDegrees("T", pole_ra)),
+        pole_dec=IAUAngleModel(IAUPolynomialDegrees("T", pole_dec)),
+        prime_meridian=IAUAngleModel(IAUPolynomialDegrees(pm_variable, pm)),
+    )
+
+
+SUN_IAU_ROTATION: Final[IAURotationModel] = _model(
+    10, "Sun", "IAU_SUN", _PCK, (286.13, 0.0, 0.0), (63.87, 0.0, 0.0), (84.176, 14.1844, 0.0)
+)
+MERCURY_IAU_ROTATION: Final[IAURotationModel] = _model(
+    199,
+    "Mercury",
+    "IAU_MERCURY",
+    f"{_PCK}; libration terms omitted (Work 11)",
+    (281.0103, -0.0328, 0.0),
+    (61.4155, -0.0049, 0.0),
+    (329.5988, 6.1385108, 0.0),
+)
+VENUS_IAU_ROTATION: Final[IAURotationModel] = _model(
+    299,
+    "Venus",
+    "IAU_VENUS",
+    _PCK,
+    (272.76, 0.0, 0.0),
+    (67.16, 0.0, 0.0),
+    (160.2, -1.4813688, 0.0),
+)
+MOON_IAU_ROTATION: Final[IAURotationModel] = _model(
+    301,
+    "Moon",
+    "IAU_MOON",
+    f"{_PCK}; nutation/libration terms omitted (Work 11)",
+    (269.9949, 0.0031, 0.0),
+    (66.5392, 0.013, 0.0),
+    (38.3213, 13.17635815, -1.4e-12),
+)
+MARS_IAU_ROTATION: Final[IAURotationModel] = _model(
+    499,
+    "Mars",
+    "IAU_MARS",
+    _PCK,
+    (317.68143, -0.1061, 0.0),
+    (52.8865, -0.0609, 0.0),
+    (176.63, 350.89198226, 0.0),
+)
+JUPITER_IAU_ROTATION: Final[IAURotationModel] = _model(
+    599,
+    "Jupiter",
+    "IAU_JUPITER",
+    _PCK,
+    (268.056595, -0.006499, 0.0),
+    (64.495303, 0.002413, 0.0),
+    (284.95, 870.536, 0.0),
+)
+SATURN_IAU_ROTATION: Final[IAURotationModel] = _model(
+    699,
+    "Saturn",
+    "IAU_SATURN",
+    _PCK,
+    (40.589, -0.036, 0.0),
+    (83.537, -0.004, 0.0),
+    (38.9, 810.7939024, 0.0),
+)
+URANUS_IAU_ROTATION: Final[IAURotationModel] = _model(
+    799,
+    "Uranus",
+    "IAU_URANUS",
+    _PCK,
+    (257.311, 0.0, 0.0),
+    (-15.175, 0.0, 0.0),
+    (203.81, -501.1600928, 0.0),
+)
+NEPTUNE_IAU_ROTATION: Final[IAURotationModel] = _model(
+    899,
+    "Neptune",
+    "IAU_NEPTUNE",
+    f"{_PCK}; periodic N term omitted (Work 11)",
+    (299.36, 0.0, 0.0),
+    (43.46, 0.0, 0.0),
+    (253.18, 536.3128492, 0.0),
+)
+PLUTO_IAU_ROTATION: Final[IAURotationModel] = _model(
+    999,
+    "Pluto",
+    "IAU_PLUTO",
+    _PCK,
+    (132.993, 0.0, 0.0),
+    (-6.163, 0.0, 0.0),
+    (302.695, 56.3625225, 0.0),
+)
+
+
+IAU_ROTATION_MODELS: Final[dict[str, IAURotationModel]] = {
+    "sun": SUN_IAU_ROTATION,
+    "mercury": MERCURY_IAU_ROTATION,
+    "venus": VENUS_IAU_ROTATION,
+    "earth": EARTH_IAU_ROTATION,
+    "moon": MOON_IAU_ROTATION,
+    "mars": MARS_IAU_ROTATION,
+    "jupiter": JUPITER_IAU_ROTATION,
+    "saturn": SATURN_IAU_ROTATION,
+    "uranus": URANUS_IAU_ROTATION,
+    "neptune": NEPTUNE_IAU_ROTATION,
+    "pluto": PLUTO_IAU_ROTATION,
+}
+
+
+def get_iau_rotation_model(key: str) -> IAURotationModel | None:
+    return IAU_ROTATION_MODELS.get(key)
+
+
 def normalize_degrees(deg: float) -> float:
     if 0.0 <= deg < 360.0:
         return 0.0 if deg == -0.0 else deg
@@ -159,24 +288,35 @@ def _padded_coefficients(polynomial: IAUPolynomialDegrees) -> tuple[float, float
 
 def earth_spice_pck_lines() -> tuple[str, ...]:
     """Return minimal text-PCK assignments for the embedded Earth model."""
-    ra = _padded_coefficients(EARTH_IAU_ROTATION.pole_ra.polynomial)
-    dec = _padded_coefficients(EARTH_IAU_ROTATION.pole_dec.polynomial)
-    pm = _padded_coefficients(EARTH_IAU_ROTATION.prime_meridian.polynomial)
+    return spice_pck_lines(EARTH_IAU_ROTATION)
+
+
+def spice_pck_lines(model: IAURotationModel) -> tuple[str, ...]:
+    """Generate minimal text-PCK assignments for an arbitrary IAU model."""
+    ra = _padded_coefficients(model.pole_ra.polynomial)
+    dec = _padded_coefficients(model.pole_dec.polynomial)
+    pm = _padded_coefficients(model.prime_meridian.polynomial)
+    nid = model.naif_id
     return (
-        f"BODY399_POLE_RA = ( {ra[0]} {ra[1]} {ra[2]} )",
-        f"BODY399_POLE_DEC = ( {dec[0]} {dec[1]} {dec[2]} )",
-        f"BODY399_PM = ( {pm[0]} {pm[1]} {pm[2]} )",
-        "BODY399_LONG_AXIS = ( 0.0 )",
+        f"BODY{nid}_POLE_RA = ( {ra[0]} {ra[1]} {ra[2]} )",
+        f"BODY{nid}_POLE_DEC = ( {dec[0]} {dec[1]} {dec[2]} )",
+        f"BODY{nid}_PM = ( {pm[0]} {pm[1]} {pm[2]} )",
+        f"BODY{nid}_LONG_AXIS = ( 0.0 )",
     )
 
 
 def spice_earth_inertial_to_body_fixed(jd_tdb: float) -> Matrix3:
     """Evaluate Earth ICRF/J2000 -> IAU_EARTH using SPICE text-PCK semantics."""
+    return spice_inertial_to_body_fixed(EARTH_IAU_ROTATION, jd_tdb)
+
+
+def spice_inertial_to_body_fixed(model: IAURotationModel, jd_tdb: float) -> Matrix3:
+    """Evaluate ICRF/J2000 -> body-fixed using SPICE text-PCK semantics."""
     spice.kclear()
     try:
-        spice.lmpool(list(earth_spice_pck_lines()))
+        spice.lmpool(list(spice_pck_lines(model)))
         et = (jd_tdb - J2000_JD_TDB) * SECONDS_PER_DAY
-        matrix = spice.pxform("J2000", "IAU_EARTH", et)
+        matrix = spice.pxform("J2000", model.frame_name, et)
         return tuple(float(x) for x in matrix.flatten())  # type: ignore[return-value]
     finally:
         spice.kclear()
