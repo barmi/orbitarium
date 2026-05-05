@@ -336,6 +336,8 @@ pytest
 - **TypeScript 6 + Vite 8 + React 19**: 모두 메이저 최신 라인. R3F v9 가 React 19 지원. 추후 Work에서 호환성 이슈 발생 시 여기에 기록.
 - **R3F 9.6.1 — `THREE.Clock` deprecation 경고**: 콘솔에 `THREE.Clock: deprecated. Please use THREE.Timer instead.` 가 매 프레임 출력되지만 동작에는 영향 없음. R3F 측에서 `Timer` 마이그레이션 PR 진행 중. 자체 코드는 영향 없음 (수정 불필요).
 - **번들 크기 1113 kB (gzip 308 kB)**: three.js + R3F + react + react-router 합산. Vite의 500 kB 경고. P5/P6/P7 에서 추가 의존성 더 늘어날 예정. Work 11(Polish)에서 manualChunks / lazy import / Draco 등으로 본격 분할.
+- **GitHub Actions Node 20 deprecation (2026-06-02 강제 Node 24)**: 첫 CI 실행에서 `actions/checkout@v4`, `actions/setup-node@v4`, `pnpm/action-setup@v4`, `astral-sh/setup-uv@v4` 모두 deprecation 경고 발생. **2026-05-05 해결**: 액션 버전 일괄 업그레이드 (checkout/setup-node/action-setup → v6, setup-uv → v8, cache → v5, upload-artifact → v7). 입력 호환성은 setup-uv `enable-cache`/`cache-dependency-glob`, action-setup `version` 모두 유지 확인.
+- **GitHub Actions cache service 일시 장애**: 첫 CI 실행에서 setup-uv 의 cache restore/save 가 400/503 에러 (`<h2>Our services aren't available right now</h2>`). 작업 자체는 성공 (캐시 best-effort). GitHub 측 transient 이슈 — 재현되면 setup-uv 버전 재확인.
 
 ## 7. 갱신 이력 (Changelog)
 
@@ -349,6 +351,7 @@ pytest
 | 2026-05-05 | **P5 완료** — Vitest + happy-dom 단위 (4 tests) + Playwright + chromium e2e (7 tests). tsconfig.test.json 신설. `pnpm test` / `pnpm test:e2e` 모두 그린. WebGL 픽셀 read는 R3F preserveDrawingBuffer 미설정 이슈로 context 활성 검증으로 대체 |
 | 2026-05-05 | **P6 완료** — `tools/python/.venv` (uv managed Python 3.13.5) + `[dev]` extras (pytest/ruff/mypy/numpy). smoke test 3건. `orbitarium-tools version` / ruff / mypy --strict / pytest 모두 그린 |
 | 2026-05-05 | **P7 완료 + Work 1 완료 🏁** — GitHub Actions 3-job (node/python/e2e) 병렬 파이프라인. `packageManager: pnpm@8.10.2` 핀 (lockfileVersion 6.0 정합). README CI 배지. 모든 CI 단계 로컬 시뮬레이션 그린 (lint/type/format/test/build/e2e/ruff/mypy/pytest). 첫 push 후 GitHub Actions 실 환경 그린 확인 남음 |
+| 2026-05-05 | **CI 첫 실 가동 + Node 24 마이그레이션** — push 후 3 job 모두 그린. Node 20 deprecation 경고 대응으로 액션 버전 일괄 업그레이드: checkout/setup-node/action-setup `v4 → v6`, setup-uv `v4 → v8`, cache `v4 → v5`, upload-artifact `v4 → v7`. 모두 Node 24 런타임. 입력 호환성 확인 |
 
 ---
 
