@@ -110,6 +110,13 @@ def _run_fixtures(args: argparse.Namespace) -> int:
         print(f"Generated {gen_de440(args.out)}")
         print(f"Generated {gen_horizons(args.out)}")
         return 0
+    if args.work == 4:
+        from orbitarium_tools.scaling import (
+            generate_distance_fixtures as gen_distance,
+        )
+
+        print(f"Generated {gen_distance(args.out)}")
+        return 0
     print(f"Work {args.work} fixtures not implemented", file=sys.stderr)
     return 1
 

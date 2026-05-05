@@ -8,12 +8,12 @@
 
 ## 0. 현재 상태 (Status)
 
-| 항목         | 값                                                                                                                  |
-| ------------ | ------------------------------------------------------------------------------------------------------------------- |
-| 현재 phase   | **P1 완료** ✓ — P2 진입 대기                                                                                        |
-| 다음 액션    | **P2 — Distance Scale Functions** 진입 — `positionToScene` + Linear / Piecewise / Logarithmic 정책 + reversibility |
-| 마지막 갱신  | 2026-05-06                                                                                                          |
-| 블로커       | 없음                                                                                                                |
+| 항목         | 값                                                                                                |
+| ------------ | ------------------------------------------------------------------------------------------------- |
+| 현재 phase   | **P2 완료** ✓ — P3 진입 대기                                                                      |
+| 다음 액션    | **P3 — Body Size Scale Functions** 진입 — `radiusToScene` + Logarithmic / MinMaxClamp / Uniform |
+| 마지막 갱신  | 2026-05-06                                                                                        |
+| 블로커       | 없음                                                                                              |
 
 ## 1. 진행 체크리스트
 
@@ -21,7 +21,7 @@
 phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 - [x] **P1** — Strategy & Brand Types _(완료 2026-05-06)_
-- [ ] **P2** — Distance Scale Functions
+- [x] **P2** — Distance Scale Functions _(완료 2026-05-06)_
 - [ ] **P3** — Body Size Scale Functions
 - [ ] **P4** — Adaptive Scale Interface
 - [ ] **P5** — Dev Demo `/dev/scale`
@@ -42,6 +42,11 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 7   | Radius vs Diameter | **반지름 (Radius)** | IAU WGCCRE 기본 표기. 직경 필요 시 `* 2` 한 줄. mesh 생성 (Work 6) 도 반지름 입력. | P1 | 2026-05-06 |
 | 8   | 톨러런스 | **round-trip 1 mm (위치 + 크기)** | Work 3 위치 톨러런스와 일치. 대수 정책의 log/exp LSB 흔들림 ~µm — 1mm 안에 충분 마진. | P1 | 2026-05-06 |
 | 9   | 천체 반지름 데이터 출처 | **IAU WGCCRE 2015 평균 적도 반지름** (NAIF pck00011 BODY*_RADII a 값) | Work 2 P4 회전 모델 출처와 일관. 11 entries (Sun + 8 planets + Moon + Pluto). EarthRadius = 6,378,136.6 m. | P1 | 2026-05-06 |
+| 10  | 거리 정책 break points | **AU 기반 [0.4, 5, 50] AU → [0.4, 1.5, 3.0] scene** | 내행성 (Mercury~Mars) 1:1 / 외행성 (Mars~Jupiter) ~3.7배 압축 / 원거리 (Jupiter~Pluto) ~30배 압축. 50 AU 너머는 마지막 segment slope 그대로 선형 연장. | P2 | 2026-05-06 |
+| 11  | 두 번째 / 세 번째 거리 정책 | **Linear baseline + Logarithmic** (`log(1 + r/r0)`) | Linear 는 비교/검증 baseline. Logarithmic 은 카메라 줌 광범위 시 부드러운 압축. P4 adaptive lerp 의 보간 양 끝점. | P2 | 2026-05-06 |
+| 12  | 대수 정책 `r0` | **1 AU** | scene unit 1 = log(2) ≈ 0.693 — 자연스러운 reference (Earth 위치). r0=1m 으로 했다면 scaled value 가 25 정도 → UI 압축 어려움. | P2 | 2026-05-06 |
+| 13  | Round-trip 톨러런스 (실제 측정) | **1 mm 절대 톨러런스가 30 AU 까지 보장** — 그 너머는 IEEE 754 LSB ~1.3 mm/40AU (Pluto) | 30 AU = 4.5e12 m × 2^-52 ≈ 1mm. piecewise/log 정책 모두 같은 IEEE 754 LSB floor. 외행성에서는 relative 1e-14 검증. | P2 | 2026-05-06 |
+| 14  | positionToScene 알고리즘 | **방향 보존 + 길이만 정책 통과** (`pos × (sScene / rMeters)`), 0 벡터 가드 (Sun at SSB ~0 case) | 정책이 pos magnitude 만 바꾸고 방향은 보존. r=0 케이스는 [0,0,0] 반환. cosine similarity 1.0 검증으로 방향 보존 확인. | P2 | 2026-05-06 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -61,10 +66,11 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 ### P2에서 결정
 
-- [ ] 거리 정책 break points (AU 기반 / body class 기반)
-- [ ] 두 번째 정책 (Logarithmic / Dual-linear)
-- [ ] 대수 정책 `r0`
-- [ ] Round-trip 톨러런스 정책별 적용
+- [x] 거리 정책 break points: **[0.4, 5, 50] AU → [0.4, 1.5, 3.0] scene** ✓ (#10)
+- [x] 두 번째/세 번째 정책: **Linear baseline + Logarithmic** ✓ (#11)
+- [x] 대수 정책 `r0`: **1 AU** ✓ (#12)
+- [x] Round-trip 톨러런스 정책별 적용: **30 AU 까지 1mm 절대, 그 너머 1e-14 relative** ✓ (#13)
+- [x] positionToScene 알고리즘: **방향 보존 + 0 벡터 가드** ✓ (#14)
 
 ### P3에서 결정
 
@@ -123,9 +129,41 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 - `pnpm test -- tests/unit/scale` ✓ — 8 tests pass.
 - `cd tools/python && uv run ruff check / mypy / pytest tests/test_scaling.py` ✓ — 4 tests, 11 source files.
 
-### P2 — Distance Scale Functions
+### P2 — Distance Scale Functions _(완료 2026-05-06)_
 
-_미시작_
+생성/수정 파일:
+
+- [`src/scale/distancePolicies.ts`](../../src/scale/distancePolicies.ts) — `LinearAuPolicy` (baseline), `PiecewiseMonotonicPolicy` (3-break), `LogarithmicPolicy` (`log(1 + r/AU)`). `DISTANCE_POLICIES` 레지스트리 + `getDistancePolicy(name)`. `PIECEWISE_INPUT_BREAKS_AU = [0.4, 5, 50]`, `PIECEWISE_OUTPUT_BREAKS_SCENE = [0.4, 1.5, 3.0]`, `LOGARITHMIC_R0_M = AU`.
+- [`src/scale/position.ts`](../../src/scale/position.ts) — `positionToScene(pos, policy)` (방향 보존 + 0 벡터 가드), `sceneToPosition(sceneVec, policy)`.
+- [`src/scale/index.ts`](../../src/scale/index.ts) — `distancePolicies` / `position` re-export 추가.
+- [`tools/python/src/orbitarium_tools/scaling.py`](../../tools/python/src/orbitarium_tools/scaling.py) — Python 미러 (`DistancePolicy` dataclass + 3 정책 + `generate_distance_fixtures(out_dir)`).
+- [`tools/python/src/orbitarium_tools/cli.py`](../../tools/python/src/orbitarium_tools/cli.py) — `fixtures --work=4` 분기 추가.
+- [`package.json`](../../package.json) — `pnpm fixtures:work-04` 스크립트 추가.
+
+테스트 + fixture:
+
+- [`tests/fixtures/work-04/distance-policies.json`](../../tests/fixtures/work-04/distance-policies.json) — 3 정책 × 14 sample 거리 (0.001~100 AU). `_tolerance_m = 1e-3`. Prettier 정렬.
+- [`tests/unit/scale/distancePolicies.test.ts`](../../tests/unit/scale/distancePolicies.test.ts) — 14 tests: Linear bit-exact round-trip, Piecewise break points + 단조성 + 1mm round-trip, Logarithmic ln(2) at 1AU + 30AU 1mm + 1000AU relative, registry, fixture cross-check.
+- [`tests/unit/scale/position.test.ts`](../../tests/unit/scale/position.test.ts) — 5 tests: zero vector, 단일 축 변환, round-trip 1mm, 방향 보존 cosine 1.0.
+- [`tools/python/tests/test_scaling.py`](../../tools/python/tests/test_scaling.py) — 11 tests (Python 미러 검증).
+
+검증 결과:
+
+- `pnpm format:check` ✓ (Prettier auto-format 후)
+- `pnpm lint` ✓ — 초기 simple-import-sort 2건 + no-unnecessary-type-assertion 3건 → autofix.
+- `pnpm typecheck` ✓
+- `pnpm test` ✓ — **362 tests** (P1 342 → P2 +20).
+- `pnpm build` ✓ — 1113 kB.
+- `cd tools/python && uv run ruff check / mypy / pytest` ✓ — 99 tests.
+- `pnpm fixtures:work-04` ✓ — idempotent 확인 (git diff 빈 결과).
+
+설계 결정 + 발견:
+
+- **IEEE 754 LSB floor at 30 AU**: 처음 1mm round-trip 테스트가 50/100/1000 AU 에서 실패 (4mm @ 1000 AU). 4.5e12 m × 2^-52 ≈ 1mm 가 LSB. 30 AU 절대 1mm + 그 너머 relative 1e-14 두 채널로 분리.
+- **`positionToScene` 방향 보존**: `pos × (sScene / rMeters)` — 정책이 magnitude 만 변환, 방향 유지. cosine similarity 1.0 검증으로 보장. `r=0` (Sun at SSB ≈ 0) 케이스는 [0,0,0] 반환.
+- **Python `zip(strict=True)`**: PEP 618 (3.10+) 활용. break point 배열 길이 mismatch 시 즉시 실패.
+- **PiecewiseMonotonic 마지막 segment 너머 처리**: 50 AU 너머는 마지막 segment slope (`(3.0-1.5)/(50-5)`) 로 선형 연장 — 단조성 유지, smooth (C¹ 불연속 허용).
+- **Brand 타입 `as number` 불필요**: `Meters = number & {...}` 는 산술 시 자동으로 number 로 평가됨. ESLint `no-unnecessary-type-assertion` 룰이 정확.
 
 ### P3 — Body Size Scale Functions
 
@@ -248,6 +286,7 @@ pnpm fixtures:work-04
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-05-06 | 초기 작성 — P0 kickoff. Plan 본체와 함께 6 phase 구조 확정 (Strategy → Distance Scale → Size Scale → Adaptive → Dev Demo → Closeout). P1 결정 ~9건 대기. Work 3 산출물 (Position/State vector) 적극 활용 예정. |
 | 2026-05-06 | **P1 완료** — `src/scale/{types,constants,index}.ts` + Python 미러 + 12 단위 테스트 (TS 8 + Python 4). 결정 9건 (#1~#9) 모두 권장값 채택: Piecewise default / Logarithmic size default / 1 scene unit = 1 AU / forward+inverse 강제 / interface 모델 / SceneUnit+PositionScene+SizeScene phantom / Radius / 1mm 톨러런스 / IAU WGCCRE 2015 평균 적도 반지름 (11 entries). format/lint/typecheck/test/build/ruff/mypy/pytest 전부 그린. |
+| 2026-05-06 | **P2 완료** — `src/scale/{distancePolicies,position}.ts` + Python 미러 + `tests/fixtures/work-04/distance-policies.json` + `pnpm fixtures:work-04` + CLI Work 4 분기. 결정 5건 (#10~#14): break points [0.4, 5, 50] AU → [0.4, 1.5, 3.0] scene / Linear baseline + Logarithmic / r0=1AU / 30 AU 까지 1mm 절대 round-trip + relative 1e-14 / 방향 보존 + 0 벡터 가드. 단위 테스트 20건 추가 (TS 19 + Python 7). 모든 정책 monotonic + cosine 1.0 + fixture cross-check 그린. format/lint/typecheck/test(362)/build/ruff/mypy/pytest(99) 그린. |
 
 ---
 
