@@ -10,17 +10,17 @@
 
 | 항목 | 값 |
 |---|---|
-| 현재 phase | **P0 — Kickoff** (plan 작성 완료, P1 결정 라운드 대기) |
-| 다음 액션 | **P1 — Constants & NAIF Catalog** 진입 — 4개 결정(상수 출처 / NAIF 범위 / 단위 brand / 모듈 분리) 확정 |
+| 현재 phase | **P1 완료** ✓ — P2 진입 대기 |
+| 다음 액션 | **P2 — Time Systems** 진입 — Leap second 처리 / TDB-TT 모델 / JD epoch / 톨러런스 4건 결정 |
 | 마지막 갱신 | 2026-05-05 |
-| 블로커 | 없음 — Work 1 CI 그린 확인 완료, P1 진입 가능 |
+| 블로커 | 없음 |
 
 ## 1. 진행 체크리스트
 
 각 phase의 Done 기준은 [plan §3](work-02-astronomy.md#3-phase-정의) 참조.
 phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
-- [ ] **P1** — Constants & NAIF Catalog
+- [x] **P1** — Constants & NAIF Catalog _(완료 2026-05-05)_
 - [ ] **P2** — Time Systems
 - [ ] **P3** — Reference Frames (Core)
 - [ ] **P4** — IAU Rotation Model Foundation
@@ -33,17 +33,20 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 | # | 항목 | 결정 | 이유 / 비고 | Phase | 결정일 |
 |---|---|---|---|---|---|
-| _아직 없음_ | | | | | |
+| 1 | 상수 출처 | **IAU 2015 + DE440 정합** (DE440 우선, IAU 2015 nominal과 7자리 매치 검증) | DE440이 ephemeris 평가의 표준 — Work 3 적용 시 단일 GM 테이블로 통일. AU/c는 SI/IAU 정의값(exact integer), GM은 DE440 11~12자리, ε은 ERFA `obl06` (IAU 2006). | P1 | 2026-05-05 |
+| 2 | NAIF 카탈로그 범위 | **Sun(1) + 행성 barycenter(9) + 행성 body(9) + Moon + 갈릴레이 4 + 토성 5 = 29 entries** | 토성 5: Titan/Rhea/Iapetus(가장 큰 셋) + Enceladus/Mimas(시각적 매력). Work 6에서 더 추가. | P1 | 2026-05-05 |
+| 3 | 단위 안전 타입 | **brand type** (`type Meters = number & { readonly __unit: 'm' }`) | 컴파일 타임 강제 + 런타임 0 비용. 함수 경계에서 단위 혼동 방지. 헬퍼 (`degToRad`, `arcSecToRad` 등) 동봉. | P1 | 2026-05-05 |
+| 4 | 상수 모듈 분리 정책 | **단일 `constants.ts`** | 작은 상수 set (AU/c/ε + GM 12개) — 분리 비용 > 가치. Work 6 IAU rotation 데이터 들어갈 시 별도 모듈(`rotationData.ts`)로 분리. | P1 | 2026-05-05 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
 ## 3. 미결정 / 보류 (Open Questions)
 
 ### P1에서 결정
-- [ ] 상수 출처 (IAU 2015 + DE440 정합 / IAU 2009 / 자체 정의)
-- [ ] NAIF 카탈로그 범위 (Sun + 8행성 + Moon + 갈릴레이 4 + 토성 주요 5 / 더 많이 / 적게)
-- [ ] 단위 안전 타입 (brand type / class wrapper / 무시)
-- [ ] 상수 모듈 분리 정책 (단일 `constants.ts` / 카테고리별)
+- [x] 상수 출처: **IAU 2015 + DE440 정합** ✓ (#1)
+- [x] NAIF 카탈로그 범위: **29 entries** (Sun + 9 bary + 9 body + Moon + 갈릴레이 4 + 토성 5) ✓ (#2)
+- [x] 단위 안전 타입: **brand type** ✓ (#3)
+- [x] 상수 모듈 분리 정책: **단일 `constants.ts`** ✓ (#4)
 
 ### P2에서 결정
 - [ ] Leap second 처리 (정적 임베드 / IERS 동적 fetch)
@@ -80,8 +83,42 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한 줄 메모.
 
-### P1 — Constants & NAIF Catalog
-_미시작_
+### P1 — Constants & NAIF Catalog _(완료 2026-05-05)_
+설치된 의존성 (`uv pip install -e ".[astro,dev]"`):
+- astropy 7.2.0, astroquery 0.4.11, spiceypy 8.1.0
+- pyerfa 2.0.1.5 (astropy 의존성, IAU 2006 `obl06` 호출에 직접 사용)
+- + 보조 (astropy-iers-data, beautifulsoup4, requests, html5lib, keyring 등 17 패키지)
+
+생성된 파일:
+- [`src/astro/units.ts`](../../src/astro/units.ts) — Brand types (`Meters`, `MetersPerSecond`, `CubicMetersPerSecondSquared`, `Seconds`, `Radians`, `Degrees`, `ArcSeconds`) + 변환 헬퍼 (`degToRad`, `arcSecToRad`, `radToDeg`, `radToArcSec`).
+- [`src/astro/constants.ts`](../../src/astro/constants.ts) — `AU` (IAU 2012), `C_LIGHT` (SI), `LIGHT_TIME_AU` (=AU/c), `EPS_J2000` (ERFA `obl06`), `GM` 객체 (DE440, 12 키). `GMKey` type export.
+- [`src/astro/naif.ts`](../../src/astro/naif.ts) — `NAIF_CATALOG` (29 entries, parent 계층), `NaifEntry` interface, `NaifKind` type, `NAIF_IDS`, `getByNaifId(id)` 헬퍼. `as const satisfies` 패턴.
+- [`src/astro/index.ts`](../../src/astro/index.ts) — 세 모듈 re-export.
+- [`tools/python/src/orbitarium_tools/constants.py`](../../tools/python/src/orbitarium_tools/constants.py) — TS 미러. `Final` 타입 어노테이션.
+- [`tools/python/src/orbitarium_tools/naif.py`](../../tools/python/src/orbitarium_tools/naif.py) — TS 미러. `@dataclass(frozen=True, slots=True)`.
+
+테스트 파일:
+- [`tests/unit/astro/constants.test.ts`](../../tests/unit/astro/constants.test.ts) — 13 tests (정의값 / 황도경사 / GM 테이블 / 질량 정렬).
+- [`tests/unit/astro/naif.test.ts`](../../tests/unit/astro/naif.test.ts) — 8 tests (count/uniqueness/Sun/planet 부모/Moon/갈릴레이/토성5/lookup).
+- [`tests/unit/astro/units.test.ts`](../../tests/unit/astro/units.test.ts) — 4 tests (round-trip).
+- [`tools/python/tests/test_constants.py`](../../tools/python/tests/test_constants.py) — 14 tests (astropy/ERFA 비교 + DE440 매치 + 질량 정렬).
+- [`tools/python/tests/test_naif.py`](../../tools/python/tests/test_naif.py) — 9 tests (TS와 동일 구조).
+
+검증 결과:
+- `pnpm typecheck` ✓ (4 tsbuildinfo, no errors)
+- `pnpm lint` ✓ — 초기 `no-loss-of-precision` 2건 발견 → GM_sun 19자리(`1.32712440041279419e20`)를 IEEE 754에 정확히 fit하는 17자리(`1.3271244004127942e20`)로 표기 변경 (값은 동일).
+- `pnpm format:check` ✓ — Prettier 자동 정렬 (long arrow function 1줄 fit, GM 객체 trailing 0 trim).
+- `pnpm test` ✓ — 26 tests pass (4→26, 추가 22). 시간 ~280ms.
+- `pnpm build` ✓ — 1113.46 kB (P4와 동일, astro 모듈은 작아서 표시 차이 없음).
+- `pnpm test:e2e` ✓ — 7 tests pass, 회귀 없음.
+- `uv run ruff check src tests` ✓ — 초기 SIM300 yoda 3건 → astropy/ERFA 비교 좌우 순서 뒤집기 (Final 상수가 좌측이면 ruff가 yoda로 분류).
+- `uv run mypy src` ✓ — strict 모드, 4 source files.
+- `uv run pytest` ✓ — 26 tests pass (3→26, 추가 23). 시간 ~160ms.
+
+설계 결정:
+- IEEE 754 표기: DE440 publication value (`1.32712440041279419e20`, 19자리) 와 IEEE 754 double 라운딩(`1.3271244004127942e20`, 17자리)이 비트 단위 동일 — TS/Python 모두 17자리 표기 + 주석으로 publication 값 명시.
+- 행성 시스템 GM 출처 차이: IAU 2015 nominal (7자리) vs DE440 (12자리)는 행성에서 ~2e-4 차이 (예: `jupiter_bary`). 7자리 매치는 GM_sun에서만 보장 — 다른 행성 GM의 정밀 cross-check는 Work 3에서 spiceypy/PCK로.
+- ruff SIM300 처리: Final 상수가 좌측이면 yoda 분류 → astropy/ERFA reference value를 좌측에 두는 패턴으로 통일 (`assert const.au.value == AU`).
 
 ### P2 — Time Systems
 _미시작_
@@ -102,14 +139,37 @@ _미시작_
 
 > 새 세션이나 다른 작업자가 이어 받을 때 여기를 먼저 본다.
 
-### 즉시 액션: P1 — Constants & NAIF Catalog 진입
+### 즉시 액션: P2 — Time Systems 진입
 
-1. [plan §3 P1](work-02-astronomy.md#phase-1--constants--naif-catalog) 의 Decisions 4개 항목을 사용자와 결정 → §2 결정 로그에 기록
-2. 디렉터리 생성: `src/astro/`, 파일 4개 (`constants.ts`, `naif.ts`, `units.ts`, `index.ts`)
-3. Python 모듈 생성: `tools/python/src/orbitarium_tools/{constants.py, naif.py}`
-   - astro extras 설치 필요: `cd tools/python && uv pip install -e ".[astro,dev]"`
-4. 단위 테스트 (TS + pytest) — 상수 값 일치 검증
-5. P1 마감: handoff §2/§3/§4/§7 갱신 → §0 "현재 phase = P2 진입 대기"
+1. [plan §3 P2](work-02-astronomy.md#phase-2--time-systems) 의 Decisions 4개 항목을 사용자와 결정 → §2 결정 로그에 기록
+   - Leap second 처리 (정적 임베드 / IERS 동적 fetch)
+   - TDB-TT 모델 (Fairhead-Bretagnon 단순화 / IAU 2009 풀 / sin 근사)
+   - JD epoch 기준 시각 (TDB / TT)
+   - 톨러런스 (시간 1µs / TT-TAI 1ns)
+2. 신규 파일:
+   - `src/astro/time.ts` — UTC↔TAI↔TT↔TDB, JD/MJD/J2000 경과
+   - `src/astro/leapSeconds.ts` — 정적 leap second 테이블
+   - `tools/python/src/orbitarium_tools/time.py` — astropy.time 래퍼 + `generate_fixtures` 함수
+3. 골든 fixture 디렉터리 생성: `tests/fixtures/work-02/`
+   - `time.json` — 20+ 대표 시각의 (UTC, TAI, TT, TDB, JD, MJD, J2000_days) 7튜플 (Python에서 생성)
+4. 테스트:
+   - `tests/unit/astro/time.test.ts` — fixture 로딩 + 1µs 비교
+   - `tools/python/tests/test_time.py` — astropy 비교
+5. P2 마감: handoff §2/§3/§4/§7 갱신 → §0 "현재 phase = P3 진입 대기"
+
+### P1 산출물 빠른 참조
+
+```ts
+// src/astro/index.ts 가 export하는 핵심 심볼
+import { AU, C_LIGHT, LIGHT_TIME_AU, EPS_J2000, GM } from '@/astro'
+import { NAIF_CATALOG, getByNaifId, type NaifEntry } from '@/astro'
+import { degToRad, arcSecToRad, type Meters, type Radians } from '@/astro'
+```
+
+```python
+from orbitarium_tools.constants import AU, C_LIGHT, LIGHT_TIME_AU, EPS_J2000, GM
+from orbitarium_tools.naif import NAIF_CATALOG, get_by_naif_id, NaifEntry
+```
 
 ### Work 2 전체 진입 전 점검 (2026-05-05 시점)
 
@@ -174,7 +234,7 @@ uv run orbitarium-tools fixtures --work=2 --out=../../tests/fixtures/work-02/
 
 ## 6. 알려진 이슈 / 노트
 
-- **astro extras 미설치**: Work 1 P6에서는 `[dev]` extras만 설치. P1 진입 시 `uv pip install -e ".[astro,dev]"` 로 astropy/astroquery/spiceypy 추가 필요. 첫 실행 시 ~수백 MB 다운로드.
+- ~~**astro extras 미설치**~~: P1에서 해결 — `uv pip install -e ".[astro,dev]"` 실행 완료 (astropy 7.2.0, spiceypy 8.1.0, pyerfa 2.0.1.5). CI에서는 매 실행 새 venv를 쓰는데 `[dev]` 만 설치 → P2부터 astropy 의존하면 CI 워크플로 갱신 필요. **TODO (P2 시작 시)**: `.github/workflows/ci.yml` 의 python job에서 `uv pip install -e ".[dev]"` → `".[astro,dev]"` 변경.
 - **astropy 첫 import 시간**: ~1-2초 (지구 회전 데이터 로딩). pytest 첫 실행 느림. 이후 캐시됨.
 - **spiceypy PCK 커널**: P4 reference에서 사용. 테스트 시 NAIF 사이트에서 PCK 다운로드 필요할 수 있음 (수 MB). 캐시 정책 P4 진입 시 결정.
 - **leap second 갱신**: IERS Bulletin C 가 6월/12월에 갱신. P2의 정적 테이블도 동일 주기로 갱신 필요. 스케줄러는 Work 12 또는 별도 작업으로.
@@ -186,6 +246,7 @@ uv run orbitarium-tools fixtures --work=2 --out=../../tests/fixtures/work-02/
 | 날짜 | 변경 |
 |---|---|
 | 2026-05-05 | 초기 작성 — P0 kickoff. Plan 본체와 함께 6 phase 구조 확정. P1 결정 4건 대기. |
+| 2026-05-05 | **P1 완료** — `src/astro/{constants,naif,units,index}.ts` + Python 미러 + 25 단위 테스트. astro extras (astropy/spiceypy/pyerfa) 설치. IAU 2015+DE440 정합, 29 NAIF entries, brand type 단위 안전, 단일 constants 모듈. typecheck/lint/format/test/build/e2e/ruff/mypy/pytest 전부 그린. IEEE 754 19→17자리 표기 정정 + ruff SIM300 yoda 비교 순서 정정 처리 |
 
 ---
 
