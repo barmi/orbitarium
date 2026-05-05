@@ -29,6 +29,7 @@ astro = [
     "astropy>=6.0",
     "astroquery>=0.4.7",
     "spiceypy>=6.0",
+    "jplephem>=2.21",
 ]
 viz = [
     "matplotlib>=3.8",

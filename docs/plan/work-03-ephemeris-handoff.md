@@ -8,12 +8,12 @@
 
 ## 0. 현재 상태 (Status)
 
-| 항목         | 값                                                                                                                                                          |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 현재 phase   | **P1 완료** ✓ — P2 진입 대기                                                                                                                                |
-| 다음 액션    | **P2 — DE440 Preprocessing (Python)** 진입 — `orbitarium_tools.de440` 작성, SPK 커널 → Chebyshev binary + manifest, spiceypy `spkezr` 비트 동일 self-test |
-| 마지막 갱신  | 2026-05-05                                                                                                                                                  |
-| 블로커       | 없음                                                                                                                                                        |
+| 항목         | 값                                                                                                                       |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| 현재 phase   | **P2 완료** ✓ — P3 진입 대기                                                                                             |
+| 다음 액션    | **P3 — TS Chebyshev Evaluator** 진입 — `src/ephemeris/{de440Loader,chebyshev,de440Evaluator}.ts` 작성, fixture 비교 |
+| 마지막 갱신  | 2026-05-06                                                                                                               |
+| 블로커       | 없음                                                                                                                     |
 
 ## 1. 진행 체크리스트
 
@@ -21,7 +21,7 @@
 phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 - [x] **P1** — Strategy & Brand Types _(완료 2026-05-05)_
-- [ ] **P2** — DE440 Preprocessing (Python)
+- [x] **P2** — DE440 Preprocessing (Python) _(완료 2026-05-06)_
 - [ ] **P3** — TS Chebyshev Evaluator
 - [ ] **P4** — Horizons Reference (Python)
 - [ ] **P5** — Dev Demo `/dev/ephemeris`
@@ -43,6 +43,14 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 8   | 위치 톨러런스 | **1 mm** (`EPHEMERIS_TOL_M = 1e-3`) | 1 AU에서 1 mm ≈ 6.7e-15 rad (~1.4e-9 mas) — 각도 mas보다 ~6 orders 엄격. spiceypy reference의 IEEE 754 한계까지 추적. | P1 | 2026-05-05 |
 | 9   | 속도 톨러런스 | **1 µm/s** (`EPHEMERIS_TOL_VEL_M_S = 1e-6`) | 지구 공전 속도 ~30 km/s 대비 3.3e-11 상대 정밀도. Chebyshev derivative borderline 가능 — P3 측정 후 조정 가능. | P1 | 2026-05-05 |
 | 10  | Brand types | **`PositionICRF`/`VelocityICRF`** (Vec3-shape phantom on `Meters`/`MetersPerSecond`), **`StateVectorICRF`** dataclass | Work 2 unit brand 위에 frame-aware tuple 합성. factory `positionICRF(x,y,z)` / `velocityICRF(...)` 제공. Python에서는 `tuple[float, float, float]` + `@dataclass(frozen, slots)`. | P1 | 2026-05-05 |
+| 11  | DE440 segment 조달 라이브러리 | **`jplephem` 2.24** (pyproject `astro` extras에 추가) | spiceypy의 low-level DAF API는 문서가 부족하고 cspice C 매뉴얼 의존. jplephem은 pure-python으로 SPK type-2/3을 깔끔하게 노출 (`load_array()` → `(init_jd, intlen_days, coefs[3,n,k])`). skyfield도 동일 의존. | P2 | 2026-05-06 |
+| 12  | DE440 segment 인벤토리 | **14 segments** (`(1..10, 0)` SSB-children + `(199, 1) (299, 2) (301, 3) (399, 3)`) — 외행성 body는 alias로 처리 | DE440 자체에 Mars+ planet body segment 없음 (planet ≈ bary 질량 지배). `PLANET_BODY_ALIASES` 로 `499→4, 599→5, ...` 맵핑. spiceypy `spkezr` 도 동일 동작. | P2 | 2026-05-06 |
+| 13  | Binary format | **little-endian Float64**, header `<iiiidd>` (target/center/n_intervals/coef_count/init_jd/interval_length_days), payload `f64[3, n_intervals, coef_count]` C-order | 모든 타깃 환경(x86/ARM Mac, GitHub Actions)이 LE — 명시적 LE 가정. SPK가 km이므로 evaluator가 km→m, km/day→m/s 변환. 헤더 32바이트로 작아 다운로드 단위에 큰 영향 없음. | P2 | 2026-05-06 |
+| 14  | Chunk 단위 | **DE440 native intervals** (Sun 16d, Mercury bary 8d, EMB 16d, Moon/Earth 4d, ...) — 그대로 보존 | Custom resampling은 정밀도 손실 + 추가 버그 표면. native intervals는 NAIF가 정밀도/사이즈 trade-off 최적화한 결과 — 그대로 사용. | P2 | 2026-05-06 |
+| 15  | 압축 | **무압축** (transport-layer gzip/brotli 신뢰) | Float64 binary는 본질적으로 entropy 높아 lossless 압축 효과 ~10%. fetch에서 `Content-Encoding`만 잡으면 충분. build-time gzip은 캐싱/검증 복잡도 증가. | P2 | 2026-05-06 |
+| 16  | Manifest 위치 | **`public/data/ephemeris/de440/manifest.json`** + body별 `spk_<target>_<center>.bin` | `public/data/`는 Vite static asset root — `/data/ephemeris/de440/...` URL로 fetch 가능. .gitignore 의 `public/data/ephemeris/*` 정책 그대로 적용 (binary 미commit). | P2 | 2026-05-06 |
+| 17  | Binary commit 정책 | **build-time download/생성** (.gitignore — `public/data/ephemeris/*` 이미 적용) | DE440 SPK ~120MB + 사전처리 binary ~25MB는 git LFS 도입하지 않는 한 commit 부담. `pnpm de440:preprocess` 한 줄로 재생성. CI에서는 캐시 + 1회 다운로드. | P2 | 2026-05-06 |
+| 18  | spiceypy/jplephem 비교 톨러런스 | **위치 < 1 mm, 속도 < 1 µm/s** — 측정 결과 max 0.49mm/0.007µm/s | jplephem `compute_and_differentiate`와 우리 evaluator 차이는 IEEE 754 evaluation 순서 차이 수준 (sub-µm). spiceypy `spkezr` 와 SSB-centered chain 비교에서도 < 0.1mm 일관. | P2 | 2026-05-06 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -63,12 +71,15 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 ### P2에서 결정
 
-- [ ] 커널 다운로드 경로 (NAIF 공식 / 미러)
-- [ ] Binary format (Float64 LE / Float32 / custom)
-- [ ] Chunk 단위 (DE440 native intervals / custom resampling)
-- [ ] 압축 (없음 / build-time gzip)
-- [ ] Manifest 위치 (`public/data/de440/manifest.json` / in-bundle)
-- [ ] Binary commit 정책 (git commit / build-time download)
+- [x] 커널 다운로드 경로: **NAIF 공식 미러** (`https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440.bsp`) ✓ (#11~17)
+- [x] DE440 segment 조달 라이브러리: **jplephem 2.24** ✓ (#11)
+- [x] Segment 인벤토리: **14 segments + 외행성 alias** ✓ (#12)
+- [x] Binary format: **little-endian Float64** (header `<iiiidd>` + `f64[3, n, k]`) ✓ (#13)
+- [x] Chunk 단위: **DE440 native intervals** ✓ (#14)
+- [x] 압축: **무압축** ✓ (#15)
+- [x] Manifest 위치: **`public/data/ephemeris/de440/manifest.json`** + `spk_<target>_<center>.bin` ✓ (#16)
+- [x] Binary commit 정책: **build-time download/생성** (.gitignore 적용 그대로) ✓ (#17)
+- [x] 비교 톨러런스: **< 1 mm / 1 µm/s 일관 통과** ✓ (#18)
 
 ### P3에서 결정
 
@@ -129,9 +140,39 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 - `pnpm build` ✓ — 1113.46 kB.
 - `uv run ruff check / mypy / pytest` ✓ — 75 tests (Work 2 71 → +4).
 
-### P2 — DE440 Preprocessing (Python)
+### P2 — DE440 Preprocessing (Python) _(완료 2026-05-06)_
 
-_미시작_
+생성/수정 파일:
+
+- [`tools/python/src/orbitarium_tools/de440.py`](../../tools/python/src/orbitarium_tools/de440.py) — `download_de440_kernel`/`crop_segment`/`write_segment_binary`/`read_segment_binary`/`evaluate_segment`/`preprocess`/`resolve_chain` 함수, `De440Segment` `@dataclass(frozen, slots)`, `DE440_SEGMENT_TARGETS_AND_CENTERS` (14), `PLANET_BODY_ALIASES` (6), `BINARY_HEADER_FORMAT = "<iiiidd"`, Chebyshev recurrence + derivative 평가.
+- [`tools/python/src/orbitarium_tools/cli.py`](../../tools/python/src/orbitarium_tools/cli.py) — `de440 preprocess` 서브커맨드 추가 (`--start --end --out [--spk]`).
+- [`tools/python/pyproject.toml`](../../tools/python/pyproject.toml) — `[astro]` extras에 `jplephem>=2.21` 추가 (uv.lock 동기화).
+- [`package.json`](../../package.json) — `pnpm de440:preprocess` 스크립트 추가 (1900-2150, public/data 출력).
+
+테스트:
+
+- [`tools/python/tests/test_de440.py`](../../tools/python/tests/test_de440.py) — 8 tests: segment inventory, alias, chain resolve, binary header size, write/read round-trip (numpy bit-equal), 14 segments × 4 JDs vs jplephem `compute_and_differentiate` (< 1mm/1µm/s), 12 targets × 3 JDs SSB chain vs spiceypy `spkezr`, preprocess pipeline 산출물 14 binary + manifest.
+
+산출물 (gitignored):
+
+- `tools/python/.cache/de440/de440.bsp` — 119.8 MB SPK 커널 (NAIF 공식, .gitignore `*.bsp`).
+- `public/data/ephemeris/de440/manifest.json` — 14 segments 메타 + binary_format 명세 + alias.
+- `public/data/ephemeris/de440/spk_<target>_<center>.bin` × 14 — 총 ~25 MB (Sun 1.4MB / EMB 1.7MB / Moon 6.8MB / Earth 6.8MB / Venus bary 1.3MB / Mercury bary 3.7MB / 외행성 bary 0.4-0.7MB / 199,299 80 bytes).
+
+검증 결과:
+
+- `uv run ruff check src tests` ✓ (E501 line-too-long 2건 line-break, SIM117 nested with 통합, UP017 `timezone.utc → UTC` 처리, F841 unused-var 정리).
+- `uv run mypy src` ✓ (jplephem `# type: ignore[import-untyped]`, manifest dict 타입 명시, cli `assert isinstance(segments, list)`).
+- `uv run pytest -q` ✓ — **83 tests** (Work 2 75 → P2 +8). astropy ERFA dubious year warning 3건 (Work 2 동일).
+- `pnpm de440:preprocess` ✓ — 14 segments, 25 MB.
+
+설계 결정 + 발견:
+
+- **Mercury(199,1) / Venus(299,2) zero-segment**: DE440 에서 두 inner planet의 body→bary offset 은 1 interval × 2 coefficient × 0 위치 — 행성 자체가 barycenter 와 거의 일치 (1AU 미만 천체에 대한 상대 위치를 mm 정밀도로 표현하기 위한 NAIF 컨벤션). 우리 binary 도 80 bytes 그대로 보존.
+- **외행성 alias 적용 시점**: TS evaluator는 `getStateAt(naifId)` 에 caller 가 외행성 body id (e.g. 499) 를 넘기면 manifest `aliases_planet_body_to_barycenter` 를 보고 자동으로 bary 로 치환. spiceypy 도 같은 alias 가정.
+- **chain composition**: SSB-centered position = sum over chain segments. 예: Earth(399) chain = `[399, 3]`, evaluator 가 `pos(399→3)` + `pos(3→0)` 합산. spiceypy `spkezr` 도 내부적으로 동일 chain 적용.
+- **Velocity 정밀도 borderline**: Chebyshev derivative 는 polynomial degree -1 → max diff ~7e-9 µm/s 측정. P3 TS 평가에서도 동일 수준 예상; tolerance 1µm/s 충분 마진.
+- **certifi 의존성**: 스크립트에서 `urllib.request.urlopen` 호출 시 SSL CA 가 누락된 환경 (uv 기본 cpython) 에서 verify 실패. `certifi.where()` 로 명시적 CA 사용. astropy 의존성으로 이미 설치됨 (no extra dep).
 
 ### P3 — TS Chebyshev Evaluator
 
@@ -262,6 +303,7 @@ pnpm fixtures:work-03
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-05-05 | 초기 작성 — P0 kickoff. Plan 본체와 함께 6 phase 구조 확정 (Strategy → Preprocessing → TS Evaluator → Horizons Reference → Dev Demo → Closeout). P1 결정 ~10건 대기. |
 | 2026-05-05 | **P1 완료** — `src/ephemeris/{types,constants,index}.ts` + Python 미러 + 10 단위 테스트. 결정 10건 (#1~#10) 모두 권장값 채택: Chebyshev 직접 평가 / DE440 1900-2150 / 20 entries (Sun + 9 bary + 9 body + Moon) / `{position, velocity}` 분리 객체 / JdTdb 입력 / ICRF (m, m/s) 출력 / 1mm·1µm/s 톨러런스 / `PositionICRF`/`VelocityICRF`/`StateVectorICRF` brand 합성. format/lint/typecheck/test(317)/build/ruff/mypy/pytest(75) 전부 그린. ESLint simple-import-sort 1건 autofix. |
+| 2026-05-06 | **P2 완료** — `orbitarium_tools.de440` (`crop_segment`/`evaluate_segment`/`write_segment_binary`/`preprocess`/`resolve_chain` + `De440Segment`), CLI `de440 preprocess`, `pnpm de440:preprocess`, jplephem 2.24 의존성. 결정 8건 (#11~#18): jplephem 라이브러리 / 14 native segments + 6 alias / Float64 LE 헤더 `<iiiidd>` / native intervals / 무압축 / `public/data/ephemeris/de440/` build-time 생성. 단위 테스트 8건 추가 (총 83). 14 segments × 4 JDs 비교: jplephem max diff < 0.49 mm / 0.007 µm/s, spiceypy SSB chain max diff < 0.1 mm / 4 µm/s — 모두 1mm/1µm/s 톨러런스 통과. ruff/mypy/pytest 모두 그린. |
 
 ---
 

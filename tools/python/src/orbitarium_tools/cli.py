@@ -1,9 +1,12 @@
 """Orbitarium tools CLI entry point.
 
 Subcommands:
-  - ``version``        Show package version.
-  - ``fixtures``       Generate golden fixtures for a given Work
-                       (e.g. ``orbitarium-tools fixtures --work=2 --out=tests/fixtures/work-02/``).
+  - ``version``                Show package version.
+  - ``fixtures --work=N --out=DIR``    Generate golden fixtures for a given Work.
+  - ``de440 preprocess --start=JD --end=JD --out=DIR``
+                               Crop the DE440 SPK kernel to a JD range and
+                               serialise per-segment Chebyshev binaries plus a
+                               manifest, ready for browser consumption.
 
 Each Work registers its fixtures under a Work number; missing Works fall through
 with a non-zero exit.
@@ -30,16 +33,85 @@ def _build_parser() -> argparse.ArgumentParser:
         "fixtures",
         help="Generate golden fixtures for a given Work.",
     )
-    p_fix.add_argument(
-        "--work", type=int, required=True, help="Work number (e.g. 2)."
-    )
+    p_fix.add_argument("--work", type=int, required=True, help="Work number (e.g. 2).")
     p_fix.add_argument(
         "--out",
         type=Path,
         required=True,
         help="Output directory (e.g. tests/fixtures/work-02/).",
     )
+
+    p_de = sub.add_parser(
+        "de440",
+        help="DE440 SPK kernel utilities.",
+    )
+    de_sub = p_de.add_subparsers(dest="de_command", metavar="<de440-command>")
+    p_pre = de_sub.add_parser(
+        "preprocess",
+        help="Crop DE440 to a JD range and write Chebyshev binaries + manifest.",
+    )
+    p_pre.add_argument(
+        "--start",
+        type=float,
+        required=True,
+        help="Start Julian Date in TDB (e.g. 2415020.5 for 1900-01-01).",
+    )
+    p_pre.add_argument(
+        "--end",
+        type=float,
+        required=True,
+        help="End Julian Date in TDB (e.g. 2506717.5 for 2150-12-31).",
+    )
+    p_pre.add_argument(
+        "--out",
+        type=Path,
+        required=True,
+        help="Output directory (e.g. public/data/de440/).",
+    )
+    p_pre.add_argument(
+        "--spk",
+        type=Path,
+        default=None,
+        help="Path to DE440 SPK; if missing, downloaded into a default cache.",
+    )
     return parser
+
+
+def _run_fixtures(args: argparse.Namespace) -> int:
+    if args.work == 2:
+        from orbitarium_tools.frames import generate_fixtures as gen_frames
+        from orbitarium_tools.rotation import generate_fixtures as gen_rotation
+        from orbitarium_tools.time import generate_fixtures as gen_time
+
+        for out_file in (gen_time(args.out), gen_frames(args.out), gen_rotation(args.out)):
+            print(f"Generated {out_file}")
+        return 0
+    print(f"Work {args.work} fixtures not implemented", file=sys.stderr)
+    return 1
+
+
+def _run_de440(args: argparse.Namespace) -> int:
+    if args.de_command == "preprocess":
+        from orbitarium_tools.de440 import download_de440_kernel, preprocess
+
+        spk_path = args.spk
+        if spk_path is None:
+            cache_dir = Path(__file__).resolve().parent.parent.parent / ".cache" / "de440"
+            spk_path = cache_dir / "de440.bsp"
+            spk_path = download_de440_kernel(spk_path)
+
+        manifest = preprocess(
+            spk_path=spk_path,
+            out_dir=args.out,
+            jd_start=args.start,
+            jd_end=args.end,
+        )
+        segments = manifest["segments"]
+        assert isinstance(segments, list)
+        print(f"Wrote {len(segments)} segments to {args.out}")
+        return 0
+    print("usage: orbitarium-tools de440 preprocess ...", file=sys.stderr)
+    return 1
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -49,18 +121,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "version":
         print(__version__)
         return 0
-
     if args.command == "fixtures":
-        if args.work == 2:
-            from orbitarium_tools.frames import generate_fixtures as gen_frames
-            from orbitarium_tools.rotation import generate_fixtures as gen_rotation
-            from orbitarium_tools.time import generate_fixtures as gen_time
-
-            for out_file in (gen_time(args.out), gen_frames(args.out), gen_rotation(args.out)):
-                print(f"Generated {out_file}")
-            return 0
-        print(f"Work {args.work} fixtures not implemented", file=sys.stderr)
-        return 1
+        return _run_fixtures(args)
+    if args.command == "de440":
+        return _run_de440(args)
 
     parser.print_help()
     return 0
