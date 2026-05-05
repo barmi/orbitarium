@@ -1,2 +1,8 @@
+export type { BodyProps } from './Body'
+export { default as Body } from './Body'
 export * from './catalog'
+export * from './material'
+export * from './rotation'
+export type { SunMeshProps } from './SunMesh'
+export { default as SunMesh } from './SunMesh'
 export * from './types'
