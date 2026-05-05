@@ -10,8 +10,8 @@
 
 | 항목 | 값 |
 |---|---|
-| 현재 phase | **P5 완료** ✓ — 다음은 **P6 (Python Tooling Smoke)** |
-| 다음 액션 | P6 시작: `tools/python/` 가상환경 + `pip install -e ".[dev]"` + smoke pytest |
+| 현재 phase | **P6 완료** ✓ — 다음은 **P7 (CI Pipeline Skeleton)** |
+| 다음 액션 | P7 시작: GitHub Actions로 lint/type/test/build (Node + Python) PR/push 자동 |
 | 마지막 갱신 | 2026-05-05 |
 | 블로커 | 없음 |
 
@@ -25,7 +25,7 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] **P3** — App Shell & Dev Routes _(완료 2026-05-05)_
 - [x] **P4** — three.js Hello _(완료 2026-05-05)_
 - [x] **P5** — Test Frameworks _(완료 2026-05-05)_
-- [ ] **P6** — Python Tooling Smoke
+- [x] **P6** — Python Tooling Smoke _(완료 2026-05-05)_
 - [ ] **P7** — CI Pipeline Skeleton
 
 ## 2. 결정 로그 (Decision Log)
@@ -43,6 +43,7 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 9 | FPS 카운터 구현 | **자체 구현 (useEffect + requestAnimationFrame)** | P4는 파이프라인 검증용 — 의존성 추가 불요. 상세 GPU/draw call metric은 Work 11에서 r3f-perf 또는 stats.js로 교체 예정. | P4 | 2026-05-05 |
 | 10 | e2e 테스트 도구 | **Playwright** | 멀티 브라우저, 내장 trace viewer, webServer auto-start, async 대기 매처 풍부. CI 캐시 가능. | P5 | 2026-05-05 |
 | 11 | Vitest DOM 환경 | **happy-dom** | jsdom 대비 ~3배 빠른 단위 테스트. 대부분 DOM API 충분 — 본 프로젝트는 R3F 컴포넌트 단위 테스트 거의 없으니 더 적합. | P5 | 2026-05-05 |
+| 12 | Python venv 도구 | **uv** (0.10.0 via Homebrew) | 이미 설치됨. Rust 기반 — venv 생성/패키지 설치 기존 pip 대비 수십배 빠름. `uv run`으로 격리 실행도 깔끔. | P6 | 2026-05-05 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -70,7 +71,7 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] DOM 환경: **happy-dom** ✓ (#11)
 
 ### P6에서 결정
-- [ ] Python venv 도구: **uv** (권장) / venv+pip / pyenv
+- [x] Python venv 도구: **uv** ✓ (#12)
 
 ### P7에서 결정
 - [ ] e2e를 ci.yml에 포함 / 별도 workflow
@@ -207,8 +208,32 @@ phase 종료 시 생성·수정된 주요 파일을 기록.
 - WebGL 픽셀 read 테스트는 시도했으나 R3F가 `preserveDrawingBuffer` 미설정 → `getContext('webgl2/webgl')` 활성 검증으로 대체. 시각적 비공백 검증은 P4 preview 스크린샷에서 이미 완료.
 - coverage exclude: `src/main.tsx`, `src/dev/**`, `src/render/**` — entry/dev/그래픽 코드는 단위 커버리지 의미 적음. 도메인 코드(astro, ephemeris 등 Work 2~)에 집중.
 
-### P6 — Python Tooling Smoke _(예정)_
-- _phase 종료 시 채움_
+### P6 — Python Tooling Smoke _(완료 2026-05-05)_
+환경:
+- 시스템 Python 3.12.2, uv 0.10.0 (Homebrew). `uv venv` 가 자동으로 managed Python 3.13.5 선택 (>=3.11 충족).
+- venv 위치: `tools/python/.venv/` (gitignored).
+
+설치된 의존성 (`uv pip install -e ".[dev]"`):
+- numpy 2.4.4 (base)
+- pytest 9.0.3, ruff 0.15.12, mypy 1.20.2 (dev extras)
+- + iniconfig, librt, mypy-extensions, packaging, pathspec, pluggy, pygments, typing-extensions, orbitarium-tools 0.1.0 (editable)
+
+생성/수정 파일:
+- [`tools/python/tests/test_smoke.py`](../../tools/python/tests/test_smoke.py) — 3 tests:
+  1. `__version__ == "0.1.0"`
+  2. `python -m orbitarium_tools.cli version` → "0.1.0"
+  3. `python -m orbitarium_tools.cli` (no args) → 도움말 출력
+- `tools/python/tests/.gitkeep` 제거.
+
+검증 결과 (모두 `tools/python/` 에서 `uv run`):
+- `uv run orbitarium-tools version` → `0.1.0` ✓
+- `uv run ruff check src tests` → All checks passed! ✓
+- `uv run mypy src` → Success: no issues found in 2 source files ✓ (strict 모드)
+- `uv run pytest` → 3 passed in 0.06s ✓
+
+비고:
+- `astro` / `viz` / `notebook` extras는 P6에서 설치하지 않음 — Work 2부터 모듈 추가 시 그 Work의 phase 에서 함께 설치.
+- 향후 lock 파일은 사용 안 함 (간단성 우선). 의존성이 늘면 `uv pip compile` 로 lock 도입 검토.
 
 ### P7 — CI Pipeline Skeleton _(예정)_
 - _phase 종료 시 채움_
@@ -217,38 +242,31 @@ phase 종료 시 생성·수정된 주요 파일을 기록.
 
 > 새 세션이나 다른 작업자가 이어 받을 때 여기를 먼저 본다.
 
-### 다음 작업: P6 — Python Tooling Smoke
+### 다음 작업: P7 — CI Pipeline Skeleton
 
-**Goal**: `tools/python/` 가 설치/실행/테스트 가능 — Work 2부터 reference 모듈 받을 준비. plan 본체 [§3 Phase 6](work-01-foundation.md#phase-6--python-tooling-smoke) 참조.
+**Goal**: GitHub Actions 로 lint / typecheck / test / build (Node + Python) 를 PR/push 시 자동 실행. plan 본체 [§3 Phase 7](work-01-foundation.md#phase-7--ci-pipeline-skeleton) 참조.
 
 **Step 1. 결정 라운드**
-§3 의 P6 결정 1개 확정:
-1. Python venv 도구: **uv** (권장 — 빠름) / venv+pip / pyenv
+§3 의 P7 결정 1개 확정:
+1. e2e 를 ci.yml 에 포함 / 별도 workflow 분리
 
-**Step 2. 환경 구성**
-```bash
-cd tools/python
-uv venv                              # 또는 python -m venv .venv
-source .venv/bin/activate
-uv pip install -e ".[dev]"           # 또는 pip install -e ".[dev]"
-```
+**Step 2. 워크플로 작성**
+- `.github/workflows/ci.yml`
+  - `node` job: setup-node + pnpm action + cache → install → lint → typecheck → test (단위) → build
+  - `python` job: setup-python + uv 설치 + cache → `uv pip install -e ".[dev]"` → ruff → mypy → pytest
+  - `e2e` job (포함 시): Playwright 캐시 → install → `pnpm test:e2e`
+- 트리거: `push` (main), `pull_request`
 
-**Step 3. smoke 테스트 작성**
-- `tools/python/tests/test_smoke.py` — `from orbitarium_tools import __version__; assert __version__ == "0.1.0"`, CLI invoke 검증
+**Step 3. 검증**
+- 임시 브랜치 + PR로 CI 그린 확인 (또는 `act`로 로컬 시뮬레이션)
+- README 에 CI 배지 (선택)
 
-**Step 4. 검증**
-```bash
-orbitarium-tools version             # → 0.1.0
-ruff check src tests
-mypy src
-pytest                               # 통과
-```
-
-**Step 5. handoff 갱신** (동일 패턴)
+**Step 4. handoff 갱신** (동일 패턴)
 
 **Notes**
-- Python venv는 `.venv/` 패턴이며 `.gitignore`에 이미 포함됨.
-- 사용 venv 도구를 §2 결정 로그에 기록.
+- pnpm 캐시: `pnpm/action-setup@v4` + `actions/setup-node@v4` 의 `cache: pnpm` 조합 권장.
+- Playwright: `~/.cache/ms-playwright` 캐시 키 = OS + chromium 버전.
+- Python: uv 가 actions/setup-python 결합으로 자동 캐시 가능 (`astral-sh/setup-uv@v4`).
 
 ### 빠른 검증 명령 (Work 1 전반)
 
@@ -292,6 +310,7 @@ pytest
 | 2026-05-05 | **P3 완료** — react-router-dom 도입 + `/dev/*` sub-router + registry 기반 동적 카드 11개 + dev-routes 컨벤션 문서. prod 빌드에서 dev chunk 완전 제거 양방향 검증 (기본=제외 / VITE_ENABLE_DEV_ROUTES=true=포함) |
 | 2026-05-05 | **P4 완료** — R3F 회전 sphere + 단일 별 + 자체 FPS 오버레이. preview 스크린샷으로 시각 확인 (120 fps 라이브, sphere 렌더). 번들 232 kB → 1113 kB (three.js 추가, Work 11에서 분할 예정). `.claude/launch.json` 추가, `.prettierignore`에 docs/*.md 보호 |
 | 2026-05-05 | **P5 완료** — Vitest + happy-dom 단위 (4 tests) + Playwright + chromium e2e (7 tests). tsconfig.test.json 신설. `pnpm test` / `pnpm test:e2e` 모두 그린. WebGL 픽셀 read는 R3F preserveDrawingBuffer 미설정 이슈로 context 활성 검증으로 대체 |
+| 2026-05-05 | **P6 완료** — `tools/python/.venv` (uv managed Python 3.13.5) + `[dev]` extras (pytest/ruff/mypy/numpy). smoke test 3건. `orbitarium-tools version` / ruff / mypy --strict / pytest 모두 그린 |
 
 ---
 
