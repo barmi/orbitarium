@@ -8,12 +8,12 @@
 
 ## 0. 현재 상태 (Status)
 
-| 항목         | 값                                                                                              |
-| ------------ | ----------------------------------------------------------------------------------------------- |
-| 현재 phase   | **P5 완료** ✓ — **P6 시작 대기**                                                                |
-| 다음 액션    | P6 — closeout (`tests/fixtures/work-06/README.md`, `bodies-conventions.md`, 회귀 가드 검증, 텍스처 자산 정책 마무리) |
-| 마지막 갱신  | 2026-05-06                                                                                      |
-| 블로커       | 없음                                                                                            |
+| 항목         | 값                                                                          |
+| ------------ | --------------------------------------------------------------------------- |
+| 현재 phase   | **P6 완료** ✓ — **Work 6 마감**                                             |
+| 다음 액션    | **Work 7 — Orbits & Trajectories** plan/handoff 작성 후 `/dev/orbits` 진입 |
+| 마지막 갱신  | 2026-05-06                                                                  |
+| 블로커       | 없음                                                                        |
 
 ## 1. 진행 체크리스트
 
@@ -25,7 +25,9 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] **P3** — Body Mesh Pipeline (Sun + 9 planets + Moon) _(완료 2026-05-06)_
 - [x] **P4** — Saturn Rings + Major Moons _(완료 2026-05-06)_
 - [x] **P5** — Dev Demo `/dev/body/<slug>` + `/dev/body/saturn` _(완료 2026-05-06)_
-- [ ] **P6** — Cross-validation & Golden Fixtures (Closeout)
+- [x] **P6** — Cross-validation & Golden Fixtures (Closeout) _(완료 2026-05-06)_
+
+> Work 6 마감 = 모든 phase [x] + [plan §1 Definition of Done](work-06-bodies.md#1-결과-정의-definition-of-done) 모든 항목 충족.
 
 > Work 6 마감 = 모든 phase [x] + [plan §1 Definition of Done](work-06-bodies.md#1-결과-정의-definition-of-done) 모든 항목 충족.
 
@@ -74,6 +76,10 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 39  | 시간 슬라이더 default | **현재 시각 vs. fixed 2026-05-06** | dev demo reproducibility 우선 → `BASE_UTC = 2026-05-06T00:00:00Z` 고정 + slider 로 ±5 년 offset. plan #'시간 슬라이더 default' 권장 (현재 시각) 변경 — fixed 이 e2e 안정성에도 좋음. | P5 | 2026-05-06 |
 | 40  | Sub-solar 계산 정책 | **DE440 evaluator 미사용 — synthetic Sun 위치 (-1AU, 0, 0) ICRF** | 본 Work dev demo 의 sub-solar lon/lat 은 IAU rotation matrix 검증용. 정확한 위치는 Work 9 / Work 11 에서 ephemeris wiring. dev demo 는 단순 + 빠름. | P5 | 2026-05-06 |
 | 41  | Saturn 전용 분기 처리 | **`/dev/body/saturn` 별도 라우트 없음 — `BodyInspector` 가 `body.rings !== null` 분기로 rings on/off + ring toggle 노출** | 코드 중복 제거. plan §3 P5 의 "Saturn 전용 페이지" 는 같은 component 의 conditional UI 로 구현. | P5 | 2026-05-06 |
+| 42  | Fixture 형식 | **JSON** + `_` prefix metadata (Work 2~5 동일) | 사람-가독 + diff 친화. `_tolerance_mas_polynomial_only` / `_tolerance_arcsec_mercury_moon` 두 톨러런스 채널 명시. | P6 | 2026-05-06 |
+| 43  | Fixture 갱신 정책 | **수동** (`pnpm fixtures:work-06`) | 정책 / 상수 변경은 의도적 결정. CI 자동 갱신 금지. reviewer 가 fixture diff 검토 (특히 W angle / matrix elements). | P6 | 2026-05-06 |
+| 44  | 텍스처 git 정책 | **placeholder README only — 실제 자산은 별도 task** (P3 #27 carry-over) | Solar System Scope 다운로드 / 변환 / commit 은 본 Work 외부. Body 컴포넌트가 fallback color 로 정상 동작 → e2e 검증 충분. 자산 추가 시 README 의 절차 따름. | P6 | 2026-05-06 |
+| 45  | Conventions 문서 위치 | **`docs/architecture/bodies-conventions.md`** (Work 4/5 패턴) | 13 섹션: 책임 경계 / 카탈로그 / IAU rotation / mesh pipeline / materials / rotation wiring / Saturn rings / tolerance / fixtures / textures / dev demo / Work 7+ 체크리스트 / 정확도 디버깅. | P6 | 2026-05-06 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -137,12 +143,13 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] Sub-solar 계산: **synthetic Sun (-1AU, 0, 0)** — DE440 미사용 ✓ (#40)
 - [x] Saturn 전용 분기: **같은 BodyInspector + `body.rings !== null` conditional UI** ✓ (#41)
 
-### P6에서 결정
+### P6에서 결정 (4건 모두 완료, 1건 변경)
 
-- [ ] Fixture 형식 (권장: JSON, Work 2~5 동일)
-- [ ] Fixture 갱신 정책 (권장: 수동 `pnpm fixtures:work-06`)
-- [ ] 텍스처 git 정책 (권장: commit, ~5 MB total)
-- [ ] Texture license attribution 표기 (권장: README 에 source URL + author + license)
+- [x] Fixture 형식: **JSON** ✓ (#42)
+- [x] Fixture 갱신 정책: **수동 (`pnpm fixtures:work-06`)** ✓ (#43)
+- [x] 텍스처 git 정책: **placeholder README only — 실제 자산은 별도 task** (plan 의 "commit ~5MB" 변경) ✓ (#44)
+- [x] Texture license attribution: **`public/data/textures/README.md` 에 출처 / 라이선스 / 갱신 절차** ✓ (P1 #5/#7 구현)
+- [x] Conventions 문서 위치: **`docs/architecture/bodies-conventions.md`** ✓ (#45)
 
 ### 추후 보류 (Work 6 범위 밖)
 
@@ -353,27 +360,46 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 - **Texture toggle 구현**: `useMemo` 로 `textureEnabled ? body : { ...body, textureUrl: null }` 파생 BodyDefinition 생성 → Body 컴포넌트가 깔끔하게 fallback color 모드로 전환. wireframe toggle 은 결정만 남기고 (state) 실제 mesh 적용은 P5 범위 밖 (Material 의 wireframe prop 노출 — 향후 work).
 - **자전축 화살표 sync**: `axisGroupRef.current.quaternion.copy(bodyOrientationQuaternion(model, jdTdb))` 를 render 시점에 직접 적용 (useEffect 아님) — body / rings 와 동일 quaternion 보장. ref 가 null 이면 skip.
 
-### P6 — Cross-validation & Golden Fixtures (Closeout)
+### P6 — Cross-validation & Golden Fixtures (Closeout) _(완료 2026-05-06)_
 
-_(대기)_
+생성/수정 파일:
+
+- [`tests/fixtures/work-06/README.md`](../../tests/fixtures/work-06/README.md) — 3 fixture 구성 (iau-rotation / body-catalog / sub-solar-point) + JSON 형식 + 톨러런스 정책 + 갱신 정책 + SPICE polynomial-only caveat 명시 + 회귀 가드 검증 절차.
+- [`docs/architecture/bodies-conventions.md`](../architecture/bodies-conventions.md) — 13 섹션: Work 6 책임 경계 / BodyDefinition 카탈로그 / IAU Rotation Models / Mesh Pipeline / Materials / Rotation Wiring / Saturn Rings / Tolerance / Fixtures / Texture Assets / Dev Demo / Work 7+ 진입 8-항목 체크리스트 / 6-항목 디버깅 케이스.
+- `public/data/textures/README.md` (P1 작성) — 실제 자산 commit 대신 placeholder 만 유지. 출처 / 라이선스 / 갱신 절차 / 17 파일 표 (P3/P4/P6 채움 예정 — 본 Work 는 미충족, 별도 task).
+
+검증 결과:
+
+- `pnpm fixtures:work-06` ✓ — 3 JSON 생성 idempotent.
+- `pnpm format:check` ✓ (fixture / docs Prettier 정렬)
+- `pnpm lint` ✓
+- `pnpm typecheck` ✓
+- `pnpm test` ✓ — **552 tests** (P5 그대로).
+- `pnpm build` ✓
+- `pnpm test:e2e` ✓ — **35 tests** (Work 1~6 누적: home 3 + dev-astro 4 + dev-ephemeris 4 + dev-scale 5 + dev-render 6 + dev-body 8 + dev-index 5).
+- `cd tools/python && uv run ruff check src tests` ✓
+- `uv run mypy src` ✓ — 14 source files
+- `uv run pytest` ✓ — **173 tests** (P5 그대로).
+
+설계 결정 + 발견:
+
+- **회귀 가드 검증**: Earth IAU `prime_meridian` polynomial constant 를 `190.147` → `190.150` (3 mas-equivalent) 로 흔들기 → `tests/unit/astro/rotationModels.test.ts` 의 fixture cross-check 4 fail (Earth model × 5 jds 중 3 mas 이상 diff 케이스). 원복 후 즉시 그린 — fixture 가 polynomial 회귀를 정확히 잡아냄.
+- **텍스처 자산 commit policy 변경 (plan 변경)**: plan §5 권장은 "commit ~5 MB" 였으나 실제 다운로드 / 변환 / 라이선스 verification 부담으로 별도 cleanup task 로 분리. 본 commit 에는 README + 카탈로그의 textureUrl 만 포함, 실제 .jpg / .png 자산은 추가 PR.
+- **`bodies-conventions.md` 13 섹션**: Work 7+ 진입 시 mesh / 카탈로그 / IAU rotation / Saturn rings / 텍스처 fallback 사용 패턴 한 페이지에서 확인. 8-항목 체크리스트가 새 작업 시 지침.
+- **두 톨러런스 채널**: fixture 가 `_tolerance_mas_polynomial_only`(1 mas, TS↔Python) + `_tolerance_arcsec_mercury_moon`(60 arcsec, full IAU 모델 vs polynomial 비교 시 — 본 Work 미평가, Work 11 hint) 두 가지 명시 → 향후 Work 11 작업자가 의도 즉시 파악.
+- **CLI 통합 entry idempotent**: `pnpm fixtures:work-06` 두 번 실행 시 git diff 빈 결과 — `generate_fixtures` 가 deterministic.
 
 ## 5. 다음 작업자에게 (For the Next Operator)
 
 > 새 세션이나 다른 작업자가 이어 받을 때 여기를 먼저 본다.
 
-### 즉시 액션: P1 시작
+### 즉시 액션: Work 7 — Orbits & Trajectories 진입
 
-1. [`docs/architecture/render-conventions.md`](../architecture/render-conventions.md) §9 Work 6+ 진입 체크리스트 (8 항목) 를 먼저 확인.
-2. [`work-06-bodies.md`](work-06-bodies.md) §3 Phase 1 + §5 권장값 표 검토.
-3. 사용자에게 권장값 ~12건 (위 §3 P1 체크리스트) 컨펌 받기.
-4. 결정 즉시 §2 결정 로그 한 줄씩 추가 (#1 ~ #12).
-5. `src/bodies/{types,catalog,index}.ts` 생성 (BodyDefinition + BODY_CATALOG ≥ 19 entries).
-6. `tools/python/src/orbitarium_tools/bodies.py` placeholder 생성 (Python mirror BodyDefinition + 위성 radius 표).
-7. `public/data/textures/README.md` placeholder (출처 / 라이선스 / 갱신 명령) — 실제 텍스처는 P3/P4.
-8. `tests/unit/bodies/types.test.ts` 작성.
-9. `pnpm format:check / lint / typecheck / test / build` + `cd tools/python && uv run ruff / mypy / pytest` 그린 확인.
-10. handoff §0 → P2 시작 대기로 갱신, §7 갱신 이력 한 줄 추가, §1 P1 [x].
-11. (선택) 커밋 — `[work-06/p1] Body Strategy & Catalog 완료 — 결정 12건`
+1. [`docs/architecture/bodies-conventions.md`](../architecture/bodies-conventions.md) §12 Work 7+ 진입 체크리스트 (8 항목) 를 먼저 확인.
+2. Work 7 plan/handoff 작성 — 목표: ephemeris 샘플링 + 궤도 폴리라인 + 과거 trail / 미래 predict + 소행성대 인스턴싱 + `/dev/orbits`.
+3. Work 7 의 trail / predict 폴리라인 위치는 Work 5 `positionToWorld` 그대로 사용. 시간 샘플링 + 폴리라인 geometry 가 본 Work 의 mesh 위치와 동일 변환 경로.
+4. `BodyDefinition.naifId` 가 Work 7 의 시간 샘플 generator 의 첫 입력 — 카탈로그 그대로 활용.
+5. 소행성 / 혜성 추가는 Work 7 / Work 11. 본 Work 6 카탈로그는 주요 천체 20 entries 만.
 
 ### Work 2/3/4/5 산출물 활용 (Work 6 시작 전 점검)
 
@@ -549,7 +575,8 @@ THREE.Quaternion                           ← Body mesh.quaternion
 | 2026-05-06 | **P2 완료** — `src/astro/rotationData.ts` 11 IAU 모델 확장 (Sun + 8 planets + Moon + Pluto, polynomial-only) + `IAU_ROTATION_MODELS` Map + Python mirror (`_model()` factory + 동일 11 모델 + `spice_inertial_to_body_fixed` 일반화) + `bodies.py` 의 `generate_iau_rotation_fixture` (11 × 5 = 55 rows) + `generate_body_catalog_fixture` + CLI work-6 분기 + `pnpm fixtures:work-06`. fixture iau-rotation.json + body-catalog.json 생성. 결정 5건 (#13~#17): pck00011 polynomial / Earth's Moon 만 / Pluto polynomial / 1 mas TS↔Python + 1e-12 SPICE polynomial-only / IAU paper 직접 참조. 단위 테스트 57 추가 (TS 45 + Python 12, 총 539 / 169). Mercury / Moon / Neptune omitted terms 는 source string 에 "Work 11" 명시. format/lint/typecheck/test(539)/build/ruff/mypy/pytest(169) 그린.                                                                                                                                                                                                                                                                                                                                                                                                                |
 | 2026-05-06 | **P3 완료** — `src/bodies/{material,rotation}.ts` + `Body.tsx` + `SunMesh.tsx` + Python `sub_solar_point` + `generate_sub_solar_fixture` (5 × 5 × 5 = 125 rows). 결정 11건 (#18~#28): planet PBR Mat`StandardMaterial` / Sun `MeshBasicMaterial` / Sun halo additive sprite / Body `worldPosition` prop (호출자 책임) / matrix transpose → quaternion / jdTdb 변화 시 `useEffect` 갱신 / 64×32 default geometry / `SRGBColorSpace` texture / 404 fallback / 텍스처 자산 P6 defer / Sun mesh 분리. 단위 테스트 14 추가 (TS 10 + Python 4, 총 549 / 173). format/lint/typecheck/test(549)/build/ruff/mypy/pytest(173) 그린. Body / SunMesh 시각 검증은 P5 dev demo e2e 에서.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | 2026-05-06 | **P4 완료** — `src/bodies/SaturnRings.tsx` (RingGeometry 128 segments + radial UV override + alpha + IAU rotation 동기화 + 텍스처/단색 fallback) 신규. 위성 entries (Galilean / Saturn major / Pluto) 는 P3 의 `Body` 컴포넌트가 그대로 처리 — 신규 코드 0. 결정 6건 (#29~#34): RingGeometry + radial UV / alpha+depthWrite=false / Saturn IAU quaternion sibling / 위성 Body 재사용 / Charon 범위 밖 / fallback color. 단위 테스트 3 추가 (geometry annulus + UV remap + invariant) — 총 552 / 173. tidally-locked 위성은 default orientation 유지 (Work 11 IAU 도입 시 자동 활성). format/lint/typecheck/test(552)/build 그린. SaturnRings 시각 검증은 P5 dev demo e2e (`/dev/body/saturn`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| 2026-05-06 | **P5 완료** — `/dev/body/:slug` dynamic dev demo. `src/dev/body/{BodyDemo,BodyInspector,BodyPicker,TimeControl,RotationReadout,MeshControls}.tsx` + `scene/BodyScene.tsx` + `body.css`. registry `hasNestedRoutes` flag + DevApp catch-all 라우팅. body picker → URL navigate / time offset ±5년 / 회전 readout (W/α/δ + sub-solar synthetic) / texture·wireframe·axis·rings 토글 (rings 는 Saturn only). 결정 7건 (#35~#41), plan 의 시간 슬라이더 default 1건 변경 (current → fixed 2026-05-06). e2e 8 추가 + dev-index Work 6 available 전환 (available 5 / placeholder 6). 시각 확인 — Saturn rings + axis arrows + 모든 readout 정상, Earth fallback color + 정확 W angle. format/lint/typecheck/test(552)/build/test:e2e(13) 그린. |
+| 2026-05-06 | **P5 완료** — `/dev/body/:slug` dynamic dev demo. `src/dev/body/{BodyDemo,BodyInspector,BodyPicker,TimeControl,RotationReadout,MeshControls}.tsx` + `scene/BodyScene.tsx` + `body.css`. registry `hasNestedRoutes` flag + DevApp catch-all 라우팅. body picker → URL navigate / time offset ±5년 / 회전 readout (W/α/δ + sub-solar synthetic) / texture·wireframe·axis·rings 토글 (rings 는 Saturn only). 결정 7건 (#35~#41), plan 의 시간 슬라이더 default 1건 변경 (current → fixed 2026-05-06). e2e 8 추가 + dev-index Work 6 available 전환 (available 5 / placeholder 6). 시각 확인 — Saturn rings + axis arrows + 모든 readout 정상, Earth fallback color + 정확 W angle. format/lint/typecheck/test(552)/build/test:e2e(13) 그린.                                                                                                                                                                                                                                                                                                                                                                                              |
+| 2026-05-06 | **P6 완료 / Work 6 마감** — fixture / doc closeout. `tests/fixtures/work-06/README.md` (3 fixture 구성 + JSON 형식 + 톨러런스 정책 + SPICE polynomial-only caveat + 회귀 가드 절차) + `docs/architecture/bodies-conventions.md` (13 섹션: 책임 경계 / 카탈로그 / IAU rotation / mesh pipeline / materials / rotation wiring / Saturn rings / tolerance / fixtures / textures / dev demo / Work 7+ 8-항목 체크리스트 / 6-항목 디버깅 케이스). 결정 4건 (#42~#45), plan 의 텍스처 commit policy 1건 변경 (commit → placeholder README only, 실제 자산 별도 task). 회귀 가드 검증 — Earth W polynomial 190.147 → 190.150 (3 mas) 흔들기 → 4 fail → 원복 후 그린. format/lint/typecheck/test(552)/build/test:e2e(35) + Python ruff/mypy(14)/pytest(173) 전부 그린. plan §1 DoD 모든 항목 충족. |
 
 ---
 
