@@ -10,8 +10,8 @@
 
 | 항목         | 값                                                                                         |
 | ------------ | ------------------------------------------------------------------------------------------ |
-| 현재 phase   | **P0 kickoff** — plan/handoff 짝 작성 직후, **P1 시작 대기**                              |
-| 다음 액션    | P1 권장값 ~12건 사용자 컨펌 → `src/render/{types,constants,index}.ts` + Python placeholder |
+| 현재 phase   | **P1 완료** ✓ — **P2 시작 대기**                                                           |
+| 다음 액션    | P2 — `src/render/renderer.ts` (createRendererProps) + Home 라우트 통합 + Python 색온도 변환 |
 | 마지막 갱신  | 2026-05-06                                                                                 |
 | 블로커       | 없음                                                                                       |
 
@@ -20,7 +20,7 @@
 각 phase 의 Done 기준은 [plan §3](work-05-render.md#3-phase-정의) 참조.
 phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 
-- [ ] **P1** — Render Strategy & Scene Graph Types
+- [x] **P1** — Render Strategy & Scene Graph Types _(완료 2026-05-06)_
 - [ ] **P2** — Renderer Pipeline (Color & Tone Mapping)
 - [ ] **P3** — Log-Depth & Scene Graph Anchors
 - [ ] **P4** — Starfield Data Pipeline + Mesh
@@ -33,27 +33,39 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 | #   | 항목 | 결정 | 이유 / 비고 | Phase | 결정일 |
 | --- | ---- | ---- | ----------- | ----- | ------ |
-| —   | (P1 결정 대기) | | | P1 | |
+| 1   | scene unit ↔ three.js unit | **1:1 매핑** (`SCENE_TO_THREE_UNIT_RATIO = 1`) | Work 4 #3 직접 매핑. 카메라 near/far/log-depth 전제와도 일관. | P1 | 2026-05-06 |
+| 2   | 색공간 / 톤매핑 | **output `'srgb'` + ACES Filmic + linear internal** | overview §5 "HDR linear-space rendering" 충족. PBR 표준 파이프라인. float framebuffer 는 Work 11. | P1 | 2026-05-06 |
+| 3   | Default exposure | **1.0** (slider [0.1, 4.0]) | 표준 노출. ACES + sRGB 조합에서 자연스러움. EXPOSURE_MIN/MAX 상수로 분리. | P1 | 2026-05-06 |
+| 4   | Logarithmic depth buffer | **enabled by default** | 1e-3 ~ 1e10 13 orders span 을 z-fighting 없이 처리. WebGL 2 + EXT_frag_depth 호환 (Work 12 fallback 검토). | P1 | 2026-05-06 |
+| 5   | Camera near / far | **`1e-3 / 1e10`** scene unit | log-depth + Work 4 piecewise [0.4, 5, 50] AU → [0.4, 1.5, 3.0] scene 범위 + 외곽 starfield 1e9 까지 커버. | P1 | 2026-05-06 |
+| 6   | Scene anchor 모델 | **string literal union** `'ssb' \| 'heliocentric' \| 'body-centric'` + context payload (P3) | discriminated union 보다 단순. body 식별은 P3 의 `SceneAnchorContext` payload 로 분리. `SCENE_ANCHORS` const 도 함께 노출. | P1 | 2026-05-06 |
+| 7   | Sun lighting (본 Work 도입분) | **PointLight at Sun + AmbientLight intensity 0.05** | Work 6 PBR 검증 전 단순 모델. r150+ PI 기반 intensity. Work 6 셰이더 검증 시 재조정 가능. | P1 | 2026-05-06 |
+| 8   | Sun 영역 광원 근사 (overview §5 명시) | **본 Work 미도입 — Work 6/11 PBR 검증 후 도입 검토** (RectAreaLight ↔ MeshStandardMaterial BRDF 호환성 사전 검증 + 셰이더 disk-area approximation) | overview §5 명시 항목이지만 PBR 셰이더 검증 (Work 6) 과 polish (Work 11) 와 함께 도입이 자연스러움. defer 정당화. | P1 | 2026-05-06 |
+| 9   | `positionToWorld` 시그니처 | **`(p, policy, anchor) → THREE.Vector3`** with `SceneAnchorContext` payload (P3) | anchor context 가 anchor 종류 + 보조 데이터 (sun pos, body pos) 를 캡슐화. anchor 별 함수 분리보다 호출처 단순. | P1 | 2026-05-06 |
+| 10  | 별 카탈로그 default | **Hipparcos main, `Vmag <= 6.0`** (~9 100 stars) | Tycho-2 (~2.5M) 는 Work 11 perf 와 함께 검토. Vmag 6.0 cutoff 가 육안 가시 별 + 데이터 크기 (~127 KB) 균형. | P1 | 2026-05-06 |
+| 11  | 색온도 변환 공식 | **Ballesteros 2012**: `T = 4600 * (1/(0.92 BV + 1.7) + 1/(0.92 BV + 0.62))` | 단순 + 결정론. TS/Python 동일 공식 → bit-exact mirror. B-V 누락 시 Sun-like 5778 K fallback. | P1 | 2026-05-06 |
+| 12  | 별 거리 처리 default | **단일 celestial sphere (`STARFIELD_SCENE_RADIUS = 1e9`)** | parallax-based 깊이는 Work 9/11 (LOD) 후보. 본 Work 는 단순 sphere shell. | P1 | 2026-05-06 |
+| 13  | 별 frame | **ICRF / J2000** + Hipparcos 에포크 J1991.25 → J2000 proper motion 적용 | Hipparcos 는 ICRS 기준. 빠른 별 (Barnard's Star, Vega) 1 mas 정밀도 위해 PM 필수. | P1 | 2026-05-06 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
 ## 3. 미결정 / 보류 (Open Questions)
 
-### P1에서 결정 (예정 ~13건)
+### P1에서 결정 (13건 모두 완료)
 
-- [ ] scene unit ↔ three.js unit 매핑 (권장: 1:1)
-- [ ] 색공간 / 톤매핑 (권장: SRGB output + ACES Filmic + linear internal — overview §5 "HDR linear-space" 충족)
-- [ ] Default exposure (권장: 1.0, slider 0.1 ~ 4.0)
-- [ ] Logarithmic depth buffer (권장: enabled by default)
-- [ ] Camera near / far (권장: 1e-3 / 1e10 scene unit)
-- [ ] Scene anchor 모델 (권장: string literal union + context payload)
-- [ ] Sun lighting — Work 5 본 Work 도입분 (권장: PointLight + 최소 ambient 0.05)
-- [ ] **Sun 영역 광원 근사 — overview §5 명시 항목** (권장: 본 Work 미도입, Work 6/11 PBR 검증 후 도입 검토)
-- [ ] `positionToWorld` 시그니처 (권장: `(p, policy, anchor) → Vector3`)
-- [ ] 별 카탈로그 default (권장: Hipparcos main, Vmag ≤ 6.0)
-- [ ] 색온도 변환 공식 (권장: Ballesteros 2012)
-- [ ] 별 거리 처리 default (권장: 단일 celestial sphere)
-- [ ] 별 frame (권장: ICRF, Hipparcos epoch → J2000 proper motion 적용)
+- [x] scene unit ↔ three.js unit 매핑: **1:1** ✓ (#1)
+- [x] 색공간 / 톤매핑: **sRGB output + ACES Filmic + linear internal** ✓ (#2)
+- [x] Default exposure: **1.0** (slider [0.1, 4.0]) ✓ (#3)
+- [x] Logarithmic depth buffer: **enabled by default** ✓ (#4)
+- [x] Camera near / far: **1e-3 / 1e10** ✓ (#5)
+- [x] Scene anchor 모델: **string literal union + context payload (P3)** ✓ (#6)
+- [x] Sun lighting — 본 Work 도입분: **PointLight + ambient 0.05** ✓ (#7)
+- [x] Sun 영역 광원 근사 (overview §5): **본 Work 미도입, Work 6/11 defer** ✓ (#8)
+- [x] `positionToWorld` 시그니처: **`(p, policy, anchor) → Vector3`** ✓ (#9)
+- [x] 별 카탈로그 default: **Hipparcos main, Vmag ≤ 6.0** ✓ (#10)
+- [x] 색온도 변환 공식: **Ballesteros 2012** ✓ (#11)
+- [x] 별 거리 처리 default: **단일 celestial sphere (1e9)** ✓ (#12)
+- [x] 별 frame: **ICRF, Hipparcos epoch → J2000 proper motion 적용** ✓ (#13)
 
 ### P2에서 결정
 
@@ -122,9 +134,41 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한 줄 메모.
 
-### P1 — Render Strategy & Scene Graph Types
+### P1 — Render Strategy & Scene Graph Types _(완료 2026-05-06)_
 
-_(대기)_
+생성/수정 파일:
+
+- [`src/render/types.ts`](../../src/render/types.ts) — `SceneAnchor` literal union + `SCENE_ANCHORS` const, `ToneMappingName` + `TONE_MAPPING_NAMES`, `OutputColorSpace`, `RenderSettings` interface (color space / tone mapping / exposure / log-depth / antialias / camera near & far / sun & ambient intensity).
+- [`src/render/constants.ts`](../../src/render/constants.ts) — `SCENE_TO_THREE_UNIT_RATIO = 1`, `RENDER_DEFAULTS` (sRGB / ACES Filmic / exposure 1.0 / log-depth ON / antialias ON / near 1e-3 / far 1e10 / sun 1.0 / ambient 0.05), `EXPOSURE_MIN/MAX`.
+- [`src/render/anchors.ts`](../../src/render/anchors.ts) — P3 placeholder.
+- [`src/render/starfield.ts`](../../src/render/starfield.ts) — P4 placeholder.
+- [`src/render/index.ts`](../../src/render/index.ts) — re-exports `constants` + `types`.
+- [`tools/python/src/orbitarium_tools/starfield.py`](../../tools/python/src/orbitarium_tools/starfield.py) — Python placeholder. Constants only: `STARFIELD_MAGIC = b"STRF"`, `STARFIELD_FORMAT_VERSION = 1`, `STARFIELD_HEADER_BYTES = 16`, palette config (`PALETTE_SIZE/MIN/MAX`), magnitude bucket config, `DEFAULT_VMAG_CUTOFF = 6.0`, `STARFIELD_SCENE_RADIUS = 1e9`, `FALLBACK_COLOR_TEMP_K = 5778`. P2/P4/P6 implementations 명시 docstring.
+
+테스트:
+
+- [`tests/unit/render/types.test.ts`](../../tests/unit/render/types.test.ts) — 12 tests: SCENE_TO_THREE_UNIT_RATIO, EXPOSURE_MIN/MAX 가드, RENDER_DEFAULTS 8 항목 (sRGB / ACES / exposure 1.0 / log-depth / camera span >12 orders / antialias / sun & ambient), SCENE_ANCHORS, TONE_MAPPING_NAMES.
+- [`tools/python/tests/test_starfield.py`](../../tools/python/tests/test_starfield.py) — 9 tests: placeholder 상수 sanity (magic / version / header bytes / palette config / magnitude bucket / vmag cutoff / scene radius / fallback temp).
+
+검증 결과:
+
+- `pnpm format:check` ✓ (Prettier auto-format on `types.ts` after first run)
+- `pnpm lint` ✓ (simple-import-sort autofix on test 1건)
+- `pnpm typecheck` ✓
+- `pnpm test` ✓ — **407 tests** (Work 4 P6 395 → P1 +12).
+- `pnpm build` ✓ — 1113 kB.
+- `cd tools/python && uv run ruff check src tests` ✓
+- `uv run mypy src` ✓ — 12 source files (Work 4 11 → +1 starfield).
+- `uv run pytest` ✓ — **113 tests** (Work 4 P6 104 → P1 +9).
+
+설계 결정 + 발견:
+
+- **`SCENE_ANCHORS` / `TONE_MAPPING_NAMES` const arrays with `satisfies`**: 타입 안전한 enum-like 패턴. P5 dev demo picker, P3 anchor switch 에서 직접 iterate 가능.
+- **`anchors.ts` / `starfield.ts` placeholder + `export {}`**: 빈 ES 모듈 — index.ts 에서 re-export 하지 않음 (P3/P4 진입 시 추가). typecheck 통과 + import 시 명시적 에러 (member 없음) 로 P1 단계 잘못된 의존 방지.
+- **HDR linear-space 의미를 docstring 에 못박음**: `constants.ts` 의 `RENDER_DEFAULTS` 주석 + 테스트 describe 에 "HDR linear-space pipeline" 명시 — overview §5 와의 정합 표현.
+- **`RENDER_DEFAULTS.cameraNear/Far` 13 orders span**: 1e-3 ~ 1e10 = 13 orders. 테스트로 `>12 orders` invariant 가드 — 향후 변경 시 의도적 결정 필요.
+- **`SCENE_TO_THREE_UNIT_RATIO` 상수 분리**: 1:1 매핑이지만 단일 진실원으로 분리 — Work 6+ mesh radius / camera distance 환산 시 import.
+- **`exposureSlider.tsx` P2 로 미루기**: P1 plan 은 선택 항목으로 두었음. dev demo controls (P5) 와 함께 R3F 컴포넌트로 구현 — P1 에는 순수 데이터/타입만 두어 happy-dom test 가능.
 
 ### P2 — Renderer Pipeline (Color & Tone Mapping)
 
@@ -305,7 +349,8 @@ THREE.SphereGeometry(args=[sceneRadius, ...])
 | 날짜       | 변경                                                                                                                                                                                                                                                                                          |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-05-06 | 초기 작성 — P0 kickoff. Plan 본체와 함께 6 phase 구조 확정 (Strategy → Renderer Pipeline → Log-Depth + Anchors → Starfield → Dev Demo → Closeout). P1 결정 ~12건 대기. Work 4 산출물 (`PositionScene` / distance·size policy) 적극 활용 예정. `src/render/`, `src/dev/render/`, `orbitarium_tools.starfield` 신설 예정.                                                                |
-| 2026-05-06 | **P0 점검 — overview §7 폴더 구조 vs 실제 비교**. 폴더 구조 / 모듈 위치 / Python 패키지 구성은 overview 와 일치. Work 5 plan 의 두 갭 보강: ① "HDR linear-space" 의미 명확화 (§1 DoD + §6 위험), ② "태양 영역 광원 근사" P1 결정 항목 추가 (본 Work 미도입 / Work 6/11 defer, §1/§3/§5/§6). P1 결정 항목 12 → 13. Tycho-2 deferred 정당화 §6 추가. 무관 cleanup 후보 2건 (`tools/python/public/` 빈 폴더 / `dev-routes.md` stale 표기) §3 추후 보류 + §6 알려진 이슈 기록 — 별도 spawn task 권장. |
+| 2026-05-06 | **P0 점검 — overview §7 폴더 구조 vs 실제 비교**. 폴더 구조 / 모듈 위치 / Python 패키지 구성은 overview 와 일치. Work 5 plan 의 두 갭 보강: ① "HDR linear-space" 의미 명확화 (§1 DoD + §6 위험), ② "태양 영역 광원 근사" P1 결정 항목 추가 (본 Work 미도입 / Work 6/11 defer, §1/§3/§5/§6). P1 결정 항목 12 → 13. Tycho-2 deferred 정당화 §6 추가. 무관 cleanup 후보 2건 (`tools/python/public/` 빈 폴더 / `dev-routes.md` stale 표기) §3 추후 보류 + §6 알려진 이슈 기록 — 별도 spawn task 권장.                                                                                                                                                                                                                                                                                                                |
+| 2026-05-06 | **P1 완료** — `src/render/{types,constants,anchors,starfield,index}.ts` + Python `orbitarium_tools.starfield` placeholder + 21 단위 테스트 (TS 12 + Python 9). 결정 13건 (#1~#13) 모두 권장값 채택: 1:1 unit / sRGB+ACES+linear / exposure 1.0 / log-depth ON / near 1e-3 ~ far 1e10 / string literal anchor + context payload / Sun PointLight + ambient 0.05 / area light defer (Work 6/11) / `(p, policy, anchor)→Vector3` / Hipparcos Vmag≤6.0 / Ballesteros 2012 / single celestial sphere 1e9 / ICRF + Hipparcos PM. format/lint/typecheck/test(407)/build/ruff/mypy(12 files)/pytest(113) 전부 그린. `anchors.ts` / `starfield.ts` 는 P3/P4 placeholder 로 index.ts 에서 export 하지 않음. |
 
 ---
 
