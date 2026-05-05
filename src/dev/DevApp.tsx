@@ -14,10 +14,11 @@ export default function DevApp() {
       {devPages.map((page) => {
         const C = page.Component
         if (!C) return null
+        const path = page.hasNestedRoutes ? `${page.slug}/*` : page.slug
         return (
           <Route
             key={page.slug}
-            path={page.slug}
+            path={path}
             element={
               <Suspense fallback={<p className="dev-loading">Loading…</p>}>
                 <C />

@@ -1,4 +1,5 @@
 @import './astro/astro.css';
+@import './body/body.css';
 @import './ephemeris/ephemeris.css';
 @import './render/render.css';
 @import './scale/scale.css';

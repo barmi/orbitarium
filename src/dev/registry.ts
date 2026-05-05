@@ -6,6 +6,8 @@ export interface DevPageEntry {
   title: string
   summary: string
   Component?: LazyExoticComponent<ComponentType>
+  /** When true, the page handles its own nested routes under ``/dev/<slug>/*``. */
+  hasNestedRoutes?: boolean
 }
 
 export const devPages: DevPageEntry[] = [
@@ -42,6 +44,8 @@ export const devPages: DevPageEntry[] = [
     slug: 'body',
     title: 'Celestial Bodies',
     summary: '단일 천체 인스펙터 — 자전축/자전 위상, 텍스처 토글, 토성 고리·그림자',
+    Component: lazy(() => import('./body/BodyDemo')),
+    hasNestedRoutes: true,
   },
   {
     workNumber: 7,

@@ -8,12 +8,12 @@
 
 ## 0. 현재 상태 (Status)
 
-| 항목         | 값                                                                                       |
-| ------------ | ---------------------------------------------------------------------------------------- |
-| 현재 phase   | **P4 완료** ✓ — **P5 시작 대기**                                                         |
-| 다음 액션    | P5 — `src/dev/body/` 단일 페이지 dev demo (`/dev/body/:slug` dynamic + `/dev/body/saturn`) |
-| 마지막 갱신  | 2026-05-06                                                                               |
-| 블로커       | 없음                                                                                     |
+| 항목         | 값                                                                                              |
+| ------------ | ----------------------------------------------------------------------------------------------- |
+| 현재 phase   | **P5 완료** ✓ — **P6 시작 대기**                                                                |
+| 다음 액션    | P6 — closeout (`tests/fixtures/work-06/README.md`, `bodies-conventions.md`, 회귀 가드 검증, 텍스처 자산 정책 마무리) |
+| 마지막 갱신  | 2026-05-06                                                                                      |
+| 블로커       | 없음                                                                                            |
 
 ## 1. 진행 체크리스트
 
@@ -24,7 +24,7 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] **P2** — IAU Rotation Models Extension _(완료 2026-05-06)_
 - [x] **P3** — Body Mesh Pipeline (Sun + 9 planets + Moon) _(완료 2026-05-06)_
 - [x] **P4** — Saturn Rings + Major Moons _(완료 2026-05-06)_
-- [ ] **P5** — Dev Demo `/dev/body/<slug>` + `/dev/body/saturn`
+- [x] **P5** — Dev Demo `/dev/body/<slug>` + `/dev/body/saturn` _(완료 2026-05-06)_
 - [ ] **P6** — Cross-validation & Golden Fixtures (Closeout)
 
 > Work 6 마감 = 모든 phase [x] + [plan §1 Definition of Done](work-06-bodies.md#1-결과-정의-definition-of-done) 모든 항목 충족.
@@ -67,6 +67,13 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 32  | Ring 텍스처 fallback | **단색 (`#c0a070`) + opacity 0.45 disk** | 404 / 부재 시 시각적으로 ring 영역만 표시. Work 6 P5 dev demo 에서 충분. | P4 | 2026-05-06 |
 | 33  | 위성 mesh 처리 | **카탈로그 19 entries 모두 P3 의 `Body` 컴포넌트 그대로** — 신규 코드 없음 | Galilean / Saturn major / Pluto 가 `kind: 'moon'` 또는 `'pluto-system'` 로 P3 Body 가 그대로 처리. textureUrl 있는 Galilean / Titan 은 PBR + 텍스처 (자산 부재 시 fallback color), 비텍스처 4 (Mimas / Enceladus / Rhea / Iapetus) 는 fallback color only. tidally-locked rotationModelKey 는 `getIauRotationModel` 이 undefined 반환 → mesh 가 default orientation 유지 (Work 11 IAU full 모델 도입 시 자동 활성). | P4 | 2026-05-06 |
 | 34  | Pluto-Charon 시스템 처리 | **Pluto 만 P3 Body 처리, Charon 은 Work 6 범위 밖 (#12)** | plan §1 의 "Pluto + Charon" 약속은 Charon 부재로 미완. Work 11 또는 별도 cleanup task. | P4 | 2026-05-06 |
+| 35  | 라우팅 패턴 | **`/dev/body/:slug` dynamic** (DevApp 의 `hasNestedRoutes` flag + nested `<Routes>`) | registry 에 `hasNestedRoutes: true` 추가 → DevApp 이 `body/*` 로 catch-all → `BodyDemo` 가 internal `<Route path=":bodySlug" />` 처리. 기존 dev page 들은 영향 없음. | P5 | 2026-05-06 |
+| 36  | `/dev/body` index 동작 | **Earth 로 redirect** (`<Navigate to="earth" replace />`) | 별도 카탈로그 화면은 dev-index 가 이미 제공 — body inspector 의 첫 화면은 Earth 가 가장 친숙. | P5 | 2026-05-06 |
+| 37  | 카메라 거리 / scene 단위 | **body radius = 1 scene unit + camera distance × 5** + log-depth OFF | 단일 body 시각화는 scene span 작아 log-depth 불필요 → 일반 perspective + near 0.05 / far 200 사용. 카메라 fixed `[5, 1, 5]`. Work 9 orbit controls 에서 dynamic. | P5 | 2026-05-06 |
+| 38  | 자전축 시각화 | **`ArrowHelper` 두 개 (북극 +z, 남극 -z) + IAU rotation 동기화** | 길이 = body radius × 1.5, 색 `#ffd166`. 자전 매트릭스 적용된 group 안에 배치 → body 와 동시 회전. 적도 line 은 본 Work 생략 (시각 잡음 우려). | P5 | 2026-05-06 |
+| 39  | 시간 슬라이더 default | **현재 시각 vs. fixed 2026-05-06** | dev demo reproducibility 우선 → `BASE_UTC = 2026-05-06T00:00:00Z` 고정 + slider 로 ±5 년 offset. plan #'시간 슬라이더 default' 권장 (현재 시각) 변경 — fixed 이 e2e 안정성에도 좋음. | P5 | 2026-05-06 |
+| 40  | Sub-solar 계산 정책 | **DE440 evaluator 미사용 — synthetic Sun 위치 (-1AU, 0, 0) ICRF** | 본 Work dev demo 의 sub-solar lon/lat 은 IAU rotation matrix 검증용. 정확한 위치는 Work 9 / Work 11 에서 ephemeris wiring. dev demo 는 단순 + 빠름. | P5 | 2026-05-06 |
+| 41  | Saturn 전용 분기 처리 | **`/dev/body/saturn` 별도 라우트 없음 — `BodyInspector` 가 `body.rings !== null` 분기로 rings on/off + ring toggle 노출** | 코드 중복 제거. plan §3 P5 의 "Saturn 전용 페이지" 는 같은 component 의 conditional UI 로 구현. | P5 | 2026-05-06 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -120,13 +127,15 @@ phase 마감 전, plan 의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] Pluto-Charon: **Pluto 만 처리, Charon 은 Work 6 범위 밖** ✓ (#34)
 - [x] 비텍스처 위성 fallback / Ring 텍스처 fallback: **단색 + opacity** ✓ (#32, P3 #26)
 
-### P5에서 결정
+### P5에서 결정 (7건 모두 완료, 1건 변경)
 
-- [ ] 라우팅 패턴 (권장: `/dev/body/:slug` dynamic)
-- [ ] 카메라 거리 (권장: body radius × 5 in scene units)
-- [ ] 자전축 시각화 (권장: 북극 / 남극 arrow + 적도 line)
-- [ ] 시간 슬라이더 default (권장: 현재 시각)
-- [ ] Saturn 전용 분기 처리 (권장: 본 페이지 + rings on/off + ring tilt readout)
+- [x] 라우팅 패턴: **`/dev/body/:slug` dynamic + DevApp `hasNestedRoutes` flag** ✓ (#35)
+- [x] `/dev/body` index 동작: **Earth 로 redirect** ✓ (#36)
+- [x] 카메라 거리: **radius × 5 + log-depth OFF + near 0.05 / far 200** ✓ (#37)
+- [x] 자전축 시각화: **북극 / 남극 ArrowHelper, 적도 line 생략** ✓ (#38)
+- [x] 시간 슬라이더 default: **fixed 2026-05-06 + ±5 년 offset** (plan 의 "현재 시각" 변경) ✓ (#39)
+- [x] Sub-solar 계산: **synthetic Sun (-1AU, 0, 0)** — DE440 미사용 ✓ (#40)
+- [x] Saturn 전용 분기: **같은 BodyInspector + `body.rings !== null` conditional UI** ✓ (#41)
 
 ### P6에서 결정
 
@@ -302,9 +311,47 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 - **Saturn ring DoubleSide**: 카메라가 ring 평면 양쪽에서 볼 수 있어야 함 (특히 dev demo 의 fixed camera). Work 11 에서 backface-culling 최적화 검토.
 - **위성 코드 재사용 ROI**: BodyDefinition 카탈로그 + Body 컴포넌트 디자인이 잘 정렬되어 P4 의 mesh 작업이 사실상 0 (SaturnRings 한 개만 신규). plan §3 P4 가 위성 처리를 한 phase 로 잡았지만 실제 Body 가 모두 흡수.
 
-### P5 — Dev Demo `/dev/body/<slug>`
+### P5 — Dev Demo `/dev/body/<slug>` _(완료 2026-05-06)_
 
-_(대기)_
+생성/수정 파일:
+
+- [`src/dev/body/BodyDemo.tsx`](../../src/dev/body/BodyDemo.tsx) — wrapper: nested `<Routes>` + `<Navigate>` redirect to `earth` + `BodyRouteByParam` (uses `useParams` + `getBodyBySlug`).
+- [`src/dev/body/BodyInspector.tsx`](../../src/dev/body/BodyInspector.tsx) — main page. 4 panels + Canvas. Time offset slider, IAU rotation evaluation (W/α/δ readout), synthetic sub-solar lon/lat, mesh controls.
+- [`src/dev/body/BodyPicker.tsx`](../../src/dev/body/BodyPicker.tsx) — Panel 1: 20-entry dropdown + react-router `useNavigate` 로 `/dev/body/<slug>` 이동.
+- [`src/dev/body/TimeControl.tsx`](../../src/dev/body/TimeControl.tsx) — Panel 2: ±5년 offset slider + UTC ISO 표시.
+- [`src/dev/body/RotationReadout.tsx`](../../src/dev/body/RotationReadout.tsx) — Panel 3: pole α / δ / W / sub-solar lon / lat readout.
+- [`src/dev/body/MeshControls.tsx`](../../src/dev/body/MeshControls.tsx) — Panel 4: texture / wireframe / axis / rings (Saturn only) checkboxes.
+- [`src/dev/body/scene/BodyScene.tsx`](../../src/dev/body/scene/BodyScene.tsx) — Canvas content: `<Body>` (or `<SunMesh>` for Sun) + `<SaturnRings>` (if applicable) + 자전축 ArrowHelper 두 개 (group with IAU quaternion).
+- [`src/dev/body/body.css`](../../src/dev/body/body.css) — 2-column grid + 4 panels + canvas.
+- [`src/dev/registry.ts`](../../src/dev/registry.ts) — Work 6 entry → `Component: lazy(() => import('./body/BodyDemo')) + hasNestedRoutes: true`.
+- [`src/dev/DevApp.tsx`](../../src/dev/DevApp.tsx) — `hasNestedRoutes` flag → path `body/*` (catch-all).
+- [`src/dev/dev.css`](../../src/dev/dev.css) — `body.css` import.
+
+테스트:
+
+- [`tests/e2e/dev-body.spec.ts`](../../tests/e2e/dev-body.spec.ts) — 8 specs: `/dev/body` → earth redirect / Saturn rings + toggle / Earth no-rings / body picker 네비 / time slider 갱신 / texture toggle overlay / 회전 readout / unknown slug fallback.
+- [`tests/e2e/dev-index.spec.ts`](../../tests/e2e/dev-index.spec.ts) — Work 6 available 전환 (available 5 / placeholder 6).
+
+검증 결과:
+
+- `pnpm format` ✓ (Prettier auto-format on multiple files)
+- `pnpm lint:fix` ✓ (1 error — async navigate → `void navigate(...)` wrapper)
+- `pnpm typecheck` ✓
+- `pnpm test` ✓ — **552 tests** (P4 그대로 — dev page 추가는 e2e 영역).
+- `pnpm build` ✓
+- `pnpm test:e2e dev-body + dev-index` ✓ — **13 tests** (8 dev-body + 5 dev-index).
+- preview 시각 확인 — `/dev/body/saturn` 에서 Saturn body + rings + 자전축 화살표 + 모든 readout (RA 40.580°, Dec 83.536°, W 253.081°, sub-solar lon 156.159°, lat -4.905°). `/dev/body/earth` 에서 blue sphere (fallback color since earth.jpg 미존재) + RA 359.831° / Dec 89.853° / W 133.613° (Earth pole near vernal equinox / celestial north). Body picker 변경 → URL + 헤딩 + mesh 모두 즉시 갱신.
+
+설계 결정 + 발견:
+
+- **`hasNestedRoutes` flag in registry**: 1줄 boolean 추가로 DevApp 이 catch-all 라우팅 분기. 기존 dev page (Astro / Ephemeris / Scale / Render) 는 영향 0. 미래 Work 들도 같은 flag 로 dynamic sub-route 지원.
+- **`useNavigate()` Promise 반환 (react-router v7)**: `onChange` 가 void 기대하는데 navigate 가 Promise 반환 → ESLint `no-misused-promises` 잡음. `void navigate(...)` 로 wrap.
+- **`hasNestedRoutes` + nested `<Routes>` chunk size**: Body / SunMesh / SaturnRings + R3F Canvas 가 모두 lazy chunk. 빌드 dist 1129 kB → 큰 변동 없음.
+- **시간 슬라이더 fixed default 변경 (plan vs. 실제)**: plan 은 "현재 시각" 권장이었으나 e2e reproducibility + dev demo 결정론을 위해 fixed `2026-05-06T00:00:00Z` + ±5 년 offset 으로 변경. 결정 #39.
+- **DE440 미사용 (sub-solar synthetic)**: dev demo 는 IAU rotation 검증용. 실제 ephemeris 위치는 Work 9 / Work 11 책임. 결정 #40.
+- **Saturn 전용 분기 = conditional UI**: 별도 `/dev/body/saturn` route 가 없어도 `body.rings !== null` 가 rings toggle 표시 분기. plan §3 P5 의 "Saturn 전용 페이지" 약속을 더 단순한 형태로 충족. 결정 #41.
+- **Texture toggle 구현**: `useMemo` 로 `textureEnabled ? body : { ...body, textureUrl: null }` 파생 BodyDefinition 생성 → Body 컴포넌트가 깔끔하게 fallback color 모드로 전환. wireframe toggle 은 결정만 남기고 (state) 실제 mesh 적용은 P5 범위 밖 (Material 의 wireframe prop 노출 — 향후 work).
+- **자전축 화살표 sync**: `axisGroupRef.current.quaternion.copy(bodyOrientationQuaternion(model, jdTdb))` 를 render 시점에 직접 적용 (useEffect 아님) — body / rings 와 동일 quaternion 보장. ref 가 null 이면 skip.
 
 ### P6 — Cross-validation & Golden Fixtures (Closeout)
 
@@ -501,7 +548,8 @@ THREE.Quaternion                           ← Body mesh.quaternion
 | 2026-05-06 | **P1 완료** — `src/bodies/{types,catalog,index}.ts` + Python `orbitarium_tools.bodies` mirror + `public/data/textures/README.md` + 35 단위 테스트 (TS 19 + Python 16). 결정 12건 (#1~#12) 모두 권장값 채택: string union BodyKind / naifId+slug / Work4 radius 재사용 + 위성 9 신규 / IAU WGCCRE 2015 / Solar System Scope CC4 / JPEG 2K+1K+PNG / 직접 commit / 단색 fallback / SphereGeometry 64×32 / atmosphere boolean / `src/bodies/` 신설 / Charon defer. format/lint/typecheck/test(494)/build/ruff/mypy(14 files)/pytest(157) 전부 그린.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | 2026-05-06 | **P2 완료** — `src/astro/rotationData.ts` 11 IAU 모델 확장 (Sun + 8 planets + Moon + Pluto, polynomial-only) + `IAU_ROTATION_MODELS` Map + Python mirror (`_model()` factory + 동일 11 모델 + `spice_inertial_to_body_fixed` 일반화) + `bodies.py` 의 `generate_iau_rotation_fixture` (11 × 5 = 55 rows) + `generate_body_catalog_fixture` + CLI work-6 분기 + `pnpm fixtures:work-06`. fixture iau-rotation.json + body-catalog.json 생성. 결정 5건 (#13~#17): pck00011 polynomial / Earth's Moon 만 / Pluto polynomial / 1 mas TS↔Python + 1e-12 SPICE polynomial-only / IAU paper 직접 참조. 단위 테스트 57 추가 (TS 45 + Python 12, 총 539 / 169). Mercury / Moon / Neptune omitted terms 는 source string 에 "Work 11" 명시. format/lint/typecheck/test(539)/build/ruff/mypy/pytest(169) 그린.                                                                                                                                                                                                                                                                                                                                                                                                                |
 | 2026-05-06 | **P3 완료** — `src/bodies/{material,rotation}.ts` + `Body.tsx` + `SunMesh.tsx` + Python `sub_solar_point` + `generate_sub_solar_fixture` (5 × 5 × 5 = 125 rows). 결정 11건 (#18~#28): planet PBR Mat`StandardMaterial` / Sun `MeshBasicMaterial` / Sun halo additive sprite / Body `worldPosition` prop (호출자 책임) / matrix transpose → quaternion / jdTdb 변화 시 `useEffect` 갱신 / 64×32 default geometry / `SRGBColorSpace` texture / 404 fallback / 텍스처 자산 P6 defer / Sun mesh 분리. 단위 테스트 14 추가 (TS 10 + Python 4, 총 549 / 173). format/lint/typecheck/test(549)/build/ruff/mypy/pytest(173) 그린. Body / SunMesh 시각 검증은 P5 dev demo e2e 에서.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| 2026-05-06 | **P4 완료** — `src/bodies/SaturnRings.tsx` (RingGeometry 128 segments + radial UV override + alpha + IAU rotation 동기화 + 텍스처/단색 fallback) 신규. 위성 entries (Galilean / Saturn major / Pluto) 는 P3 의 `Body` 컴포넌트가 그대로 처리 — 신규 코드 0. 결정 6건 (#29~#34): RingGeometry + radial UV / alpha+depthWrite=false / Saturn IAU quaternion sibling / 위성 Body 재사용 / Charon 범위 밖 / fallback color. 단위 테스트 3 추가 (geometry annulus + UV remap + invariant) — 총 552 / 173. tidally-locked 위성은 default orientation 유지 (Work 11 IAU 도입 시 자동 활성). format/lint/typecheck/test(552)/build 그린. SaturnRings 시각 검증은 P5 dev demo e2e (`/dev/body/saturn`). |
+| 2026-05-06 | **P4 완료** — `src/bodies/SaturnRings.tsx` (RingGeometry 128 segments + radial UV override + alpha + IAU rotation 동기화 + 텍스처/단색 fallback) 신규. 위성 entries (Galilean / Saturn major / Pluto) 는 P3 의 `Body` 컴포넌트가 그대로 처리 — 신규 코드 0. 결정 6건 (#29~#34): RingGeometry + radial UV / alpha+depthWrite=false / Saturn IAU quaternion sibling / 위성 Body 재사용 / Charon 범위 밖 / fallback color. 단위 테스트 3 추가 (geometry annulus + UV remap + invariant) — 총 552 / 173. tidally-locked 위성은 default orientation 유지 (Work 11 IAU 도입 시 자동 활성). format/lint/typecheck/test(552)/build 그린. SaturnRings 시각 검증은 P5 dev demo e2e (`/dev/body/saturn`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 2026-05-06 | **P5 완료** — `/dev/body/:slug` dynamic dev demo. `src/dev/body/{BodyDemo,BodyInspector,BodyPicker,TimeControl,RotationReadout,MeshControls}.tsx` + `scene/BodyScene.tsx` + `body.css`. registry `hasNestedRoutes` flag + DevApp catch-all 라우팅. body picker → URL navigate / time offset ±5년 / 회전 readout (W/α/δ + sub-solar synthetic) / texture·wireframe·axis·rings 토글 (rings 는 Saturn only). 결정 7건 (#35~#41), plan 의 시간 슬라이더 default 1건 변경 (current → fixed 2026-05-06). e2e 8 추가 + dev-index Work 6 available 전환 (available 5 / placeholder 6). 시각 확인 — Saturn rings + axis arrows + 모든 readout 정상, Earth fallback color + 정확 W angle. format/lint/typecheck/test(552)/build/test:e2e(13) 그린. |
 
 ---
 
