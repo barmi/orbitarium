@@ -8,12 +8,12 @@
 
 ## 0. 현재 상태 (Status)
 
-| 항목         | 값                                                                                                                  |
-| ------------ | ------------------------------------------------------------------------------------------------------------------- |
-| 현재 phase   | **P3 완료** ✓ — P4 진입 대기                                                                                        |
-| 다음 액션    | **P4 — Adaptive Scale Interface** 진입 — `ZoomLevel` 단위 + 두 정책 lerp (smoothstep) + binary search inverse |
-| 마지막 갱신  | 2026-05-06                                                                                                          |
-| 블로커       | 없음                                                                                                                |
+| 항목         | 값                                                                                                            |
+| ------------ | ------------------------------------------------------------------------------------------------------------- |
+| 현재 phase   | **P4 완료** ✓ — P5 진입 대기                                                                                  |
+| 다음 액션    | **P5 — Dev Demo `/dev/scale`** 진입 — 정책 picker + 1D 행성 라이너업 + 정책 곡선 + adaptive zoom 슬라이더 |
+| 마지막 갱신  | 2026-05-06                                                                                                    |
+| 블로커       | 없음                                                                                                          |
 
 ## 1. 진행 체크리스트
 
@@ -23,7 +23,7 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] **P1** — Strategy & Brand Types _(완료 2026-05-06)_
 - [x] **P2** — Distance Scale Functions _(완료 2026-05-06)_
 - [x] **P3** — Body Size Scale Functions _(완료 2026-05-06)_
-- [ ] **P4** — Adaptive Scale Interface
+- [x] **P4** — Adaptive Scale Interface _(완료 2026-05-06)_
 - [ ] **P5** — Dev Demo `/dev/scale`
 - [ ] **P6** — Cross-validation & Golden Fixtures (Closeout)
 
@@ -51,6 +51,10 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 16  | 대수 확대 정책 공식 | **`base + k * log10(1 + r/r0)`** with r0=Earth, k=0.5, base=0.005 | 단순 log(r/r0) 는 r<r0 에서 음수 → 시각화 불가. log(1+x) 시프트로 r=0 → base 안전. inverse: r0 * (10^((s-base)/k) - 1). | P3 | 2026-05-06 |
 | 17  | MinMaxClamp 공식 | **log10 normalize: `min + (s - log_min) / (log_max - log_min) * span`** | 입력 r_min=Pluto, r_max=Sun → scene [0.005, 5]. 정확 reversible. 본 카탈로그 너머 (e.g. 위성) 의 입력은 카탈로그 확장 시 갱신. | P3 | 2026-05-06 |
 | 18  | 크기 round-trip 검증 | **카탈로그 11 entries 전부 1mm 이내** | Sun/Earth/Pluto/Moon 등 전 범위. log/exp LSB 흔들림은 Sun (7e8 m) 에서도 ~1µm — 1mm 마진 충분. | P3 | 2026-05-06 |
+| 19  | ZoomLevel 단위 | **`log10(distance / 1 AU)`** brand `'log10AU'` — `ZOOM_INNER = -0.4` (Mercury), `ZOOM_OUTER = 1.7` (Pluto) | 행성 거리 0.4~50 AU 범위가 [-0.4, 1.7] log scale → linear AU 보다 자연스러움. Work 9 카메라 거리 인풋 매핑은 동일 스케일 사용. | P4 | 2026-05-06 |
+| 20  | Adaptive lerp 함수 | **smoothstep (cubic Hermite, `t² (3 - 2t)`)** | linear 보다 줌 전환이 자연스러움 (양 끝점에서 도함수 0). edge0==edge1 케이스는 step function 으로 fallback. | P4 | 2026-05-06 |
+| 21  | Adaptive inverse 방식 | **binary search (bisection)** with bracket `[min, max]` of 두 base inverse | 정책 lerp 가 monotonic 합성이라 두 base inverse 사이에 정확 root 가 존재. value tol = 1e-15, **bracket tol = 1e-6 m (1µm)** — scene tol 만 쓰면 lerp slope 0.5 시 input 에서 0.3m 오차 발생. max 200 iter (실제 ~50). | P4 | 2026-05-06 |
+| 22  | t==0 / t==1 short-circuit | **base policy inverse 직접 호출** — bisect 우회 | 양 끝 zoom 에서는 정확한 base 정책 inverse 사용 (LSB 한계 외 불일치 없음). 0 < t < 1 만 bisect. | P4 | 2026-05-06 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -85,9 +89,10 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 ### P4에서 결정
 
-- [ ] 줌 레벨 단위 (log10 AU / linear AU)
-- [ ] 정책 lerp 함수 (smoothstep / linear)
-- [ ] adaptive inverse 방식 (binary search / 표)
+- [x] 줌 레벨 단위: **log10(AU)** + `ZOOM_INNER=-0.4` / `ZOOM_OUTER=1.7` ✓ (#19)
+- [x] 정책 lerp 함수: **smoothstep (cubic Hermite)** ✓ (#20)
+- [x] adaptive inverse 방식: **binary search**, bracket tol = 1µm ✓ (#21)
+- [x] t==0/t==1 short-circuit: **base policy inverse 직접 호출** ✓ (#22)
 
 ### P5에서 결정
 
@@ -202,9 +207,32 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 - **Sun radius (7e8 m) 의 round-trip**: log/exp LSB ~1µm → 1mm 마진 충분. 가장 큰 천체에서도 안전.
 - **default k=0.5 의 시각적 결과**: Sun ~ 1.025, Earth ~ 0.156, Pluto ~ 0.042 scene. 이 값은 라이너업에서 거리 [0.4, 3] scene 와 비교 시 약간 큼 — Work 9 카메라 줌 시 탄력적 조정 (P4 adaptive interface 가 이를 받침).
 
-### P4 — Adaptive Scale Interface
+### P4 — Adaptive Scale Interface _(완료 2026-05-06)_
 
-_미시작_
+생성/수정 파일:
+
+- [`src/scale/adaptive.ts`](../../src/scale/adaptive.ts) — `ZoomLevel` brand (`log10AU`), `ZOOM_INNER = -0.4` / `ZOOM_OUTER = 1.7`, `AdaptiveDistancePolicy` / `AdaptiveSizePolicy` interface, `smoothstep(edge0, edge1, x)` (cubic Hermite, edge0==edge1 fallback to step), `lerpDistancePolicy(p0, p1, zoom0, zoom1, name?)` / `lerpSizePolicy(...)`, internal `bisectInverse(forward, target, lo, hi)` (value tol 1e-15, bracket tol 1µm, max 200 iter).
+- [`src/scale/index.ts`](../../src/scale/index.ts) — `adaptive` re-export 추가.
+
+테스트:
+
+- [`tests/unit/scale/adaptive.test.ts`](../../tests/unit/scale/adaptive.test.ts) — 19 tests: smoothstep ground truth + edge cases, ZOOM constants, lerpDistancePolicy at zoom edges (delegate base) + intermediate (bisect) round-trip 1mm, monotonic across zoom, named policy, 두 lerp 페어 (Linear↔Log, Piecewise↔Log), lerpSizePolicy (Uniform↔LogMag, Uniform↔MinMaxClamp), zoom invariants (beyond/below edges).
+
+검증 결과:
+
+- `pnpm format:check` ✓ (Prettier auto-format on adaptive.ts after first run)
+- `pnpm lint` ✓
+- `pnpm typecheck` ✓
+- `pnpm test` ✓ — **395 tests** (P3 376 → P4 +19).
+- `pnpm build` ✓
+
+설계 결정 + 발견:
+
+- **bisect tolerance trap**: 첫 구현은 value tol 1e-12 만 사용 → lerp slope ~0.5 일 때 1e-12 scene = 2e-12 AU = 0.3 m input 오차 → 1mm round-trip 톨러런스 fail. bracket tol 1µm 추가로 input precision 보장.
+- **smoothstep 도함수 0 at edges**: cubic Hermite `t²(3-2t)` 는 t=0/t=1 에서 도함수 0 → 줌 전환이 부드러움. linear 는 도함수 불연속. 양 끝점에서 base 정책 일치 보장.
+- **t==0/t==1 short-circuit**: 양 끝 zoom 에서 bisect 우회하고 base policy inverse 직접 호출 — IEEE 754 LSB 외 추가 흔들림 없음. 30 AU LSB issue 는 base policy 자체의 한계 (P2 기록).
+- **bracket invariant**: lerp 가 monotonic 합성이라 두 base inverse 가 항상 정답을 bracket — bisect 안전. 확인: forward(lo) < target < forward(hi) (혹은 반대) 자동 보장.
+- **Work 9 인터페이스 호환**: `ZoomLevel = log10(AU)` 가 카메라 거리 wiring 시 자연스러움 — 카메라 위치 |r| (m) → log10(r/AU) → ZoomLevel.
 
 ### P5 — Dev Demo `/dev/scale`
 
@@ -321,6 +349,7 @@ pnpm fixtures:work-04
 | 2026-05-06 | **P1 완료** — `src/scale/{types,constants,index}.ts` + Python 미러 + 12 단위 테스트 (TS 8 + Python 4). 결정 9건 (#1~#9) 모두 권장값 채택: Piecewise default / Logarithmic size default / 1 scene unit = 1 AU / forward+inverse 강제 / interface 모델 / SceneUnit+PositionScene+SizeScene phantom / Radius / 1mm 톨러런스 / IAU WGCCRE 2015 평균 적도 반지름 (11 entries). format/lint/typecheck/test/build/ruff/mypy/pytest 전부 그린. |
 | 2026-05-06 | **P2 완료** — `src/scale/{distancePolicies,position}.ts` + Python 미러 + `tests/fixtures/work-04/distance-policies.json` + `pnpm fixtures:work-04` + CLI Work 4 분기. 결정 5건 (#10~#14): break points [0.4, 5, 50] AU → [0.4, 1.5, 3.0] scene / Linear baseline + Logarithmic / r0=1AU / 30 AU 까지 1mm 절대 round-trip + relative 1e-14 / 방향 보존 + 0 벡터 가드. 단위 테스트 20건 추가 (TS 19 + Python 7). 모든 정책 monotonic + cosine 1.0 + fixture cross-check 그린. format/lint/typecheck/test(362)/build/ruff/mypy/pytest(99) 그린. |
 | 2026-05-06 | **P3 완료** — `src/scale/sizePolicies.ts` + Python 미러 + `tests/fixtures/work-04/size-policies.json` (3 정책 × 11 bodies). 결정 4건 (#15~#18): Uniform baseline + MinMaxClamp / LogMag 공식 base + k*log10(1+r/r0) (r0=Earth, k=0.5, base=0.005) / MinMaxClamp [0.005, 5] scene log10 normalize / 카탈로그 11 entries 1mm round-trip. 단위 테스트 18건 추가 (TS 14 + Python 4). format/lint/typecheck/test(376)/build/ruff/mypy/pytest(103) 그린. |
+| 2026-05-06 | **P4 완료** — `src/scale/adaptive.ts`: `ZoomLevel` (log10 AU) brand, `ZOOM_INNER = -0.4 / ZOOM_OUTER = 1.7`, smoothstep cubic Hermite, `lerpDistancePolicy / lerpSizePolicy` 두 base 정책 줌 보간, t=0/t=1 short-circuit + 0<t<1 binary-search inverse (value tol 1e-15, bracket tol 1µm). 결정 4건 (#19~#22) 채택. 단위 테스트 19건 추가 (총 395). bisect bracket tol 트랩 발견 (value-only tol 시 lerp slope 0.5 → input 0.3 m 오차) → bracket tol 추가로 해결. format/lint/typecheck/test/build 그린. |
 
 ---
 
