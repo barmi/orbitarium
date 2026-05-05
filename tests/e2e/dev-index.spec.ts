@@ -10,15 +10,16 @@ test.describe('dev catalog (/dev/index)', () => {
     await expect(cards).toHaveCount(11)
   })
 
-  test('Work 2 is available and the rest are placeholders', async ({ page }) => {
+  test('Work 2 and Work 3 are available and the rest are placeholders', async ({ page }) => {
     await page.goto('/dev/index')
 
     const placeholders = page.locator('.dev-card[data-status="placeholder"]')
-    await expect(placeholders).toHaveCount(10)
+    await expect(placeholders).toHaveCount(9)
 
     const available = page.locator('.dev-card[data-status="available"]')
-    await expect(available).toHaveCount(1)
-    await expect(available).toContainText('Astronomy Foundations')
+    await expect(available).toHaveCount(2)
+    await expect(available.filter({ hasText: 'Astronomy Foundations' })).toHaveCount(1)
+    await expect(available.filter({ hasText: 'Ephemeris Data Layer' })).toHaveCount(1)
   })
 
   test('each card shows work number, title, and target slug', async ({ page }) => {

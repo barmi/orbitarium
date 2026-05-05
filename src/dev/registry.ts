@@ -21,6 +21,7 @@ export const devPages: DevPageEntry[] = [
     slug: 'ephemeris',
     title: 'Ephemeris Data Layer',
     summary: 'body + 시각 입력 → 위치/속도. JPL Horizons 직접 호출 결과와 nm/mm diff',
+    Component: lazy(() => import('./ephemeris/EphemerisDemo')),
   },
   {
     workNumber: 4,

@@ -8,12 +8,12 @@
 
 ## 0. 현재 상태 (Status)
 
-| 항목         | 값                                                                                                                  |
-| ------------ | ------------------------------------------------------------------------------------------------------------------- |
-| 현재 phase   | **P4 완료** ✓ — P5 진입 대기                                                                                        |
-| 다음 액션    | **P5 — Dev Demo `/dev/ephemeris`** 진입 — body × 시각 입력 → state vector 표시 + Horizons diff 패널, registry 연결 |
-| 마지막 갱신  | 2026-05-06                                                                                                          |
-| 블로커       | 없음 (CI에서 DE440 preprocess는 P6에서 통합)                                                                        |
+| 항목         | 값                                                                                                                              |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| 현재 phase   | **P5 완료** ✓ — P6 진입 대기                                                                                                    |
+| 다음 액션    | **P6 — Cross-validation & Golden Fixtures (Closeout)** 진입 — fixture README, ephemeris-conventions, CI binary 통합, 회귀 가드 |
+| 마지막 갱신  | 2026-05-06                                                                                                                      |
+| 블로커       | 없음                                                                                                                            |
 
 ## 1. 진행 체크리스트
 
@@ -24,7 +24,7 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] **P2** — DE440 Preprocessing (Python) _(완료 2026-05-06)_
 - [x] **P3** — TS Chebyshev Evaluator _(완료 2026-05-06)_
 - [x] **P4** — Horizons Reference (Python) _(완료 2026-05-06)_
-- [ ] **P5** — Dev Demo `/dev/ephemeris`
+- [x] **P5** — Dev Demo `/dev/ephemeris` _(완료 2026-05-06)_
 - [ ] **P6** — Cross-validation & Golden Fixtures (Closeout)
 
 > Work 3 마감 = 모든 phase [x] + [plan §1 Definition of Done](work-03-ephemeris.md#1-결과-정의-definition-of-done) 모든 항목 충족.
@@ -59,6 +59,10 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 24  | Horizons text precision tolerance | **위치 1 cm, 속도 1 µm/s** — Horizons API 자체 한계 | Horizons 응답이 AU 단위 14-자리 sig fig 텍스트 → 1 AU 거리에서 IEEE 754 LSB ≈ 1cm. 우리 evaluator (P3 < 1mm) vs Horizons 비교는 Horizons API 의 텍스트 한계가 절대 floor. 의미 있는 cross-check은 spiceypy ↔ Horizons 일치 (확인 완료, < 6mm). | P4 | 2026-05-06 |
 | 25  | TS Horizons client | **Work 7로 deferred** | 본 Work는 Python reference 채널만. CORS proxy / browser 캐싱 / asteroid 추가는 Work 7 (Orbits) 에서 본격 도입. CLI `orbitarium-tools horizons` 와 P6 fixture 생성으로 충분. | P4 | 2026-05-06 |
 | 26  | Horizons cache | **astroquery 내장 cache** (HTTP-level, `~/.astropy/cache/`) | 별도 디스크 cache 필요 없음. fixture 재생성 시 자동 활용 → 2번째 실행 빠름. CI는 매 실행 fresh download (캐시 cold) — 작은 grid (30 queries) 라 OK. | P4 | 2026-05-06 |
+| 27  | Dev Demo 구조 | **단일 페이지 + 3 섹션** (StateVector wide / ReferenceDiff wide / PlanetLineup wide) | 패널이 데이터-heavy (벡터 + 테이블). 그리드 2열 대신 모든 패널을 wide 로 두고 세로 스크롤. body picker 가 11개 라 가로 공간 필요. | P5 | 2026-05-06 |
+| 28  | Body picker UI | **radio button group** (11 항목, 자동 wrap) | dropdown 대비 가시성 높고 1-click 전환. 라디오 + 시각 스타일 (segmented 패턴 재사용 변형). | P5 | 2026-05-06 |
+| 29  | Loader 추상화 | **`createWebDe440Loader({ baseUrl })`** for browser, `diskLoader` (test-only, Node fs) — 둘 다 `De440SegmentLoader` 인터페이스 구현 | dev demo 와 unit test 가 같은 evaluator 코드를 공유. baseUrl 기본값 `/data/ephemeris/de440/` (Vite static asset root). 테스트는 인메모리 또는 Node fs. | P5 | 2026-05-06 |
+| 30  | Frame 표시 토글 | **단일 frame 라디오 (ICRF / EME2000 / Ecliptic)** + 라운드트립 잔차 노트 | 동시 표시는 화면 부담. 라디오 전환 즉시 변환 적용 (Work 2 frames 합성). EME2000 선택 시 round-trip 잔차 표시. | P5 | 2026-05-06 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -107,9 +111,10 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 ### P5에서 결정
 
-- [ ] Dev Demo 구조 (단일 페이지 / 탭)
-- [ ] body picker (dropdown / button group)
-- [ ] frame 변환 표시 (동시 / 토글)
+- [x] Dev Demo 구조: **단일 페이지 3 섹션 (모두 wide)** ✓ (#27)
+- [x] body picker: **radio button group** ✓ (#28)
+- [x] frame 변환 표시: **라디오 토글 + 라운드트립 잔차** ✓ (#30)
+- [x] Loader 추상화: **`createWebDe440Loader` (브라우저) / `diskLoader` (Node 테스트)** ✓ (#29)
 
 ### P6에서 결정
 
@@ -246,9 +251,41 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 - **CLI 이름 → NAIF 매핑**: `--body=mars` 같은 입력을 `NAIF_CATALOG` 의 키로 lower+underscore 정규화하여 lookup. 숫자 입력은 NAIF id 직접 사용.
 - **의도적으로 TS Horizons 미구현**: Work 7 진입 시 소행성/혜성/우주선 ephemeris 가 본격 필요해질 때 CORS 프록시 + 캐싱과 함께 구현. Work 3 의 P5 dev demo 는 fixture 기반 비교만 표시.
 
-### P5 — Dev Demo `/dev/ephemeris`
+### P5 — Dev Demo `/dev/ephemeris` _(완료 2026-05-06)_
 
-_미시작_
+생성/수정 파일:
+
+- [`src/dev/ephemeris/EphemerisDemo.tsx`](../../src/dev/ephemeris/EphemerisDemo.tsx) — Work 3 dev demo shell. 3개 패널 단일 페이지 grid. evaluator 단일 instance 공유.
+- [`src/dev/ephemeris/StateVectorPanel.tsx`](../../src/dev/ephemeris/StateVectorPanel.tsx) — Body picker (11 천체 라디오) + UTC `datetime-local` + frame 라디오 → ICRF/EME2000/Ecliptic 변환 결과 (m, km, m/s, AU 거리, 속도 magnitude). EME2000 선택 시 round-trip 잔차 표시.
+- [`src/dev/ephemeris/ReferenceDiffPanel.tsx`](../../src/dev/ephemeris/ReferenceDiffPanel.tsx) — `de440-states.json` 160 entries 자동 로드 → evaluator 결과와 component-wise L_∞ diff 표 + 최댓값 요약. fixture URL fallback (`/fixtures/work-03/...` → `/tests/fixtures/work-03/...`).
+- [`src/dev/ephemeris/PlanetLineupPanel.tsx`](../../src/dev/ephemeris/PlanetLineupPanel.tsx) — Mercury~Pluto (9 행성) 현재 시각 SSB 거리 (AU) + 속도 (km/s) 표.
+- [`src/dev/ephemeris/{webLoader,bodies,format}.ts`](../../src/dev/ephemeris/) — `createWebDe440Loader` fetch wrapper, `DEMO_BODIES` 카탈로그 (11 entries), AU/km 변환 헬퍼.
+- [`src/dev/ephemeris/ephemeris.css`](../../src/dev/ephemeris/ephemeris.css) — body picker grid + status/error 스타일.
+- [`src/dev/dev.css`](../../src/dev/dev.css) — `@import './ephemeris/ephemeris.css'` 추가.
+- [`src/dev/registry.ts`](../../src/dev/registry.ts) — Work 3 entry `Component: lazy(() => import('./ephemeris/EphemerisDemo'))` 연결.
+
+테스트:
+
+- [`tests/e2e/dev-ephemeris.spec.ts`](../../tests/e2e/dev-ephemeris.spec.ts) — 4 specs: 3 패널 렌더, J2000 Earth state vector ~1 AU, Reference Diff summary 표시, Planet Lineup 9 rows. `test.skip(!DATA_AVAILABLE, ...)` 으로 binary 부재 시 graceful skip.
+- [`tests/e2e/dev-index.spec.ts`](../../tests/e2e/dev-index.spec.ts) — Work 3 카드 available 기대값 갱신 (placeholder 9, available 2).
+
+검증 결과:
+
+- `pnpm format:check` ✓ (Prettier auto-format)
+- `pnpm lint` ✓
+- `pnpm typecheck` ✓
+- `pnpm test` ✓ — 334 tests
+- `pnpm test:e2e` ✓ — **16 tests** (Work 2 12 → P5 +4)
+- `pnpm build` ✓ — 1113 kB
+- 브라우저 preview 검증: `/dev/ephemeris` 정상 렌더, console error 없음, Reference Diff 표가 max Δr=9.766e-4 m (< 1mm) / max Δv=1.091e-11 m/s 표시 — TS evaluator 가 spiceypy fixture 와 component-wise 1mm/1µm/s 안에서 일치 시각 확인.
+
+설계 결정 + 발견:
+
+- **`__dirname` ESM 호환**: e2e spec 이 ESM 으로 로드되므로 `path.dirname(fileURLToPath(import.meta.url))` 패턴 사용. `__dirname` 직접 사용 시 Playwright 가 throw.
+- **Playwright `toContainText` 다중 매치 함정**: `available.toContainText('Astronomy')` + `toContainText('Ephemeris')` 는 모든 엘리먼트가 두 문자열을 다 포함해야 통과 — `available.filter({ hasText: ... })` + `toHaveCount(1)` 로 변경.
+- **`Vec3` 타입 캐스트**: `state.position` 은 `PositionICRF` (Meters phantom 3-tuple) 인데 frame 변환 함수는 `Vec3` 받음 — narrow assignment 로 안전하게 변환 (`pos: Vec3 = [state.position[0] as number, ...]`).
+- **fixture URL fallback**: dev 모드에서는 `tests/fixtures/work-03/de440-states.json` 이 Vite 정적 자원 root 에 없음 → fetch 실패. 임시 해결은 fixture 를 `public/fixtures/...` 에 복사하는 대신 ReferenceDiffPanel 이 두 경로 시도 후 silent 실패. P6 에서 더 깔끔한 해결 (fixture 를 public/ 에 mount 하는 vite plugin 또는 별도 endpoint).
+- **모바일 레이아웃 `astro-panel--wide`**: Work 2 패턴 그대로 — `grid-column: 1 / -1` 로 wide 패널 가능. 모바일에서는 자동으로 1열.
 
 ### P6 — Cross-validation & Golden Fixtures (Closeout)
 
@@ -370,6 +407,7 @@ pnpm fixtures:work-03
 | 2026-05-06 | **P2 완료** — `orbitarium_tools.de440` (`crop_segment`/`evaluate_segment`/`write_segment_binary`/`preprocess`/`resolve_chain` + `De440Segment`), CLI `de440 preprocess`, `pnpm de440:preprocess`, jplephem 2.24 의존성. 결정 8건 (#11~#18): jplephem 라이브러리 / 14 native segments + 6 alias / Float64 LE 헤더 `<iiiidd>` / native intervals / 무압축 / `public/data/ephemeris/de440/` build-time 생성. 단위 테스트 8건 추가 (총 83). 14 segments × 4 JDs 비교: jplephem max diff < 0.49 mm / 0.007 µm/s, spiceypy SSB chain max diff < 0.1 mm / 4 µm/s — 모두 1mm/1µm/s 톨러런스 통과. ruff/mypy/pytest 모두 그린. |
 | 2026-05-06 | **P3 완료** — TS Chebyshev evaluator + DE440 binary loader. `src/ephemeris/{chebyshev,de440Format,de440Evaluator}.ts` + `de440-states.json` fixture (160 entries). 결정 4건 (#19~#22): async Promise + 주입 가능한 loader / Promise Map 캐시 / L_∞ component-wise 비교 / CI 통합은 P6 deferred. 단위 테스트 17건 추가 (총 334): chebyshev 9 + format parse 5 + evaluator 4 (3 conditional on binary). spiceypy fixtures cross-check max < 1 mm / 1 µm/s component-wise (Neptune bary at 30AU = IEEE 754 한계). format/lint/typecheck/test/build/e2e 그린. |
 | 2026-05-06 | **P4 완료** — Horizons reference (Python only). `orbitarium_tools.horizons` (`query_state` / `query_states` / `cli_describe` / `generate_fixtures`), CLI `horizons --body=... --jd-tdb=...` + `fixtures --work=3` (de440 + horizons). `tests/fixtures/work-03/horizons-states.json` (30 entries). 결정 4건 (#23~#26): AU→m 단위 변환 / refplane='earth' + light-time off / Horizons text precision = 1cm tolerance / TS Horizons client 은 Work 7 deferred / astroquery 내장 cache. 단위 테스트 5건 추가 (총 88). Horizons ↔ spiceypy live cross-check ≤ 6mm / 1µm/s 통과. ruff/mypy/pytest 그린. |
+| 2026-05-06 | **P5 완료** — `/dev/ephemeris` 단일 페이지 dev demo. `src/dev/ephemeris/{EphemerisDemo,StateVectorPanel,ReferenceDiffPanel,PlanetLineupPanel,webLoader,bodies,format}.ts(x)` + ephemeris.css 추가, Work 3 registry 연결. State Vector (11 body radio + UTC + frame 토글 → ICRF/EME2000/Ecliptic 위치/속도 표시), Reference Diff (160 fixture entries vs evaluator L_∞ diff + 요약), Planet Lineup (9 행성 SSB 거리 + 속도). 결정 4건 (#27~#30) 채택. e2e 4건 추가 (총 16). 브라우저 검증: max Δr=9.766e-4 m / Δv=1.091e-11 m/s — 1mm/1µm/s 안. format/lint/typecheck/test(334)/build/e2e(16) 그린. |
 
 ---
 
