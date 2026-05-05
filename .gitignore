@@ -25,6 +25,9 @@ out/
 *.swp
 *.swo
 
+# Claude Code — share project config, exclude personal overrides
+.claude/settings.local.json
+
 # Logs
 *.log
 npm-debug.log*

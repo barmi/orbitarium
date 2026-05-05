@@ -10,8 +10,8 @@
 
 | 항목 | 값 |
 |---|---|
-| 현재 phase | **P3 완료** ✓ — 다음은 **P4 (three.js Hello)** |
-| 다음 액션 | P4 시작: `/` 에 회전 sphere + FPS 카운터 + 별 1점 (three.js 파이프라인 검증 수준) |
+| 현재 phase | **P4 완료** ✓ — 다음은 **P5 (Test Frameworks)** |
+| 다음 액션 | P5 시작: Vitest 단위 + Playwright e2e 골격 + 단위 1개 / e2e 2개 (`/`, `/dev/index`) |
 | 마지막 갱신 | 2026-05-05 |
 | 블로커 | 없음 |
 
@@ -23,7 +23,7 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] **P1** — Tech Decisions & Repo Bootstrap _(완료 2026-05-05)_
 - [x] **P2** — Quality Tooling _(완료 2026-05-05)_
 - [x] **P3** — App Shell & Dev Routes _(완료 2026-05-05)_
-- [ ] **P4** — three.js Hello
+- [x] **P4** — three.js Hello _(완료 2026-05-05)_
 - [ ] **P5** — Test Frameworks
 - [ ] **P6** — Python Tooling Smoke
 - [ ] **P7** — CI Pipeline Skeleton
@@ -40,6 +40,7 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 6 | pre-commit hook | **미도입** | CI(P7)에서 lint/type/test 검증. 쓰기 단계 마찰 최소화. 추후 husky+lint-staged 추가 가능. | P2 | 2026-05-05 |
 | 7 | 라우터 라이브러리 | **React Router (v7 라인)** | 가장 성숙한 생태계. 동적 로드/속도적 navigate 등 확장 용이. v6 API 호환되어 기존 패턴 그대로 사용. | P3 | 2026-05-05 |
 | 8 | 프로덕션 dev 라우트 제외 | **`import.meta.env.DEV` + `lazy()`** | 단일 entry. dev 모드에서만 enableDevRoutes=true → 조건부 lazy import. prod 빌드 시 false 평가로 dynamic import 자체가 dead-code 제거. 설정 최소화. | P3 | 2026-05-05 |
+| 9 | FPS 카운터 구현 | **자체 구현 (useEffect + requestAnimationFrame)** | P4는 파이프라인 검증용 — 의존성 추가 불요. 상세 GPU/draw call metric은 Work 11에서 r3f-perf 또는 stats.js로 교체 예정. | P4 | 2026-05-05 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -60,7 +61,7 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] 프로덕션 dev 제외 방식: **`import.meta.env.DEV` + `lazy()`** ✓ (#8)
 
 ### P4에서 결정
-- [ ] FPS 표시: 자체 구현 / `stats.js` / R3F 헬퍼
+- [x] FPS 표시: **자체 구현** ✓ (#9)
 
 ### P5에서 결정
 - [ ] e2e: **Playwright** (권장) / Cypress
@@ -159,8 +160,24 @@ phase 종료 시 생성·수정된 주요 파일을 기록.
   - `VITE_ENABLE_DEV_ROUTES=true pnpm build` → 별도 chunk `DevApp-*.js` (3.25 kB) + `DevApp-*.css` (1.40 kB) 생성 → 조건부 분기가 빌드 타임에 정확히 평가됨 ✓
 - 번들 크기 변화 (P1 → P3): 190.74 kB → 232.06 kB (+41 kB) — react-router-dom 추가분.
 
-### P4 — three.js Hello _(예정)_
-- _phase 종료 시 채움_
+### P4 — three.js Hello _(완료 2026-05-05)_
+신규 의존성: 없음 (P1에서 설치한 three 0.184.0 + @react-three/fiber 9.6.1 사용).
+
+생성/수정 파일:
+- [`src/render/HomeScene.tsx`](../../src/render/HomeScene.tsx) — R3F 씬: ambient + directional 광원, 회전 sphere (`useFrame` 으로 y/x 축 회전), BufferGeometry 단일 별 점 (off-axis).
+- [`src/render/FpsOverlay.tsx`](../../src/render/FpsOverlay.tsx) — useEffect + requestAnimationFrame 으로 1초 윈도우 평균 FPS 계산. 의존성 0.
+- [`src/routes/Home.tsx`](../../src/routes/Home.tsx) — Canvas 풀스크린 (z=0) + 헤더(z=1, pointer-events:none) + FpsOverlay(우상단) + dev 링크(우하단, dev 모드에서만).
+- [`src/routes/home.css`](../../src/routes/home.css) — 풀스크린 캔버스 + overlay layout + FPS overlay 스타일.
+- [`src/styles.css`](../../src/styles.css) — `.app/.note/.dev-link` 제거 (P1 잔재 정리), 루트 + 기본 reset만 유지.
+- [`.claude/launch.json`](../../.claude/launch.json) — preview 도구용 `vite-dev` 설정.
+- [`.prettierignore`](../../.prettierignore) — `docs/*.md` 사용자 작성 노트 보호 규칙 추가.
+
+검증 결과:
+- `pnpm typecheck` / `pnpm lint` / `pnpm format:check` ✓
+- **Preview 스크린샷** ✓ — sphere 회전 렌더링, FPS 오버레이 `120 fps` 라이브 표시, 헤더/링크 모두 정상 배치, 단일 별 visible.
+- 콘솔 에러 0건. 경고는 `THREE.Clock: deprecated → use THREE.Timer` (R3F 9.x 내부에서 발생, R3F 측 마이그레이션 대기).
+- **프로덕션 빌드 dev 제외 재확인** ✓ — `dist/assets/`에 단일 `index-*.js` (1113 kB / gzip 308 kB) + `index-*.css`, `Dev*` 시그니처 0건.
+- 번들 크기 변화 (P3 → P4): 232 kB → 1113 kB (+881 kB). 원인: three.js + R3F 코어 포함. Vite의 500 kB 경고가 뜨지만 정상 baseline. **Work 11(Polish & Performance)에서 코드 분할 (DE440 chunk, body 텍스처 chunk 등)로 최적화 예정**.
 
 ### P5 — Test Frameworks _(예정)_
 - _phase 종료 시 채움_
@@ -175,37 +192,38 @@ phase 종료 시 생성·수정된 주요 파일을 기록.
 
 > 새 세션이나 다른 작업자가 이어 받을 때 여기를 먼저 본다.
 
-### 다음 작업: P4 — three.js Hello
+### 다음 작업: P5 — Test Frameworks
 
-**Goal**: `/` 페이지에서 회전 sphere + FPS 카운터 + 별 1점 → three.js 렌더 파이프라인 검증. plan 본체 [§3 Phase 4](work-01-foundation.md#phase-4--threejs-hello) 참조.
+**Goal**: Vitest 단위 + Playwright e2e 골격 + sanity 테스트. plan 본체 [§3 Phase 5](work-01-foundation.md#phase-5--test-frameworks) 참조.
 
 **Step 1. 결정 라운드**
-§3 의 P4 결정 1개 확정:
-1. FPS 표시 방식: 자체 구현 / `stats.js` / `r3f-perf` 또는 R3F 헬퍼
+§3 의 P5 결정 2개 확정:
+1. e2e: **Playwright** (권장) / Cypress
+2. DOM 환경: **happy-dom** (권장 — 빠름) / jsdom
 
-**Step 2. 구현**
-- `src/render/` 디렉터리 신설 (Work 5에서 확장)
-- `<Canvas>` (R3F) 안에 회전 sphere (`MeshStandardMaterial` 또는 `MeshBasicMaterial`)
-- 간단한 광원 1개 (`<ambientLight>` + `<directionalLight>` 또는 `<pointLight>`)
-- BufferGeometry로 별 1점 (Work 5 starfield 예고)
-- FPS 오버레이
-- 윈도우 리사이즈 — R3F 자동 처리되므로 추가 작업 불필요
-
-**Step 3. 검증**
+**Step 2. 도구 설치**
 ```bash
-pnpm dev   # / 에 회전 sphere + FPS 표시, 콘솔 에러 없음, 30fps+
-pnpm build && pnpm preview   # 빌드본도 동일 동작
-pnpm lint && pnpm typecheck && pnpm format:check   # 그린
+pnpm add -D vitest @vitest/ui happy-dom @testing-library/react @testing-library/jest-dom
+pnpm add -D @playwright/test
+pnpm exec playwright install chromium    # 브라우저 다운로드
 ```
 
-**Step 4. 비범위 (Work 5에서 처리)**
-- HDR / ACES 톤매핑
-- 로그 깊이 버퍼
-- 실제 항성 카탈로그 starfield
-- 텍스처/PBR
+**Step 3. 설정 파일**
+- `vitest.config.ts` — happy-dom 환경, alias 동기화
+- `playwright.config.ts` — chromium baseURL `http://localhost:5173`, webServer auto-start
+- `tests/unit/sanity.test.ts` — 1개 trivial assert
+- `tests/e2e/home.spec.ts` — `/` 로드 + canvas 존재 + non-blank 픽셀 (toHaveScreenshot 또는 픽셀 샘플)
+- `tests/e2e/dev-index.spec.ts` — `/dev/index` 로드 + 카드 11개 (`registry.ts` 기준)
+- `package.json` scripts: `test`, `test:watch`, `test:ui`, `test:e2e`, `test:e2e:headed`
 
-**Step 5. handoff 갱신**
-- §0 / §1 / §3 / §4 / §7 (P1~P3 패턴과 동일)
+**Step 4. 검증**
+```bash
+pnpm test                # 단위 그린
+pnpm test:e2e            # e2e 그린 (자동으로 dev 서버 띄움)
+pnpm lint && pnpm typecheck && pnpm format:check
+```
+
+**Step 5. handoff 갱신** (동일 패턴)
 
 ### 빠른 검증 명령 (Work 1 전반)
 
@@ -236,6 +254,8 @@ pytest
 - **TypeScript 6 deprecation**: `baseUrl` 옵션이 TS 7에서 제거 예정 → 본 프로젝트는 `paths` 만 사용 (`./src/*` 형태). 향후 `paths` 추가 시 동일 컨벤션 유지.
 - **pnpm 업데이트 가능**: 설치된 8.10.2 → 최신 10.33.3. P2에서 `packageManager: pnpm@10.x` 핀 + corepack 사용 검토.
 - **TypeScript 6 + Vite 8 + React 19**: 모두 메이저 최신 라인. R3F v9 가 React 19 지원. 추후 Work에서 호환성 이슈 발생 시 여기에 기록.
+- **R3F 9.6.1 — `THREE.Clock` deprecation 경고**: 콘솔에 `THREE.Clock: deprecated. Please use THREE.Timer instead.` 가 매 프레임 출력되지만 동작에는 영향 없음. R3F 측에서 `Timer` 마이그레이션 PR 진행 중. 자체 코드는 영향 없음 (수정 불필요).
+- **번들 크기 1113 kB (gzip 308 kB)**: three.js + R3F + react + react-router 합산. Vite의 500 kB 경고. P5/P6/P7 에서 추가 의존성 더 늘어날 예정. Work 11(Polish)에서 manualChunks / lazy import / Draco 등으로 본격 분할.
 
 ## 7. 갱신 이력 (Changelog)
 
@@ -245,6 +265,7 @@ pytest
 | 2026-05-05 | **P1 완료** — pnpm + React 19 + R3F + Vite 부트스트랩, build/dev 검증 그린 |
 | 2026-05-05 | **P2 완료** — ESLint flat config + Prettier + TS strict 강화 (`noUncheckedIndexedAccess`, `noImplicitOverride`) + 컨벤션 문서. lint/typecheck/format 모두 그린, 룰 위반 5종 검출 검증 |
 | 2026-05-05 | **P3 완료** — react-router-dom 도입 + `/dev/*` sub-router + registry 기반 동적 카드 11개 + dev-routes 컨벤션 문서. prod 빌드에서 dev chunk 완전 제거 양방향 검증 (기본=제외 / VITE_ENABLE_DEV_ROUTES=true=포함) |
+| 2026-05-05 | **P4 완료** — R3F 회전 sphere + 단일 별 + 자체 FPS 오버레이. preview 스크린샷으로 시각 확인 (120 fps 라이브, sphere 렌더). 번들 232 kB → 1113 kB (three.js 추가, Work 11에서 분할 예정). `.claude/launch.json` 추가, `.prettierignore`에 docs/*.md 보호 |
 
 ---
 

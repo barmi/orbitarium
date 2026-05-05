@@ -11,3 +11,5 @@ tools/python
 # Plan/handoff docs use intentionally hand-tuned bilingual formatting;
 # Prettier reflows tables/lists in unwanted ways. Architecture docs may be formatted.
 docs/plan
+# Top-level user-authored notes in docs/ (e.g. WebStorm setup memos) — leave untouched.
+docs/*.md
