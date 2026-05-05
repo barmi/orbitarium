@@ -8,19 +8,19 @@
 
 ## 0. 현재 상태 (Status)
 
-| 항목         | 값                                                                                                                                              |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| 현재 phase   | **P0 kickoff** — plan/handoff 짝 작성 완료, P1 진입 대기                                                                                        |
-| 다음 액션    | **P1 — Strategy & Brand Types** 진입 — 거리/크기 정책 default / scene 단위 / Brand types 결정 후 §2 결정 로그 기록 + 타입 모듈 작성             |
-| 마지막 갱신  | 2026-05-06                                                                                                                                      |
-| 블로커       | 없음 — Work 3 마감 완료 (P6 commit 완료)                                                                                                        |
+| 항목         | 값                                                                                                                  |
+| ------------ | ------------------------------------------------------------------------------------------------------------------- |
+| 현재 phase   | **P1 완료** ✓ — P2 진입 대기                                                                                        |
+| 다음 액션    | **P2 — Distance Scale Functions** 진입 — `positionToScene` + Linear / Piecewise / Logarithmic 정책 + reversibility |
+| 마지막 갱신  | 2026-05-06                                                                                                          |
+| 블로커       | 없음                                                                                                                |
 
 ## 1. 진행 체크리스트
 
 각 phase의 Done 기준은 [plan §3](work-04-scale.md#3-phase-정의) 참조.
 phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
-- [ ] **P1** — Strategy & Brand Types
+- [x] **P1** — Strategy & Brand Types _(완료 2026-05-06)_
 - [ ] **P2** — Distance Scale Functions
 - [ ] **P3** — Body Size Scale Functions
 - [ ] **P4** — Adaptive Scale Interface
@@ -33,7 +33,15 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 | #   | 항목 | 결정 | 이유 / 비고 | Phase | 결정일 |
 | --- | ---- | ---- | ----------- | ----- | ------ |
-| _(P1 진입 시 채움)_ |
+| 1   | 거리 정책 default | **Piecewise monotonic** | 내행성/외행성/원거리 별도 압축 → 행성 라이너업이 자연스러움. 대수는 두 번째 정책. P2 에서 break points 결정. | P1 | 2026-05-06 |
+| 2   | 크기 정책 default | **Logarithmic Magnification** | 작은 천체(Pluto, Mercury) 가시성 보장 + 큰 천체(Sun) 비대 방지 동시. P3 에서 r0/k 결정. | P1 | 2026-05-06 |
+| 3   | scene 단위 | **1 scene unit = 1 AU 시각 단위 (변환 후)** | three.js scene 자연스러움 + UI 친화. Work 5 에서 1:1 three.js unit 매핑. | P1 | 2026-05-06 |
+| 4   | Reversibility | **모든 정책에 forward + inverse 강제** | UI hover (scene → 실제 거리), 카메라 보간 (Work 9), validation 재검증 등 inverse 필수. round-trip 1mm 안. | P1 | 2026-05-06 |
+| 5   | 정책 객체 모델 | **`{ name, forward, inverse, metadata }` interface** | function pair는 type 추론 약함. interface 는 metadata (break points, base 등)를 캡슐화 + IDE 자동완성. | P1 | 2026-05-06 |
+| 6   | Brand types | **`SceneUnit` phantom + `PositionScene` 3-tuple + `SizeScene = SceneUnit`** | Work 2/3 phantom 패턴 그대로. `SizeScene` 은 의미 명확화 alias (별도 phantom 비용 없음). factory `sceneUnit/positionScene/sizeScene`. | P1 | 2026-05-06 |
+| 7   | Radius vs Diameter | **반지름 (Radius)** | IAU WGCCRE 기본 표기. 직경 필요 시 `* 2` 한 줄. mesh 생성 (Work 6) 도 반지름 입력. | P1 | 2026-05-06 |
+| 8   | 톨러런스 | **round-trip 1 mm (위치 + 크기)** | Work 3 위치 톨러런스와 일치. 대수 정책의 log/exp LSB 흔들림 ~µm — 1mm 안에 충분 마진. | P1 | 2026-05-06 |
+| 9   | 천체 반지름 데이터 출처 | **IAU WGCCRE 2015 평균 적도 반지름** (NAIF pck00011 BODY*_RADII a 값) | Work 2 P4 회전 모델 출처와 일관. 11 entries (Sun + 8 planets + Moon + Pluto). EarthRadius = 6,378,136.6 m. | P1 | 2026-05-06 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -41,15 +49,15 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 ### P1에서 결정
 
-- [ ] 거리 정책 default (Piecewise / Logarithmic / Dual-linear)
-- [ ] 크기 정책 default (Logarithmic Magnification / Uniform / Manual)
-- [ ] scene 단위 (1 = 1 AU / 1 m / 임의)
-- [ ] Reversibility 강제 여부 (forward + inverse / forward만)
-- [ ] 정책 객체 모델 (interface / function pair / class)
-- [ ] Brand types (SceneUnit / PositionScene / SizeScene)
-- [ ] Radius vs Diameter
-- [ ] Round-trip 톨러런스 (1 mm / 1 cm)
-- [ ] 천체 반지름 데이터 출처 (IAU WGCCRE / 자체)
+- [x] 거리 정책 default: **Piecewise monotonic** ✓ (#1)
+- [x] 크기 정책 default: **Logarithmic Magnification** ✓ (#2)
+- [x] scene 단위: **1 = 1 AU 시각 단위** ✓ (#3)
+- [x] Reversibility 강제: **forward + inverse** ✓ (#4)
+- [x] 정책 객체 모델: **interface** ✓ (#5)
+- [x] Brand types: **`SceneUnit`/`PositionScene`/`SizeScene`** ✓ (#6)
+- [x] Radius vs Diameter: **Radius** ✓ (#7)
+- [x] Round-trip 톨러런스: **1 mm** ✓ (#8)
+- [x] 천체 반지름 데이터 출처: **IAU WGCCRE 2015 평균 적도 반지름** ✓ (#9)
 
 ### P2에서 결정
 
@@ -93,9 +101,27 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한 줄 메모.
 
-### P1 — Strategy & Brand Types
+### P1 — Strategy & Brand Types _(완료 2026-05-06)_
 
-_미시작_
+생성/수정 파일:
+
+- [`src/scale/types.ts`](../../src/scale/types.ts) — `SceneUnit` phantom, `PositionScene`/`SizeScene`, factory `sceneUnit/positionScene/sizeScene`, `DistancePolicy`/`SizePolicy` interface (`{ name, forward, inverse, metadata }`).
+- [`src/scale/constants.ts`](../../src/scale/constants.ts) — `SCALE_TOL_M = 1e-3`, `SCALE_TOL_SIZE_M = 1e-3`, `EARTH_MEAN_EQUATORIAL_RADIUS_M = 6_378_136.6`, `BODY_MEAN_EQUATORIAL_RADIUS_M` (11 entries, Meters branded), `SCALE_BODY_NAIF_IDS` (Sun + 8 planets + Moon + Pluto).
+- [`src/scale/index.ts`](../../src/scale/index.ts) — re-exports.
+- [`tools/python/src/orbitarium_tools/scaling.py`](../../tools/python/src/orbitarium_tools/scaling.py) — Python placeholder mirror (Final 상수 + body radius 표).
+
+테스트:
+
+- [`tests/unit/scale/types.test.ts`](../../tests/unit/scale/types.test.ts) — 8 tests: 톨러런스, Earth 반지름, 11-entry table, max=Sun/min=Pluto, brand factories.
+- [`tools/python/tests/test_scaling.py`](../../tools/python/tests/test_scaling.py) — 4 tests (TS와 동일 구조).
+
+검증 결과:
+
+- `pnpm format:check` ✓
+- `pnpm lint` ✓ — Prettier 가 SCALE_BODY_NAIF_IDS 한 줄 fit으로 정렬.
+- `pnpm typecheck` ✓
+- `pnpm test -- tests/unit/scale` ✓ — 8 tests pass.
+- `cd tools/python && uv run ruff check / mypy / pytest tests/test_scaling.py` ✓ — 4 tests, 11 source files.
 
 ### P2 — Distance Scale Functions
 
@@ -221,6 +247,7 @@ pnpm fixtures:work-04
 | 날짜       | 변경                                                                                                                                                                                                  |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-05-06 | 초기 작성 — P0 kickoff. Plan 본체와 함께 6 phase 구조 확정 (Strategy → Distance Scale → Size Scale → Adaptive → Dev Demo → Closeout). P1 결정 ~9건 대기. Work 3 산출물 (Position/State vector) 적극 활용 예정. |
+| 2026-05-06 | **P1 완료** — `src/scale/{types,constants,index}.ts` + Python 미러 + 12 단위 테스트 (TS 8 + Python 4). 결정 9건 (#1~#9) 모두 권장값 채택: Piecewise default / Logarithmic size default / 1 scene unit = 1 AU / forward+inverse 강제 / interface 모델 / SceneUnit+PositionScene+SizeScene phantom / Radius / 1mm 톨러런스 / IAU WGCCRE 2015 평균 적도 반지름 (11 entries). format/lint/typecheck/test/build/ruff/mypy/pytest 전부 그린. |
 
 ---
 
