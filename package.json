@@ -22,7 +22,8 @@
     "test:ui": "vitest --ui",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "fixtures:work-02": "cd tools/python && uv run orbitarium-tools fixtures --work=2 --out=../../tests/fixtures/work-02/ && cd ../.. && prettier --write tests/fixtures/work-02/"
   },
   "dependencies": {
     "@react-three/fiber": "^9.6.1",

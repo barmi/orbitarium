@@ -10,8 +10,8 @@
 
 | 항목 | 값 |
 |---|---|
-| 현재 phase | **P5 완료** ✓ — P6 진입 대기 |
-| 다음 액션 | **P6 — Cross-validation & Golden Fixtures (Closeout)** 진입 — fixture README / helper / 정책 문서화 |
+| 현재 phase | **P6 완료** ✓ — Work 2 마감 |
+| 다음 액션 | **Work 2 closeout 마감 처리** — DoD 체크 + commit/push 후 Work 3 (Ephemeris) 진입 준비 |
 | 마지막 갱신 | 2026-05-05 |
 | 블로커 | 없음 |
 
@@ -25,7 +25,7 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] **P3** — Reference Frames (Core) _(완료 2026-05-05)_
 - [x] **P4** — IAU Rotation Model Foundation _(완료 2026-05-05)_
 - [x] **P5** — Dev Demo `/dev/astro` _(완료 2026-05-05)_
-- [ ] **P6** — Cross-validation & Golden Fixtures (Closeout)
+- [x] **P6** — Cross-validation & Golden Fixtures (Closeout) _(완료 2026-05-05)_
 
 > Work 2 마감 = 모든 phase [x] + [plan §1 Definition of Done](work-02-astronomy.md#1-결과-정의-definition-of-done) 모든 항목 충족.
 
@@ -50,6 +50,10 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 15 | body-fixed 행렬 API | **양방향 제공** (`inertialToBodyFixed`, `bodyFixedToInertial`) | 계획서의 함수명/괄호 설명 방향이 서로 달라 혼동 가능. 이름의 물리 방향을 따르고, `inertialToBodyFixed`는 SPICE `pxform("J2000", "IAU_EARTH", et)`와 일치하도록 검증. | P4 | 2026-05-05 |
 | 16 | Dev Demo 구조 | **단일 페이지 + 4 섹션** | P2~P4 산출물이 각각 독립 패널로 깔끔하게 분리됨. 탭 없이 한 화면에서 시간/좌표/자전 값을 동시에 비교 가능. | P5 | 2026-05-05 |
 | 17 | J2000 라이브 카운터 | **`setInterval(1000)`** | 1초 단위 표시라 `requestAnimationFrame`의 frame-rate 갱신 비용이 필요 없음. React state 갱신도 초당 1회로 제한. | P5 | 2026-05-05 |
+| 18 | Fixture 형식 | **JSON** (사람-가독 + git diff 친화) | Python `json.dump(indent=2)` + Prettier 정렬. JSONL/Parquet은 diff 검토가 어려움. | P6 | 2026-05-05 |
+| 19 | Fixture 갱신 정책 | **수동** — `pnpm fixtures:work-02` 후 reviewer가 diff 검토하고 commit | 모델/상수 변경은 의도적 결정이어야 하므로 CI 자동 갱신 금지. IERS/PCK/IAU 갱신 시 사람이 명시적으로 재생성. | P6 | 2026-05-05 |
+| 20 | Diff 헬퍼 톨러런스 | **시간 1µs (TDB 100µs) / 각도 1mas / 거리 1mm** — `tests/helpers/expectClose.ts` 단일 출처 | Work 2 fixture 비교부터 Work 3+ ephemeris/궤도까지 공통 사용. 도메인별 helper(`expectCloseDays`/`expectCloseDegrees`/`expectCloseMeters`/`expectCloseVec3`/`expectCloseMatrix3`) 제공. | P6 | 2026-05-05 |
+| 21 | 헬퍼 위치 | **`tests/helpers/`** (`src/test-utils/` 후보 대비) | tests/는 prod 산출물에 포함되지 않고 coverage exclude 자연 적용. tsconfig.test가 이미 `tests/` 포함. | P6 | 2026-05-05 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -83,9 +87,9 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] J2000 라이브 카운터 구현: **setInterval(1000)** ✓ (#17)
 
 ### P6에서 결정
-- [ ] Fixture 형식 (JSON / JSONL / Parquet)
-- [ ] Fixture 갱신 정책 (수동 / CI 자동)
-- [ ] Diff 헬퍼 톨러런스 (시간 1µs / 각도 1mas / 거리 1mm)
+- [x] Fixture 형식: **JSON** ✓ (#18)
+- [x] Fixture 갱신 정책: **수동** (`pnpm fixtures:work-02`) ✓ (#19)
+- [x] Diff 헬퍼 톨러런스: **시간 1µs / 각도 1mas / 거리 1mm** ✓ (#20, #21 헬퍼 위치 추가)
 
 ### 추후 보류 (Work 2 범위 밖)
 - TDB-TT 풀 모델 업그레이드 — Work 8/12 정밀도 요구에 따라
@@ -254,29 +258,47 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 - **카탈로그 상태 변경**: `/dev/index`의 Work 2 카드만 `available`, 나머지 10개는 placeholder. 기존 e2e 기대값을 이에 맞춰 갱신.
 - **CSS import 방식**: TS side-effect CSS import를 새 dev page마다 늘리지 않고 `dev.css`에서 `@import './astro/astro.css'`로 묶었다.
 
-### P6 — Cross-validation & Golden Fixtures (Closeout)
-_미시작_
+### P6 — Cross-validation & Golden Fixtures (Closeout) _(완료 2026-05-05)_
+생성/수정 파일:
+- [`tests/helpers/expectClose.ts`](../../tests/helpers/expectClose.ts) — 톨러런스 매처 단일 출처. `expectCloseSeconds`/`expectCloseDays`/`expectCloseDegrees`/`expectCloseRadians`/`expectCloseMeters`/`expectCloseVec3`/`expectCloseMatrix3` + 톨러런스 상수 (`TOL_TIME_US=1`, `TOL_TIME_TDB_US=100`, `TOL_ANGLE_MAS=1`, `TOL_DISTANCE_MM=1`) + 단위 변환 헬퍼 (`masToDeg`/`masToRad`/`usToDays`).
+- [`tests/helpers/fixtures.ts`](../../tests/helpers/fixtures.ts) — `loadWorkFixture<T>(workNumber, filename)` + `workFixturesDir(n)` 헬퍼.
+- [`tests/unit/helpers/expectClose.test.ts`](../../tests/unit/helpers/expectClose.test.ts) — 헬퍼 자체 단위 테스트 17건 (pass/throw 양쪽).
+- [`tests/fixtures/work-02/README.md`](../../tests/fixtures/work-02/README.md) — fixture 파일 구성/스키마(time/frames/rotation-earth)/재생성 명령/톨러런스 정책/회귀 가드 검증 문서화.
+- [`docs/architecture/astro-conventions.md`](../../docs/architecture/astro-conventions.md) — 시간/좌표/회전 정책 요약 + Work 3+ 진입 체크리스트. 결정 로그 §2 #1~#17 인덱싱.
+- [`package.json`](../../package.json) — `pnpm fixtures:work-02` 스크립트 추가 (CLI generate + Prettier --write 묶음).
+
+검증 결과:
+- `pnpm format:check` ✓
+- `pnpm lint` ✓
+- `pnpm typecheck` ✓
+- `pnpm test` ✓ — **311 tests** (P5 294 → P6 +17 from helper unit tests).
+- `pnpm build` ✓ — 1113.46 kB.
+- `pnpm test:e2e` ✓ — 12 tests pass.
+- `cd tools/python && uv run ruff check src tests` ✓ — All checks passed.
+- `uv run mypy src` ✓ — 7 source files.
+- `uv run pytest -q` ✓ — 71 tests pass.
+- `pnpm fixtures:work-02` 실행 후 `git diff tests/fixtures/work-02/` 빈 결과 — fixture 재생성 idempotent 확인.
+- 회귀 가드: `EARTH_IAU_ROTATION` `prime_meridian` 첫 항을 0.001 deg(=3600 mas) 흔들어 `pnpm test`에서 29 건 fail (rotation fixture 비교 + SPICE pxform 비교 + transpose 검증 모두 검출) → 원복 후 그린 확인.
+
+설계 결정 + 발견:
+- **헬퍼 위치**: `tests/helpers/`로 결정 (`src/test-utils/` 대신). prod 산출물에 포함되지 않고 coverage exclude 자연 적용 + 이미 `tsconfig.test.json`이 `tests/`를 포함. 결정 #21에 기록.
+- **`expectCloseDays` 단위 테스트의 JD 한계**: JD ~2.46e6에 1µs(=1.16e-11 days)를 더하면 IEEE 754 cancellation으로 사라짐. 헬퍼 단위 테스트는 small day value (0.5)에서 검증하도록 수정 — 헬퍼 자체의 기능은 정확하지만 caller가 비교 시 cancellation 한계를 인지해야 함 (이는 P2 결정 #8과 동일한 이유로, fixture는 비트 동일 비교가 1순위).
+- **Python json.dump vs Prettier 형식 차이**: `json.dump(indent=2)`는 array 한 element/줄, Prettier는 `--print-width 100` 적용해 multi-element/줄. 두 출력은 의미상 동일하지만 textual diff 발생 → `pnpm fixtures:work-02` 스크립트가 generate 후 자동으로 Prettier --write로 정렬한다.
+- **회귀 가드 설계**: `prime_meridian` 첫 항 0.001 deg(=3600 mas) 변경으로 fixture 비교(angle 1mas, matrix 1e-10) + SPICE pxform 비교 + transpose 검증이 모두 fail → 단일 변경으로 다층 검증 모두 작동 확인. 향후 정확도 정책을 변경하려는 작업자는 fixture 먼저 재생성 후 reviewer가 diff 검토.
 
 ## 5. 다음 작업자에게 (For the Next Operator)
 
 > 새 세션이나 다른 작업자가 이어 받을 때 여기를 먼저 본다.
 
-### 즉시 액션: P6 — Cross-validation & Golden Fixtures 진입
+### 즉시 액션: Work 2 마감 → Work 3 (Ephemeris) 진입 준비
 
-1. [plan §3 P6](work-02-astronomy.md#phase-6--cross-validation--golden-fixtures-closeout) 의 Decisions 3개 항목을 확정 → §2 결정 로그에 기록
-   - Fixture 형식 (JSON / JSONL / Parquet)
-   - Fixture 갱신 정책 (수동 / CI 자동)
-   - Diff helper 톨러런스 (시간 1µs / 각도 1mas / 거리 1mm)
-2. Fixture 문서화:
-   - `tests/fixtures/work-02/README.md` — time/frames/rotation-earth schema + 재생성 명령
-   - `docs/architecture/astro-conventions.md` — 시간/좌표/회전 정책 요약
-3. Test helper:
-   - `tests/helpers` 또는 `src/test-utils` — 공통 `expectClose` 류 helper 정리
-4. Work 2 closeout 전체 검증:
-   - `pnpm lint` / `format:check` / `typecheck` / `test` / `test:e2e` / `build`
-   - `cd tools/python && uv run ruff check src tests && uv run mypy src && uv run pytest`
+1. Work 2 commit (`[work-02/p6] ...` prefix), push, CI 그린 확인.
+2. Work 3 plan + handoff 짝 문서 생성: `docs/plan/work-03-ephemeris.md` + `work-03-ephemeris-handoff.md`.
+   - DE440/SPK 커널 평가, Horizons API 클라이언트, 위치/속도 시간변환 등 phase 정의.
+   - Work 2 산출물(특히 `JdTdb` brand type, `expectClose*`, fixture CLI 패턴)을 적극 import해 재사용.
+3. (선택) `overview.md` Work 2 상태를 in-progress → done으로 갱신할지는 사용자 정책에 따른다 (overview.md는 큰 그림 유지용).
 
-### P1+P2+P3+P4+P5 산출물 빠른 참조
+### P1+P2+P3+P4+P5+P6 산출물 빠른 참조
 
 ```ts
 // src/astro/index.ts 가 export하는 핵심 심볼
@@ -324,9 +346,24 @@ from orbitarium_tools.rotation import (
 )
 ```
 
+```ts
+// Test helpers
+import {
+  expectCloseDays, expectCloseDegrees, expectCloseRadians,
+  expectCloseMeters, expectCloseVec3, expectCloseMatrix3,
+  TOL_TIME_US, TOL_ANGLE_MAS, TOL_DISTANCE_MM,
+  masToDeg, masToRad, usToDays,
+} from '../../helpers/expectClose'
+import { loadWorkFixture, workFixturesDir } from '../../helpers/fixtures'
+```
+
 ```bash
-# Fixture 재생성 (Work 2 전체)
+# Fixture 재생성 (Work 2 전체) — 권장
+pnpm fixtures:work-02
+
+# 또는 manual:
 cd tools/python && uv run orbitarium-tools fixtures --work=2 --out=../../tests/fixtures/work-02/
+cd ../.. && pnpm exec prettier --write tests/fixtures/work-02/
 ```
 
 ### Work 2 전체 진입 전 점검 (2026-05-05 시점)
@@ -412,6 +449,7 @@ uv run orbitarium-tools fixtures --work=2 --out=../../tests/fixtures/work-02/
 | 2026-05-05 | **P3 완료** — `src/astro/frames.ts` + Python 미러 + `tests/fixtures/work-02/frames.json` (12 vectors + 3 matrices). ICRF↔EME2000 frame bias (ERFA bp00 RB 임베드, 9 doubles, ~23 mas RSS) + EME2000↔Ecliptic R_x(ε) + 합성 ICRF↔Ecliptic. `Vec3`/`Matrix3` readonly tuple, loop-unrolled matMul3 (9 명시 expression). 세차/장동 무시(J2000 고정), IAU 2006 ε 재사용. astropy ICRS↔BarycentricMeanEcliptic 1mas 매치. orthogonality 1e-15. typecheck/lint/format/test(261)/build/e2e/ruff/mypy/pytest(61) 전부 그린. SIM300 yoda 6건 자동 fix. erfa import-untyped → `# type: ignore`. R_x(ε) 부호 컨벤션 docstring 정정. ICRF X→ecliptic Z 톨러런스 1e-7→2e-7 (frame bias 누적) |
 | 2026-05-05 | **P4 완료** — `src/astro/{rotation,rotationData}.ts` + Python 미러 + `tests/fixtures/work-02/rotation-earth.json`. `IAURotationModel` 타입, polynomial/periodic evaluator, Earth `IAU_EARTH` BODY399 constants, `evaluateRotation`, `inertialToBodyFixed`, `bodyFixedToInertial` 구현. NAIF `pck00011.tpc` 기준이며 Earth orientation은 WGCCRE 2009 계승(2015 report no Earth/Moon orientation) 명시. SPICE text-PCK Euler sequence를 `spiceypy.lmpool` + `pxform("J2000","IAU_EARTH")`로 1mas 안에서 검증. TS rotation tests 33, Python rotation tests 10 추가. CLI Work 2 fixture 생성이 time+frames+rotation으로 확장. lint/format/typecheck/test(294)/build/e2e(7)/ruff/mypy/pytest(71) 전부 그린. JS `% 360` 마지막 bit 보존을 위해 `normalizeDegrees` fast path 추가 |
 | 2026-05-05 | **P5 완료** — `/dev/astro` 단일 페이지 dev demo 구현. `src/dev/astro/{AstroDemo,TimeConverter,J2000Counter,FrameConverter,EarthRotation}.tsx` + helper/CSS 추가, Work 2 registry lazy component 연결로 `/dev/index` 카드 available 전환. 시간 변환기(UTC→JD UTC/TAI/TT/TDB/MJD/J2000), live J2000 counter(`setInterval(1000)`), ICRF/EME2000/Ecliptic vector converter + round-trip norm, Earth W/pole/matrix panel 구현. e2e `dev-astro.spec.ts` 4건 추가, `dev-index.spec.ts` Work 2 available 기대값 갱신. format/lint/typecheck/test(294)/targeted e2e(9) 그린. `datetime-local` 입력은 UTC helper가 `Z`를 붙여 해석 |
+| 2026-05-05 | **P6 완료 / Work 2 마감** — `tests/helpers/{expectClose,fixtures}.ts` 톨러런스 헬퍼 + fixture 로더 단일 출처(시간 1µs / TDB 100µs / 각도 1mas / 거리 1mm), `tests/fixtures/work-02/README.md` 스키마/재생성 문서, `docs/architecture/astro-conventions.md` Work 3+ 진입 가이드, `pnpm fixtures:work-02` 스크립트 (CLI generate + Prettier --write 묶음). 회귀 가드: Earth `prime_meridian` 0.001 deg 변경으로 29 테스트 fail 후 원복 → 그린. format/lint/typecheck/test(311)/build/e2e(12)/ruff/mypy/pytest(71) 전부 그린. fixture 재생성 idempotent 확인. P6 결정 4건(#18~#21) 기록 |
 
 ---
 
