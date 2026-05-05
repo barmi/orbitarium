@@ -10,8 +10,8 @@
 
 | 항목 | 값 |
 |---|---|
-| 현재 phase | **P4 완료** ✓ — 다음은 **P5 (Test Frameworks)** |
-| 다음 액션 | P5 시작: Vitest 단위 + Playwright e2e 골격 + 단위 1개 / e2e 2개 (`/`, `/dev/index`) |
+| 현재 phase | **P5 완료** ✓ — 다음은 **P6 (Python Tooling Smoke)** |
+| 다음 액션 | P6 시작: `tools/python/` 가상환경 + `pip install -e ".[dev]"` + smoke pytest |
 | 마지막 갱신 | 2026-05-05 |
 | 블로커 | 없음 |
 
@@ -24,7 +24,7 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] **P2** — Quality Tooling _(완료 2026-05-05)_
 - [x] **P3** — App Shell & Dev Routes _(완료 2026-05-05)_
 - [x] **P4** — three.js Hello _(완료 2026-05-05)_
-- [ ] **P5** — Test Frameworks
+- [x] **P5** — Test Frameworks _(완료 2026-05-05)_
 - [ ] **P6** — Python Tooling Smoke
 - [ ] **P7** — CI Pipeline Skeleton
 
@@ -41,6 +41,8 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 7 | 라우터 라이브러리 | **React Router (v7 라인)** | 가장 성숙한 생태계. 동적 로드/속도적 navigate 등 확장 용이. v6 API 호환되어 기존 패턴 그대로 사용. | P3 | 2026-05-05 |
 | 8 | 프로덕션 dev 라우트 제외 | **`import.meta.env.DEV` + `lazy()`** | 단일 entry. dev 모드에서만 enableDevRoutes=true → 조건부 lazy import. prod 빌드 시 false 평가로 dynamic import 자체가 dead-code 제거. 설정 최소화. | P3 | 2026-05-05 |
 | 9 | FPS 카운터 구현 | **자체 구현 (useEffect + requestAnimationFrame)** | P4는 파이프라인 검증용 — 의존성 추가 불요. 상세 GPU/draw call metric은 Work 11에서 r3f-perf 또는 stats.js로 교체 예정. | P4 | 2026-05-05 |
+| 10 | e2e 테스트 도구 | **Playwright** | 멀티 브라우저, 내장 trace viewer, webServer auto-start, async 대기 매처 풍부. CI 캐시 가능. | P5 | 2026-05-05 |
+| 11 | Vitest DOM 환경 | **happy-dom** | jsdom 대비 ~3배 빠른 단위 테스트. 대부분 DOM API 충분 — 본 프로젝트는 R3F 컴포넌트 단위 테스트 거의 없으니 더 적합. | P5 | 2026-05-05 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -64,8 +66,8 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] FPS 표시: **자체 구현** ✓ (#9)
 
 ### P5에서 결정
-- [ ] e2e: **Playwright** (권장) / Cypress
-- [ ] DOM 환경: **happy-dom** (권장) / jsdom
+- [x] e2e: **Playwright** ✓ (#10)
+- [x] DOM 환경: **happy-dom** ✓ (#11)
 
 ### P6에서 결정
 - [ ] Python venv 도구: **uv** (권장) / venv+pip / pyenv
@@ -179,8 +181,31 @@ phase 종료 시 생성·수정된 주요 파일을 기록.
 - **프로덕션 빌드 dev 제외 재확인** ✓ — `dist/assets/`에 단일 `index-*.js` (1113 kB / gzip 308 kB) + `index-*.css`, `Dev*` 시그니처 0건.
 - 번들 크기 변화 (P3 → P4): 232 kB → 1113 kB (+881 kB). 원인: three.js + R3F 코어 포함. Vite의 500 kB 경고가 뜨지만 정상 baseline. **Work 11(Polish & Performance)에서 코드 분할 (DE440 chunk, body 텍스처 chunk 등)로 최적화 예정**.
 
-### P5 — Test Frameworks _(예정)_
-- _phase 종료 시 채움_
+### P5 — Test Frameworks _(완료 2026-05-05)_
+설치된 dev 의존성:
+- vitest 4.1.5, @vitest/ui 4.1.5, happy-dom 20.9.0
+- @playwright/test 1.59.1 (+ chromium-headless-shell v1217 다운로드 ~92 MiB)
+
+생성/수정 파일:
+- [`tsconfig.test.json`](../../tsconfig.test.json) — `tests/`, `vitest.config.ts`, `playwright.config.ts` 타입체크. app과 동일한 strict 규칙.
+- [`tsconfig.json`](../../tsconfig.json) — references 에 test 추가 (3-config 빌드).
+- [`eslint.config.js`](../../eslint.config.js) — parserOptions.project에 tsconfig.test.json 추가 (테스트 파일 type-aware lint).
+- [`vitest.config.ts`](../../vitest.config.ts) — happy-dom 환경, `tests/unit/**/*.{test,spec}.{ts,tsx}` 만 매치 (e2e와 격리), `@/*` alias 동기, v8 coverage.
+- [`playwright.config.ts`](../../playwright.config.ts) — chromium 단일 프로젝트, baseURL `http://localhost:5173`, webServer auto-start (`pnpm dev`), CI에서만 retry 2 + 1 worker, trace on-first-retry.
+- [`tests/unit/sanity.test.ts`](../../tests/unit/sanity.test.ts) — sanity (1+1) + registry shape 검증 3건 (count=11, slug 유일성, title/summary 존재). 총 4 tests.
+- [`tests/e2e/home.spec.ts`](../../tests/e2e/home.spec.ts) — 3 specs: title+canvas, FPS 숫자 갱신, WebGL context 활성.
+- [`tests/e2e/dev-index.spec.ts`](../../tests/e2e/dev-index.spec.ts) — 4 specs: 카드 11개, 모두 placeholder, 카드 구조(번호/제목/슬러그), 홈→/dev/index 네비.
+- [`package.json`](../../package.json) — scripts 6개 추가 (`test`, `test:watch`, `test:ui`, `test:e2e`, `test:e2e:headed`, `test:e2e:ui`).
+
+검증 결과:
+- `pnpm test` ✓ — 4 unit tests pass (~250ms).
+- `pnpm test:e2e` ✓ — 7 e2e tests pass (~3s, webServer reuse).
+- `pnpm typecheck` / `lint` / `format:check` ✓.
+
+설계 결정:
+- 단위 vs e2e 격리: vitest의 `include` 로 `tests/unit/**` 만 매치 → vitest는 e2e 파일 무시.
+- WebGL 픽셀 read 테스트는 시도했으나 R3F가 `preserveDrawingBuffer` 미설정 → `getContext('webgl2/webgl')` 활성 검증으로 대체. 시각적 비공백 검증은 P4 preview 스크린샷에서 이미 완료.
+- coverage exclude: `src/main.tsx`, `src/dev/**`, `src/render/**` — entry/dev/그래픽 코드는 단위 커버리지 의미 적음. 도메인 코드(astro, ephemeris 등 Work 2~)에 집중.
 
 ### P6 — Python Tooling Smoke _(예정)_
 - _phase 종료 시 채움_
@@ -192,38 +217,38 @@ phase 종료 시 생성·수정된 주요 파일을 기록.
 
 > 새 세션이나 다른 작업자가 이어 받을 때 여기를 먼저 본다.
 
-### 다음 작업: P5 — Test Frameworks
+### 다음 작업: P6 — Python Tooling Smoke
 
-**Goal**: Vitest 단위 + Playwright e2e 골격 + sanity 테스트. plan 본체 [§3 Phase 5](work-01-foundation.md#phase-5--test-frameworks) 참조.
+**Goal**: `tools/python/` 가 설치/실행/테스트 가능 — Work 2부터 reference 모듈 받을 준비. plan 본체 [§3 Phase 6](work-01-foundation.md#phase-6--python-tooling-smoke) 참조.
 
 **Step 1. 결정 라운드**
-§3 의 P5 결정 2개 확정:
-1. e2e: **Playwright** (권장) / Cypress
-2. DOM 환경: **happy-dom** (권장 — 빠름) / jsdom
+§3 의 P6 결정 1개 확정:
+1. Python venv 도구: **uv** (권장 — 빠름) / venv+pip / pyenv
 
-**Step 2. 도구 설치**
+**Step 2. 환경 구성**
 ```bash
-pnpm add -D vitest @vitest/ui happy-dom @testing-library/react @testing-library/jest-dom
-pnpm add -D @playwright/test
-pnpm exec playwright install chromium    # 브라우저 다운로드
+cd tools/python
+uv venv                              # 또는 python -m venv .venv
+source .venv/bin/activate
+uv pip install -e ".[dev]"           # 또는 pip install -e ".[dev]"
 ```
 
-**Step 3. 설정 파일**
-- `vitest.config.ts` — happy-dom 환경, alias 동기화
-- `playwright.config.ts` — chromium baseURL `http://localhost:5173`, webServer auto-start
-- `tests/unit/sanity.test.ts` — 1개 trivial assert
-- `tests/e2e/home.spec.ts` — `/` 로드 + canvas 존재 + non-blank 픽셀 (toHaveScreenshot 또는 픽셀 샘플)
-- `tests/e2e/dev-index.spec.ts` — `/dev/index` 로드 + 카드 11개 (`registry.ts` 기준)
-- `package.json` scripts: `test`, `test:watch`, `test:ui`, `test:e2e`, `test:e2e:headed`
+**Step 3. smoke 테스트 작성**
+- `tools/python/tests/test_smoke.py` — `from orbitarium_tools import __version__; assert __version__ == "0.1.0"`, CLI invoke 검증
 
 **Step 4. 검증**
 ```bash
-pnpm test                # 단위 그린
-pnpm test:e2e            # e2e 그린 (자동으로 dev 서버 띄움)
-pnpm lint && pnpm typecheck && pnpm format:check
+orbitarium-tools version             # → 0.1.0
+ruff check src tests
+mypy src
+pytest                               # 통과
 ```
 
 **Step 5. handoff 갱신** (동일 패턴)
+
+**Notes**
+- Python venv는 `.venv/` 패턴이며 `.gitignore`에 이미 포함됨.
+- 사용 venv 도구를 §2 결정 로그에 기록.
 
 ### 빠른 검증 명령 (Work 1 전반)
 
@@ -266,6 +291,7 @@ pytest
 | 2026-05-05 | **P2 완료** — ESLint flat config + Prettier + TS strict 강화 (`noUncheckedIndexedAccess`, `noImplicitOverride`) + 컨벤션 문서. lint/typecheck/format 모두 그린, 룰 위반 5종 검출 검증 |
 | 2026-05-05 | **P3 완료** — react-router-dom 도입 + `/dev/*` sub-router + registry 기반 동적 카드 11개 + dev-routes 컨벤션 문서. prod 빌드에서 dev chunk 완전 제거 양방향 검증 (기본=제외 / VITE_ENABLE_DEV_ROUTES=true=포함) |
 | 2026-05-05 | **P4 완료** — R3F 회전 sphere + 단일 별 + 자체 FPS 오버레이. preview 스크린샷으로 시각 확인 (120 fps 라이브, sphere 렌더). 번들 232 kB → 1113 kB (three.js 추가, Work 11에서 분할 예정). `.claude/launch.json` 추가, `.prettierignore`에 docs/*.md 보호 |
+| 2026-05-05 | **P5 완료** — Vitest + happy-dom 단위 (4 tests) + Playwright + chromium e2e (7 tests). tsconfig.test.json 신설. `pnpm test` / `pnpm test:e2e` 모두 그린. WebGL 픽셀 read는 R3F preserveDrawingBuffer 미설정 이슈로 context 활성 검증으로 대체 |
 
 ---
 
