@@ -38,9 +38,13 @@ def test_identity_matrix3_is_identity() -> None:
     assert IDENTITY_MATRIX3 == (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
 
 
-def test_icrf_to_eme2000_matches_erfa_bp00_bit_exact() -> None:
-    """Embedded frame-bias matrix must match a fresh ERFA bp00 call exactly."""
-    assert erfa_frame_bias_matrix() == ICRF_TO_EME2000
+def test_icrf_to_eme2000_matches_erfa_bp00_within_one_ulp() -> None:
+    """Embedded frame-bias matrix must match a fresh ERFA bp00 call to one ULP."""
+    actual = erfa_frame_bias_matrix()
+    for actual_value, expected_value in zip(actual, ICRF_TO_EME2000, strict=True):
+        assert abs(actual_value - expected_value) <= max(
+            math.ulp(actual_value), math.ulp(expected_value)
+        )
 
 
 def test_frame_bias_off_diagonals_within_17_mas() -> None:

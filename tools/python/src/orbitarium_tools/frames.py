@@ -117,7 +117,8 @@ def ecliptic_to_icrf(v: Vec3) -> Vec3:
 def erfa_frame_bias_matrix() -> Matrix3:
     """Return the ICRF -> EME2000 frame bias from ERFA bp00 directly.
 
-    Reference for cross-check tests; should match `ICRF_TO_EME2000` bit-for-bit.
+    Reference for cross-check tests; should match `ICRF_TO_EME2000` to one ULP
+    because ERFA/libm builds can differ in the final bit.
     """
     rb, _, _ = erfa.bp00(2451545.0, 0.0)
     return tuple(float(x) for x in rb.flatten())  # type: ignore[return-value]
