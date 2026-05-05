@@ -10,8 +10,8 @@
 
 | 항목 | 값 |
 |---|---|
-| 현재 phase | **P3 완료** ✓ — P4 진입 대기 |
-| 다음 액션 | **P4 — IAU Rotation Model Foundation** 진입 — 회전 모델 데이터 출처 / 검증 천체 2건 결정 |
+| 현재 phase | **P4 완료** ✓ — P5 진입 대기 |
+| 다음 액션 | **P5 — Dev Demo `/dev/astro`** 진입 — P2~P4 산출물 인터랙티브 패널 구현 |
 | 마지막 갱신 | 2026-05-05 |
 | 블로커 | 없음 |
 
@@ -23,7 +23,7 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] **P1** — Constants & NAIF Catalog _(완료 2026-05-05)_
 - [x] **P2** — Time Systems _(완료 2026-05-05)_
 - [x] **P3** — Reference Frames (Core) _(완료 2026-05-05)_
-- [ ] **P4** — IAU Rotation Model Foundation
+- [x] **P4** — IAU Rotation Model Foundation _(완료 2026-05-05)_
 - [ ] **P5** — Dev Demo `/dev/astro`
 - [ ] **P6** — Cross-validation & Golden Fixtures (Closeout)
 
@@ -42,9 +42,12 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 7 | JD epoch 기준 시각 | **TDB** (`J2000_JD_TDB = 2451545.0`, 천체역학 표준) | Work 3+의 ephemeris 평가 입력이 모두 JD_TDB. UTC/TT epoch이 필요하면 명시 변환. brand type (`JdTdb`/`JdTt`/`JdTai`/`JdUtc`)으로 컴파일 타임 구분. | P2 | 2026-05-05 |
 | 8 | 톨러런스 | **UTC/TAI/TT/JD 1µs (fixture 비트 동일), TDB 100µs (astropy IAU 2009 비교)**, invariant test는 cancellation 한계로 1e-4 (~100µs) | TS와 Python이 같은 알고리즘 → 같은 IEEE 754 결과 (fixture-based bit-identical). astropy 비교는 모델 차이 ~50µs + 안전 마진. JD ~2.46e6 + double precision = 9 fractional digits → invariant 검증은 cancellation 한계 안에서. | P2 | 2026-05-05 |
 | 9 | 세차/장동 모델 | **무시 (J2000 고정)** — Work 7/8 timeline 확장 시 재평가 | J2000 ± 100yr 누적 오차 ~50″ (Work 2~6 visualization timeline에 충분). IAU 2006/2000A 풀 모델은 코드 ~수 KB + 매 frame 평가 비용. 보이저(1977)~미래 100년 시연 시 mas 정밀도 부족 → Work 12 검증 시 재고. | P3 | 2026-05-05 |
-| 10 | ICRF↔EME2000 frame bias | **적용** (RB matrix from ERFA `bp00` / IAU 2006/2000A, ~23 mas RSS) | 23 mas는 1 AU 거리에서 ~17 km — 무시 못함. RB는 시간 무관 상수 (한 번 계산 후 임베드). bit-exact ERFA `bp00(2451545.0, 0.0)` 결과 9 doubles. orthogonality `B Bᵀ = I` 1e-15 안에서 보장. | P3 | 2026-05-05 |
+| 10 | ICRF↔EME2000 frame bias | **적용** (RB matrix from ERFA `bp00` / IAU 2006/2000A, ~23 mas RSS) | 23 mas는 1 AU 거리에서 ~17 km — 무시 못함. RB는 시간 무관 상수 (한 번 계산 후 임베드). ERFA/libm 빌드별 마지막 bit 차이를 허용하기 위해 런타임 ERFA 비교는 1 ULP 안에서 검증. orthogonality `B Bᵀ = I` 1e-15 안에서 보장. | P3 | 2026-05-05 |
 | 11 | 회전 행렬 표현 | **3×3 row-major readonly tuple `[number; 9]`** + `Vec3 = readonly [n,n,n]` | 9개 분리 곱셈으로 명시 (loop unroll → cancellation/precision 안정 + `noUncheckedIndexedAccess` 우회). `THREE.Matrix3` 어댑터는 Work 5 렌더링 단계에서 추가. matMul3/matVec3/transposeMatrix3 헬퍼만 제공. | P3 | 2026-05-05 |
 | 12 | 황도경사 ε | **IAU 2006 P03 J2000 = 0.4090926006005829 rad** (P1 #1에서 결정한 `EPS_J2000` 재사용) | ERFA `obl06(2451545.0, 0.0)` 결과 = 84381.406 arcsec. IAU 1976 (84381.448 arcsec) 대비 0.04 arcsec = 40 mas 차이 — IAU 2006이 더 정확. R_x(ε) = `[[1,0,0],[0,cos ε,sin ε],[0,-sin ε,cos ε]]` 컨벤션. | P3 | 2026-05-05 |
+| 13 | IAU 회전 데이터 출처 | **TS는 NAIF `pck00011.tpc` BODY399 상수 인라인, Python은 spiceypy text-PCK 평가 병행** | NAIF `pck00011`은 WGCCRE 2015 기반 PCK지만 Earth/Moon orientation은 2015 보고서에서 빠져 2009 WGCCRE 값을 계승한다고 명시. 런타임 PCK 다운로드 없이 동일 BODY399 계수를 `lmpool`로 로드해 SPICE 행렬 컨벤션을 검증. | P4 | 2026-05-05 |
+| 14 | P4 검증 천체 | **지구만** | Work 6에서 전체 천체로 확장. P4는 인터페이스와 행렬 방향을 고정하는 단계라 가장 자주 검증될 Earth W/IAU_EARTH 1건으로 충분. | P4 | 2026-05-05 |
+| 15 | body-fixed 행렬 API | **양방향 제공** (`inertialToBodyFixed`, `bodyFixedToInertial`) | 계획서의 함수명/괄호 설명 방향이 서로 달라 혼동 가능. 이름의 물리 방향을 따르고, `inertialToBodyFixed`는 SPICE `pxform("J2000", "IAU_EARTH", et)`와 일치하도록 검증. | P4 | 2026-05-05 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -69,8 +72,9 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 - [x] 황도경사 ε 값: **IAU 2006 P03 J2000 = 0.4090926006005829 rad** (P1 EPS_J2000 재사용) ✓ (#12)
 
 ### P4에서 결정
-- [ ] IAU 회전 데이터 출처 (WGCCRE 2015 인라인 / spiceypy PCK 런타임 / 병행)
-- [ ] 본 phase 검증 천체 (지구만 / 지구 + 달)
+- [x] IAU 회전 데이터 출처: **NAIF pck00011 BODY399 인라인 + spiceypy text-PCK reference 병행** ✓ (#13)
+- [x] 본 phase 검증 천체: **지구만** ✓ (#14)
+- [x] 행렬 API 방향: **ICRF/J2000→body-fixed + inverse 둘 다 제공** ✓ (#15)
 
 ### P5에서 결정
 - [ ] Dev Demo 구조 (단일 페이지 4 섹션 / 탭 분리)
@@ -171,7 +175,7 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 테스트 + fixture:
 - [`tests/fixtures/work-02/frames.json`](../../tests/fixtures/work-02/frames.json) — 12 ICRF 테스트 벡터 (단위 축 6개, 1/√3 단위벡터, 임의 3개, 1AU magnitude 2개) → (eme2000, ecliptic_j2000, round_trip_icrf). 추가로 `matrices` 섹션에 임베드 행렬 9-tuple 3개.
 - [`tests/unit/astro/frames.test.ts`](../../tests/unit/astro/frames.test.ts) — 5 그룹: 행렬 유틸 (5 tests) + 임베드 행렬 sanity (4 tests) + orthogonality `B Bᵀ = I` (3 tests) + transpose 페어 (3 tests) + fixture 비교 (12 × 5 = 60 tests) + 축 방향 (2 tests). 총 ~77 sub-tests.
-- [`tools/python/tests/test_frames.py`](../../tools/python/tests/test_frames.py) — 15 tests: 임베드/ERFA bp00 bit-exact, frame bias magnitude, orthogonality (3건), 축 방향 (2건), 라운드트립, astropy ICRS↔BarycentricMeanEcliptic 1mas 비교, fixture 생성/자기일관성.
+- [`tools/python/tests/test_frames.py`](../../tools/python/tests/test_frames.py) — 15 tests: 임베드/ERFA bp00 1 ULP 비교, frame bias magnitude, orthogonality (3건), 축 방향 (2건), 라운드트립, astropy ICRS↔BarycentricMeanEcliptic 1mas 비교, fixture 생성/자기일관성.
 
 검증 결과:
 - `pnpm typecheck` ✓ — `Matrix3 = readonly [n,n,n,...,n]` (9-tuple) 패턴이 `noUncheckedIndexedAccess`를 자연 우회 (positional [0]~[8]).
@@ -185,14 +189,41 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 - `uv run pytest` ✓ — **61 tests** (P1+P2 46 → P3 +15).
 
 설계 결정 + 발견:
-- **임베드 vs 런타임 ERFA**: TS는 ERFA를 못 부르므로 bp00 결과 9 doubles 임베드. Python은 정상 임포트 + 헬퍼 `erfa_frame_bias_matrix()`로 매번 ERFA 호출. 두 결과 bit-exact 일치 검증 (`test_icrf_to_eme2000_matches_erfa_bp00_bit_exact`). 향후 IERS가 bias 모델 업데이트 시 한 번만 갱신.
+- **임베드 vs 런타임 ERFA**: TS는 ERFA를 못 부르므로 bp00 결과 9 doubles 임베드. Python은 정상 임포트 + 헬퍼 `erfa_frame_bias_matrix()`로 매번 ERFA 호출. ERFA/libm 빌드에 따라 마지막 bit가 달라질 수 있어 1 ULP 안에서 검증 (`test_icrf_to_eme2000_matches_erfa_bp00_within_one_ulp`). 향후 IERS가 bias 모델 업데이트 시 한 번만 갱신.
 - **R_x(ε) 부호 컨벤션**: `R_x(ε) = [[1,0,0],[0,cos ε,sin ε],[0,-sin ε,cos ε]]` — ICRF Z (0,0,1) → ecliptic (0, +sin ε, cos ε). 처음 docstring에 -sin ε 적은 건 잘못 — 테스트 expected value도 +sin ε로 수정.
 - **frame bias 컴포넌트 한계**: ICRF X → ecliptic Z 컴포넌트는 frame bias + R_x(ε) 합성으로 ~21 mas (단순 ~17 mas 아님) — 톨러런스 1e-7 → 2e-7로 완화.
 - **astropy 비교의 의미**: 우리 transform vs astropy `ICRS → BarycentricMeanEcliptic(equinox=J2000.0)` 1 mas 안에서 일치 (J2000 epoch에서 precession=0이므로 mean ecliptic = our ICRF→Ecliptic). 본 구현이 astropy reference와 호환됨을 보장.
 - **Loop-unrolled matMul3**: 9개 분리 expression — TS의 noUncheckedIndexedAccess 우회 + dynamic index 추론 회피 + IEEE 754 evaluation 안정성. 가독성 약간 떨어지나 cancellation 위험 없음.
 
-### P4 — IAU Rotation Model Foundation
-_미시작_
+### P4 — IAU Rotation Model Foundation _(완료 2026-05-05)_
+생성/수정 파일:
+- [`src/astro/rotation.ts`](../../src/astro/rotation.ts) — `IAURotationModel` / `IAUAngleModel` 타입, polynomial + periodic term evaluator, `evaluateRotation`, `inertialToBodyFixed`, `bodyFixedToInertial`, `normalizeDegrees`. SPICE text-PCK Euler sequence `Rz(-W) * Rx(dec - 90deg) * Rz(-(90deg + ra))` 적용.
+- [`src/astro/rotationData.ts`](../../src/astro/rotationData.ts) — Earth `IAU_EARTH` model (`BODY399_POLE_RA`, `BODY399_POLE_DEC`, `BODY399_PM`). NAIF `pck00011.tpc` 기준, Earth orientation은 WGCCRE 2009 계승.
+- [`src/astro/index.ts`](../../src/astro/index.ts) — `rotation` / `rotationData` re-export 추가.
+- [`tools/python/src/orbitarium_tools/rotation.py`](../../tools/python/src/orbitarium_tools/rotation.py) — TS 미러 + `spice_earth_inertial_to_body_fixed(jd_tdb)` helper. 런타임 다운로드 없이 minimal BODY399 text-PCK lines를 `spiceypy.lmpool`로 로드.
+- [`tools/python/src/orbitarium_tools/cli.py`](../../tools/python/src/orbitarium_tools/cli.py) — `args.work == 2` 분기에서 time + frames + rotation fixture 생성.
+
+테스트 + fixture:
+- [`tests/fixtures/work-02/rotation-earth.json`](../../tests/fixtures/work-02/rotation-earth.json) — J2000 ±50yr, J2000+12h, mission/current/future UTC cases → (ra, dec, W, inertial↔body matrices, spiceypy matrix, max diff). `work_02_current_date = 2026-05-05T00:00:00.000Z` 포함.
+- [`tests/unit/astro/rotation.test.ts`](../../tests/unit/astro/rotation.test.ts) — Earth BODY399 coefficients, J2000 angles, angle normalization, periodic term evaluator, fixture angles 1mas 비교, SPICE text-PCK matrix convention 비교, inverse transpose/orthogonality. 33 tests.
+- [`tools/python/tests/test_rotation.py`](../../tools/python/tests/test_rotation.py) — Earth coefficient sanity, minimal PCK lines, J2000 angles, normalization, periodic term evaluator, matrix orthogonality/inverse, spiceypy `pxform("J2000","IAU_EARTH")` 1mas 비교, fixture 생성/자기일관성. 10 tests.
+
+검증 결과:
+- `pnpm lint` ✓
+- `pnpm format:check` ✓
+- `pnpm typecheck` ✓
+- `pnpm test` ✓ — 294 tests (P3 261 → P4 +33).
+- `pnpm build` ✓ — 1113.46 kB, 기존 Vite chunk-size warning만 표시.
+- `pnpm test:e2e` ✓ — 7 tests, 회귀 없음. 기존 `NO_COLOR`/`THREE.Clock` warning만 표시.
+- `uv run ruff check src tests` ✓
+- `uv run mypy src` ✓ — strict 모드, 7 source files.
+- `uv run pytest -q` ✓ — 71 tests (P3 61 → P4 +10), 기존 astropy ERFA dubious year warning 3건.
+
+설계 결정 + 발견:
+- **Earth data source nuance**: NAIF `pck00011.tpc` 자체는 WGCCRE 2015 기반이지만, 파일 주석상 Earth/Moon orientation은 2015 보고서에서 제공되지 않아 WGCCRE 2009 값을 계승. 코드/fixture/source metadata에 이 사실을 명시.
+- **SPICE 행렬 방향**: `inertialToBodyFixed`가 SPICE `pxform("J2000", "IAU_EARTH", et)`와 1mas보다 훨씬 작은 오차(현재 fixture max ~1e-11 component)로 일치. `bodyFixedToInertial`은 transpose로 제공.
+- **PCK 다운로드 회피**: 테스트는 외부 커널 파일 다운로드 없이 `lmpool`으로 최소 BODY399 text-PCK assignment를 로드한다. CI 안정성 + SPICE semantics 검증을 동시에 확보.
+- **JS `% 360` 마지막 bit 흔들림**: `normalizeDegrees`는 이미 `[0, 360)` 범위면 원값을 그대로 반환해 J2000 `W=190.147` 같은 상수 epoch 값을 보존.
 
 ### P5 — Dev Demo `/dev/astro`
 _미시작_
@@ -204,23 +235,20 @@ _미시작_
 
 > 새 세션이나 다른 작업자가 이어 받을 때 여기를 먼저 본다.
 
-### 즉시 액션: P4 — IAU Rotation Model Foundation 진입
+### 즉시 액션: P5 — Dev Demo `/dev/astro` 진입
 
-1. [plan §3 P4](work-02-astronomy.md#phase-4--iau-rotation-model-foundation) 의 Decisions 2개 항목을 사용자와 결정 → §2 결정 로그에 기록
-   - IAU 회전 데이터 출처 (WGCCRE 2015 인라인 / spiceypy PCK 런타임 / 병행)
-   - 본 phase 검증 천체 (지구만 / 지구 + 달)
-2. 신규 파일:
-   - `src/astro/rotation.ts` — `IAURotationModel` 타입 + `evaluateRotation(model, jdTdb)` + `bodyFixedToInertial(model, jdTdb)`
-   - `src/astro/rotationData.ts` — 지구 회전 모델 (Work 6에서 전체 천체 확장)
-   - `tools/python/src/orbitarium_tools/rotation.py` — spiceypy PCK 평가 reference + `generate_fixtures`
-3. 골든 fixture: `tests/fixtures/work-02/rotation-earth.json` — 현재 시각의 W (그리니치 자오선 각) + 다양한 J2000 경과 시각의 (ra, dec, w)
-4. CLI 확장: `cli.py::main`의 work=2 분기에 rotation도 추가
-5. 테스트:
-   - `tests/unit/astro/rotation.test.ts` — 지구 W (현재 시각) 1mas 비교, J2000 ± 50yr 범위
-   - `tools/python/tests/test_rotation.py` — spiceypy PCK vs 우리 모델 비교
-6. P4 마감: handoff §2/§3/§4/§7 갱신 → §0 "현재 phase = P5 진입 대기"
+1. [plan §3 P5](work-02-astronomy.md#phase-5--dev-demo-devastro) 의 UI 구조 결정 → §2 결정 로그에 기록
+   - 단일 페이지 4 섹션 / 탭 분리
+   - J2000 라이브 카운터 구현 방식 (`setInterval` / `requestAnimationFrame`)
+2. 신규 dev route:
+   - `src/dev/astro/` — 시간 변환기, J2000 경과, ICRF↔ecliptic 좌표 변환, 지구 자전 위상 패널
+   - `src/dev/registry.ts` — Work 2 entry의 `Component` 연결 + available 전환
+3. e2e:
+   - `/dev/index` 에서 Work 2 카드 available 확인
+   - `/dev/astro` 패널 기본 렌더/입력 동작 확인
+4. P5 마감: handoff §2/§3/§4/§7 갱신 → §0 "현재 phase = P6 진입 대기"
 
-### P1+P2+P3 산출물 빠른 참조
+### P1+P2+P3+P4 산출물 빠른 참조
 
 ```ts
 // src/astro/index.ts 가 export하는 핵심 심볼
@@ -239,6 +267,11 @@ import {
   matVec3, matMul3, transposeMatrix3,
   type Vec3, type Matrix3,
 } from '@/astro'
+import {
+  EARTH_IAU_ROTATION, evaluateRotation,
+  inertialToBodyFixed, bodyFixedToInertial,
+  normalizeDegrees, type IAURotationModel,
+} from '@/astro'
 ```
 
 ```python
@@ -255,6 +288,11 @@ from orbitarium_tools.frames import (
     icrf_to_eme2000, icrf_to_ecliptic,
     mat_vec3, mat_mul3, transpose_matrix3,
     erfa_frame_bias_matrix,
+)
+from orbitarium_tools.rotation import (
+    EARTH_IAU_ROTATION, evaluate_rotation,
+    inertial_to_body_fixed, body_fixed_to_inertial,
+    spice_earth_inertial_to_body_fixed,
 )
 ```
 
@@ -331,7 +369,7 @@ uv run orbitarium-tools fixtures --work=2 --out=../../tests/fixtures/work-02/
 - **JS Date leap second 표현 불가**: `2016-12-31T23:59:60Z` 같은 입력 생성 불가 (POSIX time). 본 프로젝트는 leap second 직전/직후 instant만 다룸 — 실용적 영향 없음.
 - **astropy ERFA dubious year 경고**: 2050/2100 등 미래 시각에서 IERS leap second 미정 → ERFA 경고 (`dubious year`). 본 시각의 TDB 비교는 단순화 모델 자체의 ~50µs 오차로 충분히 가려짐 — 경고는 무시 가능. Work 12 검증 시 적정 시각 범위 명시 권장.
 - **astropy 첫 import 시간**: ~1-2초 (지구 회전 데이터 로딩). pytest 첫 실행 느림. 이후 캐시됨.
-- **spiceypy PCK 커널**: P4 reference에서 사용. 테스트 시 NAIF 사이트에서 PCK 다운로드 필요할 수 있음 (수 MB). 캐시 정책 P4 진입 시 결정.
+- **spiceypy PCK 커널 다운로드 불필요**: P4 reference는 `spiceypy.lmpool`로 minimal BODY399 text-PCK constants를 메모리에 로드한다. 외부 PCK 파일 다운로드 없이 SPICE `pxform` semantics만 검증.
 - **leap second 갱신**: IERS Bulletin C 가 6월/12월에 갱신. P2의 정적 테이블도 동일 주기로 갱신 필요. 스케줄러는 Work 12 또는 별도 작업으로.
 - **단위 brand type의 빌드 영향**: TypeScript phantom type은 런타임 코드 0 — 번들 크기 영향 없음. 단지 컴파일 타임 강제력만.
 - **Work 1 알려진 이슈와 동일하게 적용**: Node 24 deprecation 경고는 이미 마이그레이션 완료. R3F THREE.Clock 경고는 자체 코드 영향 없음.
@@ -344,6 +382,7 @@ uv run orbitarium-tools fixtures --work=2 --out=../../tests/fixtures/work-02/
 | 2026-05-05 | **P1 완료** — `src/astro/{constants,naif,units,index}.ts` + Python 미러 + 25 단위 테스트. astro extras (astropy/spiceypy/pyerfa) 설치. IAU 2015+DE440 정합, 29 NAIF entries, brand type 단위 안전, 단일 constants 모듈. typecheck/lint/format/test/build/e2e/ruff/mypy/pytest 전부 그린. IEEE 754 19→17자리 표기 정정 + ruff SIM300 yoda 비교 순서 정정 처리 |
 | 2026-05-05 | **P2 완료** — `src/astro/{leapSeconds,time}.ts` + Python 미러 + `tests/fixtures/work-02/time.json` (21 representative times) + `orbitarium-tools fixtures --work=2 --out=...` CLI. UTC↔TAI↔TT↔TDB 변환 (TS와 Python 비트 동일, fixture 1µs 매치, astropy IAU 2009 대비 TDB ~50µs). Brand type `JdTdb/JdTt/JdTai/JdUtc`. CI extras `[dev]` → `[astro,dev]`. typecheck/lint/format/test(184)/build/e2e/ruff/mypy/pytest(46) 전부 그린. ruff UP017(timezone.utc→UTC alias) 19건 + RUF002/003(유니코드 minus/dash) 5건 정리. let-binding offset 타입 narrowing 수정. invariant test 톨러런스 1e-4 (cancellation 한계) |
 | 2026-05-05 | **P3 완료** — `src/astro/frames.ts` + Python 미러 + `tests/fixtures/work-02/frames.json` (12 vectors + 3 matrices). ICRF↔EME2000 frame bias (ERFA bp00 RB 임베드, 9 doubles, ~23 mas RSS) + EME2000↔Ecliptic R_x(ε) + 합성 ICRF↔Ecliptic. `Vec3`/`Matrix3` readonly tuple, loop-unrolled matMul3 (9 명시 expression). 세차/장동 무시(J2000 고정), IAU 2006 ε 재사용. astropy ICRS↔BarycentricMeanEcliptic 1mas 매치. orthogonality 1e-15. typecheck/lint/format/test(261)/build/e2e/ruff/mypy/pytest(61) 전부 그린. SIM300 yoda 6건 자동 fix. erfa import-untyped → `# type: ignore`. R_x(ε) 부호 컨벤션 docstring 정정. ICRF X→ecliptic Z 톨러런스 1e-7→2e-7 (frame bias 누적) |
+| 2026-05-05 | **P4 완료** — `src/astro/{rotation,rotationData}.ts` + Python 미러 + `tests/fixtures/work-02/rotation-earth.json`. `IAURotationModel` 타입, polynomial/periodic evaluator, Earth `IAU_EARTH` BODY399 constants, `evaluateRotation`, `inertialToBodyFixed`, `bodyFixedToInertial` 구현. NAIF `pck00011.tpc` 기준이며 Earth orientation은 WGCCRE 2009 계승(2015 report no Earth/Moon orientation) 명시. SPICE text-PCK Euler sequence를 `spiceypy.lmpool` + `pxform("J2000","IAU_EARTH")`로 1mas 안에서 검증. TS rotation tests 33, Python rotation tests 10 추가. CLI Work 2 fixture 생성이 time+frames+rotation으로 확장. lint/format/typecheck/test(294)/build/e2e(7)/ruff/mypy/pytest(71) 전부 그린. JS `% 360` 마지막 bit 보존을 위해 `normalizeDegrees` fast path 추가 |
 
 ---
 

@@ -53,9 +53,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "fixtures":
         if args.work == 2:
             from orbitarium_tools.frames import generate_fixtures as gen_frames
+            from orbitarium_tools.rotation import generate_fixtures as gen_rotation
             from orbitarium_tools.time import generate_fixtures as gen_time
 
-            for out_file in (gen_time(args.out), gen_frames(args.out)):
+            for out_file in (gen_time(args.out), gen_frames(args.out), gen_rotation(args.out)):
                 print(f"Generated {out_file}")
             return 0
         print(f"Work {args.work} fixtures not implemented", file=sys.stderr)

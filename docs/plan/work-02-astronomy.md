@@ -214,19 +214,19 @@ tools/python/src/orbitarium_tools/
   - `δ0(T)`: 자전축 Dec
   - `W(d)`: prime meridian — 일 단위 선형 + sin/cos 보정
   - T = J2000 경과 세기, d = J2000 경과일
-- 지구의 IAU 2015 회전 모델 데이터 (참고용 — Work 6에서 모든 천체 추가)
+- 지구의 NAIF `pck00011.tpc` BODY399 회전 모델 데이터
+  - `pck00011`은 WGCCRE 2015 기반이지만 Earth orientation은 WGCCRE 2009 값을 계승
+    (2015 report에서 Earth/Moon orientation 미제공)
 - TS: `rotation.ts`
   - `IAURotationModel` 타입
   - `evaluateRotation(model, jdTdb)`: { ra, dec, w } 반환
-  - `bodyFixedToInertial(model, jdTdb)`: 3×3 회전 행렬 (ICRF → body-fixed)
-- Python: `rotation.py` — spiceypy의 PCK 평가 결과와 비교 (지구 1건)
+  - `inertialToBodyFixed(model, jdTdb)`: 3×3 회전 행렬 (ICRF → body-fixed)
+  - `bodyFixedToInertial(model, jdTdb)`: 역변환 (body-fixed → ICRF)
+- Python: `rotation.py` — spiceypy text-PCK 평가 결과와 비교 (지구 1건)
 
 **Decisions** (P4에서 확정)
-- 회전 모델 데이터 출처:
-  - (a) **IAU WGCCRE 2015 보고서 (Archinal et al. 2018) — 정적 데이터 인라인** 권장
-  - (b) spiceypy로 PCK 커널 평가 (런타임 의존)
-  - (c) 두 가지 병행 (TS는 (a), Python reference는 (b))
-- 본 phase의 검증 천체: **지구만 (지구 자전 위상이 가장 자주 검증됨)** 권장 / 지구 + 달
+- 회전 모델 데이터 출처: **NAIF `pck00011.tpc` BODY399 정적 인라인 + spiceypy text-PCK reference 병행**
+- 본 phase의 검증 천체: **지구만 (지구 자전 위상이 가장 자주 검증됨)**
 
 **Deliverables**
 ```
@@ -241,7 +241,7 @@ tools/python/src/orbitarium_tools/
 + `tests/fixtures/work-02/rotation-earth.json`
 
 **Done**
-- 지구의 W(현재 시각) TS 결과와 spiceypy 결과 1mas 안에서 일치
+- 지구의 W(현재 시각)와 `ICRF/J2000 → IAU_EARTH` 행렬이 spiceypy text-PCK 결과와 1mas 안에서 일치
 - 인터페이스가 Work 6에서 그대로 확장 가능 (전체 천체 추가만)
 - `pnpm test` / `uv run pytest` 그린
 
@@ -383,7 +383,7 @@ P2 Time          P3 Frames
 | ICRF↔EME2000 frame bias | **적용 (~23 mas)** | 무시 | P3 |
 | 회전 행렬 표현 | **3×3 row-major `number[9]`** | THREE.Matrix3 어댑터 | P3 |
 | 황도경사 ε | **IAU 2006 J2000 평균** (`0.4090926006…rad`) | IAU 1976 | P3 |
-| IAU 회전 데이터 출처 | **IAU WGCCRE 2015 보고서 인라인** | spiceypy PCK 런타임 | P4 |
+| IAU 회전 데이터 출처 | **NAIF pck00011 BODY399 인라인 + spiceypy text-PCK reference** | spiceypy PCK 런타임 | P4 |
 | P4 검증 천체 | **지구만** | 지구 + 달 | P4 |
 | Dev Demo 구조 | **단일 페이지 + 4 섹션** | 탭 분리 | P5 |
 | Fixture 형식 | **JSON** | JSONL / Parquet | P6 |
