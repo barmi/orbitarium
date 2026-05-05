@@ -8,12 +8,12 @@
 
 ## 0. 현재 상태 (Status)
 
-| 항목         | 값                                                                                                |
-| ------------ | ------------------------------------------------------------------------------------------------- |
-| 현재 phase   | **P2 완료** ✓ — P3 진입 대기                                                                      |
-| 다음 액션    | **P3 — Body Size Scale Functions** 진입 — `radiusToScene` + Logarithmic / MinMaxClamp / Uniform |
-| 마지막 갱신  | 2026-05-06                                                                                        |
-| 블로커       | 없음                                                                                              |
+| 항목         | 값                                                                                                                  |
+| ------------ | ------------------------------------------------------------------------------------------------------------------- |
+| 현재 phase   | **P3 완료** ✓ — P4 진입 대기                                                                                        |
+| 다음 액션    | **P4 — Adaptive Scale Interface** 진입 — `ZoomLevel` 단위 + 두 정책 lerp (smoothstep) + binary search inverse |
+| 마지막 갱신  | 2026-05-06                                                                                                          |
+| 블로커       | 없음                                                                                                                |
 
 ## 1. 진행 체크리스트
 
@@ -22,7 +22,7 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 - [x] **P1** — Strategy & Brand Types _(완료 2026-05-06)_
 - [x] **P2** — Distance Scale Functions _(완료 2026-05-06)_
-- [ ] **P3** — Body Size Scale Functions
+- [x] **P3** — Body Size Scale Functions _(완료 2026-05-06)_
 - [ ] **P4** — Adaptive Scale Interface
 - [ ] **P5** — Dev Demo `/dev/scale`
 - [ ] **P6** — Cross-validation & Golden Fixtures (Closeout)
@@ -47,6 +47,10 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 | 12  | 대수 정책 `r0` | **1 AU** | scene unit 1 = log(2) ≈ 0.693 — 자연스러운 reference (Earth 위치). r0=1m 으로 했다면 scaled value 가 25 정도 → UI 압축 어려움. | P2 | 2026-05-06 |
 | 13  | Round-trip 톨러런스 (실제 측정) | **1 mm 절대 톨러런스가 30 AU 까지 보장** — 그 너머는 IEEE 754 LSB ~1.3 mm/40AU (Pluto) | 30 AU = 4.5e12 m × 2^-52 ≈ 1mm. piecewise/log 정책 모두 같은 IEEE 754 LSB floor. 외행성에서는 relative 1e-14 검증. | P2 | 2026-05-06 |
 | 14  | positionToScene 알고리즘 | **방향 보존 + 길이만 정책 통과** (`pos × (sScene / rMeters)`), 0 벡터 가드 (Sun at SSB ~0 case) | 정책이 pos magnitude 만 바꾸고 방향은 보존. r=0 케이스는 [0,0,0] 반환. cosine similarity 1.0 검증으로 방향 보존 확인. | P2 | 2026-05-06 |
+| 15  | 크기 정책 — 추가 구현 | **Uniform baseline + MinMaxClamp** | Uniform 은 비교 baseline (r/AU). MinMaxClamp 는 모든 천체 가시화 — log10 normalize to [0.005, 5] scene. | P3 | 2026-05-06 |
+| 16  | 대수 확대 정책 공식 | **`base + k * log10(1 + r/r0)`** with r0=Earth, k=0.5, base=0.005 | 단순 log(r/r0) 는 r<r0 에서 음수 → 시각화 불가. log(1+x) 시프트로 r=0 → base 안전. inverse: r0 * (10^((s-base)/k) - 1). | P3 | 2026-05-06 |
+| 17  | MinMaxClamp 공식 | **log10 normalize: `min + (s - log_min) / (log_max - log_min) * span`** | 입력 r_min=Pluto, r_max=Sun → scene [0.005, 5]. 정확 reversible. 본 카탈로그 너머 (e.g. 위성) 의 입력은 카탈로그 확장 시 갱신. | P3 | 2026-05-06 |
+| 18  | 크기 round-trip 검증 | **카탈로그 11 entries 전부 1mm 이내** | Sun/Earth/Pluto/Moon 등 전 범위. log/exp LSB 흔들림은 Sun (7e8 m) 에서도 ~1µm — 1mm 마진 충분. | P3 | 2026-05-06 |
 
 > 기록 규칙: 결정 즉시 한 줄 추가. 번복 시 새 항목으로 추가하고 비고에 "supersedes #N" 명시.
 
@@ -74,9 +78,10 @@ phase 마감 전, plan의 "Done" 모든 항목을 만족해야 [x] 가능.
 
 ### P3에서 결정
 
-- [ ] 두 번째 정책 (MinMaxClamp / 행성별 manual)
-- [ ] 대수 확대 `r0` / `k` 기본값
-- [ ] MinMax clamp [min, max]
+- [x] 추가 정책: **Uniform baseline + MinMaxClamp** ✓ (#15)
+- [x] 대수 확대 `r0` / `k` / base: **r0=Earth, k=0.5, base=0.005**, 공식 `base + k*log10(1 + r/r0)` ✓ (#16)
+- [x] MinMax clamp [min, max] / r 범위: **[0.005, 5] scene unit** + log10 normalize from [Pluto, Sun] ✓ (#17)
+- [x] Round-trip 검증 범위: **카탈로그 11 entries 1mm 이내** ✓ (#18)
 
 ### P4에서 결정
 
@@ -165,9 +170,37 @@ phase 종료 시 생성·수정된 주요 파일을 기록. 형식: 경로 + 한
 - **PiecewiseMonotonic 마지막 segment 너머 처리**: 50 AU 너머는 마지막 segment slope (`(3.0-1.5)/(50-5)`) 로 선형 연장 — 단조성 유지, smooth (C¹ 불연속 허용).
 - **Brand 타입 `as number` 불필요**: `Meters = number & {...}` 는 산술 시 자동으로 number 로 평가됨. ESLint `no-unnecessary-type-assertion` 룰이 정확.
 
-### P3 — Body Size Scale Functions
+### P3 — Body Size Scale Functions _(완료 2026-05-06)_
 
-_미시작_
+생성/수정 파일:
+
+- [`src/scale/sizePolicies.ts`](../../src/scale/sizePolicies.ts) — `UniformPolicy` (k=1, r/AU), `LogarithmicMagnificationPolicy` (`base + k*log10(1 + r/r0)`, r0=Earth, k=0.5, base=0.005), `MinMaxClampPolicy` (log10 normalize [Pluto, Sun] → [0.005, 5]). `SIZE_POLICIES` 레지스트리 + `getSizePolicy(name)`. `radiusToScene` / `sceneToRadius` 헬퍼.
+- [`src/scale/index.ts`](../../src/scale/index.ts) — `sizePolicies` re-export 추가.
+- [`tools/python/src/orbitarium_tools/scaling.py`](../../tools/python/src/orbitarium_tools/scaling.py) — `SizePolicy` dataclass + 3 정책 + `generate_size_fixtures(out_dir)` + `get_size_policy`.
+- [`tools/python/src/orbitarium_tools/cli.py`](../../tools/python/src/orbitarium_tools/cli.py) — `fixtures --work=4` 분기에 size 추가.
+
+테스트 + fixture:
+
+- [`tests/fixtures/work-04/size-policies.json`](../../tests/fixtures/work-04/size-policies.json) — 3 정책 × 11 body radii. `_tolerance_m = 1e-3`.
+- [`tests/unit/scale/sizePolicies.test.ts`](../../tests/unit/scale/sizePolicies.test.ts) — 14 tests: Uniform bit-exact / LogMag Earth ground truth + 양수 + 단조 + round-trip / MinMax 끝점 정확 + round-trip + 단조 / registry / radiusToScene/sceneToRadius helpers / fixture cross-check.
+- [`tools/python/tests/test_scaling.py`](../../tools/python/tests/test_scaling.py) — 추가 4 tests (registry, Uniform bit-exact, LogMag round-trip, MinMax 끝점).
+
+검증 결과:
+
+- `pnpm format:check` ✓
+- `pnpm lint` ✓ — 초기 simple-import-sort 1건 → autofix.
+- `pnpm typecheck` ✓
+- `pnpm test` ✓ — **376 tests** (P2 362 → P3 +14).
+- `pnpm build` ✓
+- `cd tools/python && uv run ruff check / mypy / pytest` ✓ — 103 tests (P2 99 → P3 +4).
+
+설계 결정 + 발견:
+
+- **`log(r/r0)` → `log(1 + r/r0)` 시프트**: 단순 log 는 r<r0 (Pluto, Mercury) 에서 음수 → 시각화 불가. log(1+x) 시프트로 r≥0 모두 양수 보장. inverse: `r0 * (10^((s-base)/k) - 1)`.
+- **MinMax clamp 가 strict normalize**: 입력이 [r_min, r_max] 범위 내라고 가정 (clamp 함수 자체는 정의역 외 입력에 대해 외삽). 위성/소행성 추가 시 r_min/r_max 갱신 필요 — Work 6 진입 시.
+- **mypy `[no-any-return]`**: `10.0 ** ...` 의 결과를 mypy 가 `Any` 로 추론 → `float()` 캐스트로 강제. TS 쪽은 `**` 연산자가 number 자동 추론 → 캐스트 불필요.
+- **Sun radius (7e8 m) 의 round-trip**: log/exp LSB ~1µm → 1mm 마진 충분. 가장 큰 천체에서도 안전.
+- **default k=0.5 의 시각적 결과**: Sun ~ 1.025, Earth ~ 0.156, Pluto ~ 0.042 scene. 이 값은 라이너업에서 거리 [0.4, 3] scene 와 비교 시 약간 큼 — Work 9 카메라 줌 시 탄력적 조정 (P4 adaptive interface 가 이를 받침).
 
 ### P4 — Adaptive Scale Interface
 
@@ -287,6 +320,7 @@ pnpm fixtures:work-04
 | 2026-05-06 | 초기 작성 — P0 kickoff. Plan 본체와 함께 6 phase 구조 확정 (Strategy → Distance Scale → Size Scale → Adaptive → Dev Demo → Closeout). P1 결정 ~9건 대기. Work 3 산출물 (Position/State vector) 적극 활용 예정. |
 | 2026-05-06 | **P1 완료** — `src/scale/{types,constants,index}.ts` + Python 미러 + 12 단위 테스트 (TS 8 + Python 4). 결정 9건 (#1~#9) 모두 권장값 채택: Piecewise default / Logarithmic size default / 1 scene unit = 1 AU / forward+inverse 강제 / interface 모델 / SceneUnit+PositionScene+SizeScene phantom / Radius / 1mm 톨러런스 / IAU WGCCRE 2015 평균 적도 반지름 (11 entries). format/lint/typecheck/test/build/ruff/mypy/pytest 전부 그린. |
 | 2026-05-06 | **P2 완료** — `src/scale/{distancePolicies,position}.ts` + Python 미러 + `tests/fixtures/work-04/distance-policies.json` + `pnpm fixtures:work-04` + CLI Work 4 분기. 결정 5건 (#10~#14): break points [0.4, 5, 50] AU → [0.4, 1.5, 3.0] scene / Linear baseline + Logarithmic / r0=1AU / 30 AU 까지 1mm 절대 round-trip + relative 1e-14 / 방향 보존 + 0 벡터 가드. 단위 테스트 20건 추가 (TS 19 + Python 7). 모든 정책 monotonic + cosine 1.0 + fixture cross-check 그린. format/lint/typecheck/test(362)/build/ruff/mypy/pytest(99) 그린. |
+| 2026-05-06 | **P3 완료** — `src/scale/sizePolicies.ts` + Python 미러 + `tests/fixtures/work-04/size-policies.json` (3 정책 × 11 bodies). 결정 4건 (#15~#18): Uniform baseline + MinMaxClamp / LogMag 공식 base + k*log10(1+r/r0) (r0=Earth, k=0.5, base=0.005) / MinMaxClamp [0.005, 5] scene log10 normalize / 카탈로그 11 entries 1mm round-trip. 단위 테스트 18건 추가 (TS 14 + Python 4). format/lint/typecheck/test(376)/build/ruff/mypy/pytest(103) 그린. |
 
 ---
 

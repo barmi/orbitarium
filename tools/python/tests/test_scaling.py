@@ -87,3 +87,55 @@ def test_logarithmic_round_trips_within_one_mm_up_to_30_au() -> None:
         d_m = d_au * AU
         back = LOGARITHMIC_POLICY.inverse(LOGARITHMIC_POLICY.forward(d_m))
         assert abs(back - d_m) < SCALE_TOL_M
+
+
+def test_size_policy_registry_lists_three_policies() -> None:
+    from orbitarium_tools.scaling import (
+        LOGARITHMIC_MAGNIFICATION_POLICY,
+        MIN_MAX_CLAMP_POLICY,
+        SIZE_POLICIES,
+        UNIFORM_POLICY,
+        get_size_policy,
+    )
+
+    names = [p.name for p in SIZE_POLICIES]
+    assert names == ["uniform", "logarithmic-magnification", "minmax-clamp"]
+    assert get_size_policy("uniform") is UNIFORM_POLICY
+    assert get_size_policy("minmax-clamp") is MIN_MAX_CLAMP_POLICY
+    assert LOGARITHMIC_MAGNIFICATION_POLICY in SIZE_POLICIES
+
+
+def test_uniform_size_policy_round_trips_for_body_table() -> None:
+    from orbitarium_tools.scaling import UNIFORM_POLICY
+
+    for naif_id in SCALE_BODY_NAIF_IDS:
+        r = BODY_MEAN_EQUATORIAL_RADIUS_M[naif_id]
+        assert UNIFORM_POLICY.inverse(UNIFORM_POLICY.forward(r)) == r
+
+
+def test_logmag_policy_positive_and_round_trips() -> None:
+    from orbitarium_tools.scaling import LOGARITHMIC_MAGNIFICATION_POLICY
+
+    for naif_id in SCALE_BODY_NAIF_IDS:
+        r = BODY_MEAN_EQUATORIAL_RADIUS_M[naif_id]
+        scene = LOGARITHMIC_MAGNIFICATION_POLICY.forward(r)
+        assert scene > 0
+        back = LOGARITHMIC_MAGNIFICATION_POLICY.inverse(scene)
+        assert abs(back - r) < SCALE_TOL_SIZE_M
+
+
+def test_minmax_clamp_endpoints_and_round_trips() -> None:
+    from orbitarium_tools.scaling import (
+        MIN_MAX_CLAMP_POLICY,
+        MINMAX_MAX_SCENE,
+        MINMAX_MIN_SCENE,
+    )
+
+    pluto = BODY_MEAN_EQUATORIAL_RADIUS_M[999]
+    sun = BODY_MEAN_EQUATORIAL_RADIUS_M[10]
+    assert math.isclose(MIN_MAX_CLAMP_POLICY.forward(pluto), MINMAX_MIN_SCENE, rel_tol=1e-12)
+    assert math.isclose(MIN_MAX_CLAMP_POLICY.forward(sun), MINMAX_MAX_SCENE, rel_tol=1e-12)
+    for naif_id in SCALE_BODY_NAIF_IDS:
+        r = BODY_MEAN_EQUATORIAL_RADIUS_M[naif_id]
+        back = MIN_MAX_CLAMP_POLICY.inverse(MIN_MAX_CLAMP_POLICY.forward(r))
+        assert abs(back - r) < SCALE_TOL_SIZE_M
