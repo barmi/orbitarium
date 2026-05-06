@@ -11,6 +11,7 @@ import {
 } from '@/orbits'
 
 import {
+  MOON_ORBIT_RESAMPLE_GRANULARITY_DAYS,
   ORBIT_RESAMPLE_GRANULARITY_DAYS,
   ORBIT_SAMPLE_COUNT,
   ORBITAL_PERIOD_DAYS,
@@ -45,9 +46,12 @@ export interface SolarOrbitsResult {
  * approach mis-scales because the distance policy is non-linear).
  */
 export function useSolarOrbits(evaluator: De440Evaluator, jdTdb: JdTdb): SolarOrbitsResult {
-  const granular =
+  const planetGranular =
     Math.round((jdTdb as number) / ORBIT_RESAMPLE_GRANULARITY_DAYS) *
     ORBIT_RESAMPLE_GRANULARITY_DAYS
+  const moonGranular =
+    Math.round((jdTdb as number) / MOON_ORBIT_RESAMPLE_GRANULARITY_DAYS) *
+    MOON_ORBIT_RESAMPLE_GRANULARITY_DAYS
   const [state, setState] = useState<SolarOrbitsResult>({
     map: EMPTY,
     moonOrbitSamples: null,
@@ -56,19 +60,21 @@ export function useSolarOrbits(evaluator: De440Evaluator, jdTdb: JdTdb): SolarOr
 
   useEffect(() => {
     let cancelled = false
-    const targets = SOLAR_BODY_SLUGS.filter((slug) => slug !== 'sun').map((slug) => {
-      const body = getBodyBySlug(slug)!
-      const period = ORBITAL_PERIOD_DAYS[slug] ?? 365
-      return {
-        naifId: body.naifId,
-        start: (granular - period * 0.5) as JdTdb,
-        end: (granular + period * 0.5) as JdTdb,
-      }
-    })
+    const targets = SOLAR_BODY_SLUGS.filter((slug) => slug !== 'sun' && slug !== 'moon').map(
+      (slug) => {
+        const body = getBodyBySlug(slug)!
+        const period = ORBITAL_PERIOD_DAYS[slug] ?? 365
+        return {
+          naifId: body.naifId,
+          start: (planetGranular - period * 0.5) as JdTdb,
+          end: (planetGranular + period * 0.5) as JdTdb,
+        }
+      },
+    )
 
     const moonPeriod = ORBITAL_PERIOD_DAYS.moon ?? 27.3
-    const moonStart = (granular - moonPeriod * 0.5) as JdTdb
-    const moonEnd = (granular + moonPeriod * 0.5) as JdTdb
+    const moonStart = (moonGranular - moonPeriod * 0.5) as JdTdb
+    const moonEnd = (moonGranular + moonPeriod * 0.5) as JdTdb
 
     Promise.all([
       Promise.all(
@@ -90,7 +96,7 @@ export function useSolarOrbits(evaluator: De440Evaluator, jdTdb: JdTdb): SolarOr
     return () => {
       cancelled = true
     }
-  }, [evaluator, granular])
+  }, [evaluator, planetGranular, moonGranular])
 
   return state
 }

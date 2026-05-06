@@ -63,6 +63,12 @@ export const ORBIT_SAMPLE_COUNT = 256
  * orbits visually fresh while avoiding spurious refetches. */
 export const ORBIT_RESAMPLE_GRANULARITY_DAYS = 365
 
+/** Moon orbit re-sample granularity. Sidereal month is only ~27 days, so the
+ * 1-year planet granularity skips entirely past the current jdTdb's sample
+ * window — meaning Moon's ring shape would represent a *different month* and
+ * Moon's body would slide off the ring. We re-sample once per simulated day. */
+export const MOON_ORBIT_RESAMPLE_GRANULARITY_DAYS = 1
+
 /** Position fetch granularity (days). At rate=1 (real time) jdTdb advances by
  * ~1.16e-5 days/sec — refetching on every change is wasteful. We round jdTdb
  * to this granularity before useEffect deps; ~7 minutes resolution at any rate. */
