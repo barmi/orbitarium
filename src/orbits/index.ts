@@ -1,3 +1,5 @@
+export type { AsteroidBeltProps } from './AsteroidBelt'
+export { default as AsteroidBelt } from './AsteroidBelt'
 export * from './constants'
 export * from './material'
 export * from './sampler'

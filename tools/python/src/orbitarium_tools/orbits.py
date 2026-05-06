@@ -88,7 +88,7 @@ def extract_keplerian(
     r_mag = math.sqrt(rx * rx + ry * ry + rz * rz)
     v_mag2 = vx * vx + vy * vy + vz * vz
 
-    # Specific angular momentum h = r × v
+    # Specific angular momentum h = r x v
     hx = ry * vz - rz * vy
     hy = rz * vx - rx * vz
     hz = rx * vy - ry * vx
@@ -97,7 +97,7 @@ def extract_keplerian(
     # Inclination: cos(inc) = hz / h_mag
     inc = math.acos(max(-1.0, min(1.0, hz / h_mag))) if h_mag > 0 else 0.0
 
-    # Node line N = k × h = (-hy, hx, 0)
+    # Node line N = k x h = (-hy, hx, 0)
     nx, ny = -hy, hx
     n_mag = math.sqrt(nx * nx + ny * ny)
 
@@ -109,7 +109,7 @@ def extract_keplerian(
         if ny < 0.0:
             raan = 2.0 * math.pi - raan
 
-    # Eccentricity vector e = ((v² - μ/r) r - (r·v) v) / μ
+    # Eccentricity vector e = ((v^2 - mu/r) r - (r dot v) v) / mu
     rv_dot = rx * vx + ry * vy + rz * vz
     coeff_r = v_mag2 - mu_m3_per_s2 / r_mag
     ex = (coeff_r * rx - rv_dot * vx) / mu_m3_per_s2
@@ -126,7 +126,7 @@ def extract_keplerian(
         if ez < 0.0:
             argp = 2.0 * math.pi - argp
 
-    # True anomaly ν, then mean anomaly M
+    # True anomaly nu, then mean anomaly M
     if ecc == 0.0:
         nu = 0.0
     else:
@@ -135,9 +135,9 @@ def extract_keplerian(
         if rv_dot < 0.0:
             nu = 2.0 * math.pi - nu
 
-    # Eccentric anomaly E and mean anomaly M (elliptical only).
+    # Eccentric anomaly E_anom and mean anomaly M (elliptical only).
     if ecc < 1.0:
-        # E from ν
+        # E from nu
         e_anom = 2.0 * math.atan2(
             math.sqrt(1.0 - ecc) * math.sin(nu / 2.0),
             math.sqrt(1.0 + ecc) * math.cos(nu / 2.0),
@@ -146,12 +146,9 @@ def extract_keplerian(
     else:
         mean_anomaly = nu
 
-    # Semi-major axis from energy: ε = v²/2 - μ/r = -μ/(2 a)
+    # Semi-major axis from energy: eps = v^2/2 - mu/r = -mu/(2 a)
     energy = 0.5 * v_mag2 - mu_m3_per_s2 / r_mag
-    if abs(energy) < 1e-30:
-        sma = float("inf")
-    else:
-        sma = -mu_m3_per_s2 / (2.0 * energy)
+    sma = float("inf") if abs(energy) < 1e-30 else -mu_m3_per_s2 / (2.0 * energy)
 
     return KeplerianElements(
         sma_m=sma,
@@ -161,3 +158,50 @@ def extract_keplerian(
         argp_rad=argp,
         mean_anomaly_rad=mean_anomaly,
     )
+
+
+_AU_M: Final[float] = 149_597_870_700.0
+SMA_BELT_MIN_AU: Final[float] = 2.2
+SMA_BELT_MAX_AU: Final[float] = 3.3
+ECC_BELT_MAX: Final[float] = 0.2
+INC_BELT_MAX_RAD: Final[float] = 15.0 * math.pi / 180.0
+
+
+def _mulberry32(seed: int) -> object:
+    """Mulberry32 PRNG mirroring src/orbits/AsteroidBelt.tsx (deterministic)."""
+    state = [seed & 0xFFFFFFFF]
+
+    def _next() -> float:
+        state[0] = (state[0] + 0x6D2B79F5) & 0xFFFFFFFF
+        t = state[0]
+        t = ((t ^ (t >> 15)) * (t | 1)) & 0xFFFFFFFF
+        t ^= (t + ((t ^ (t >> 7)) * (t | 61)) & 0xFFFFFFFF) & 0xFFFFFFFF
+        return ((t ^ (t >> 14)) & 0xFFFFFFFF) / 4294967296.0
+
+    return _next
+
+
+def generate_asteroid_belt(
+    count: int = ASTEROID_BELT_DEFAULT_COUNT,
+    seed: int = 1,
+) -> list[tuple[float, float, float]]:
+    """Deterministic synthetic main-belt positions (m, ICRF, SSB).
+
+    Distribution matches ``src/orbits/AsteroidBelt.tsx`` so the TS belt and
+    Python-generated belt agree bit-for-bit (modulo unavoidable FP).
+    """
+    rng = _mulberry32(seed)
+    out: list[tuple[float, float, float]] = []
+    for _ in range(count):
+        sma = SMA_BELT_MIN_AU + rng() * (SMA_BELT_MAX_AU - SMA_BELT_MIN_AU)  # type: ignore[operator]
+        ecc = rng() * ECC_BELT_MAX  # type: ignore[operator]
+        inc = (rng() * 2 - 1) * INC_BELT_MAX_RAD  # type: ignore[operator]
+        true_anom = rng() * 2 * math.pi  # type: ignore[operator]
+        r = sma * (1 - ecc * ecc) / (1 + ecc * math.cos(true_anom))
+        x_plane = r * math.cos(true_anom)
+        y_plane = r * math.sin(true_anom)
+        x = x_plane
+        y = y_plane * math.cos(inc)
+        z = y_plane * math.sin(inc)
+        out.append((x * _AU_M, y * _AU_M, z * _AU_M))
+    return out

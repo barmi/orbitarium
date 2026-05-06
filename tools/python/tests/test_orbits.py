@@ -93,3 +93,33 @@ def test_keplerian_elliptical_orbit() -> None:
     )
     assert math.isclose(elements.sma_m, a_target, rel_tol=1e-9)
     assert math.isclose(elements.ecc, e_target, rel_tol=1e-6)
+
+
+from orbitarium_tools.orbits import (  # noqa: E402
+    generate_asteroid_belt,
+)
+
+
+def test_asteroid_belt_default_count() -> None:
+    belt = generate_asteroid_belt()
+    assert len(belt) == ASTEROID_BELT_DEFAULT_COUNT
+
+
+def test_asteroid_belt_positions_in_main_belt_range() -> None:
+    au = 149_597_870_700.0
+    belt = generate_asteroid_belt(count=64, seed=42)
+    for x, y, z in belt:
+        r = math.sqrt(x * x + y * y + z * z) / au
+        assert 1.5 < r < 4.5, f"r={r}"
+
+
+def test_asteroid_belt_deterministic() -> None:
+    a = generate_asteroid_belt(count=10, seed=7)
+    b = generate_asteroid_belt(count=10, seed=7)
+    assert a == b
+
+
+def test_asteroid_belt_seed_changes_distribution() -> None:
+    a = generate_asteroid_belt(count=10, seed=1)
+    b = generate_asteroid_belt(count=10, seed=2)
+    assert a != b
