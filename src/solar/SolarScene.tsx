@@ -68,7 +68,7 @@ export default function SolarScene({
       {showOrbits && (
         <SolarOrbits
           orbits={orbits.map}
-          moonGeocentric={orbits.moonGeocentric}
+          moonOrbitSamples={orbits.moonOrbitSamples}
           positions={positions.map}
           distancePolicy={distancePolicy}
           anchor={anchor}

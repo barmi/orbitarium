@@ -54,22 +54,43 @@ export async function sampleOrbit(
 }
 
 /**
- * Sample ``naifId``'s position relative to ``refNaifId`` (i.e. ``naif − ref``)
- * over a uniform jdTdb grid. Useful for geocentric Moon orbit visualization,
- * where SSB-frame samples produce a near-degenerate huge ellipse.
+ * Paired SSB samples of two bodies at the same time grid. Used for accurate
+ * geocentric orbit rendering — to draw Moon's orbit at the same scale that
+ * Moon's body appears at, both bodies' SSB positions must go through the
+ * (potentially non-linear) distance policy *separately*, then be subtracted
+ * in scene space. Naively applying the policy to the difference vector gives
+ * the wrong scale: piecewise-monotonic uses a steep slope near 0 AU and a
+ * gentler slope near 1 AU, so a 384,000-km vector mapped at 0 AU != Moon's
+ * actual scene displacement around Earth at 1 AU.
  */
-export async function sampleRelativeOrbit(
+export interface PairedOrbitSamples {
+  readonly count: number
+  /** Body SSB samples, count*3 (Float64Array, x/y/z meters). */
+  readonly positionsM: Float64Array
+  /** Reference body SSB samples, count*3 (paired by index). */
+  readonly refPositionsM: Float64Array
+  readonly jdTdbs: Float64Array
+}
+
+/**
+ * Sample ``naifId`` and ``refNaifId``'s SSB positions over the same uniform
+ * jdTdb grid. Both arrays are aligned by index. Use ``PairedOrbitSamples``
+ * when you need to compute a relative orbit *after* per-body distance-policy
+ * conversion — see e.g. `MoonOrbitRing` in solar/.
+ */
+export async function samplePairedOrbit(
   evaluator: De440Evaluator,
   naifId: number,
   refNaifId: number,
   jdStart: JdTdb,
   jdEnd: JdTdb,
   count: number,
-): Promise<OrbitPolyline> {
+): Promise<PairedOrbitSamples> {
   if (count < 1) {
-    throw new Error(`sampleRelativeOrbit: count must be >= 1, got ${count}`)
+    throw new Error(`samplePairedOrbit: count must be >= 1, got ${count}`)
   }
   const positionsM = new Float64Array(count * 3)
+  const refPositionsM = new Float64Array(count * 3)
   const jdTdbs = new Float64Array(count)
 
   if (count === 1) {
@@ -78,10 +99,13 @@ export async function sampleRelativeOrbit(
       evaluator.getStateAt(naifId, jdStart),
       evaluator.getStateAt(refNaifId, jdStart),
     ])
-    positionsM[0] = s.position[0] - ref.position[0]
-    positionsM[1] = s.position[1] - ref.position[1]
-    positionsM[2] = s.position[2] - ref.position[2]
-    return { count, positionsM, jdTdbs }
+    positionsM[0] = s.position[0]
+    positionsM[1] = s.position[1]
+    positionsM[2] = s.position[2]
+    refPositionsM[0] = ref.position[0]
+    refPositionsM[1] = ref.position[1]
+    refPositionsM[2] = ref.position[2]
+    return { count, positionsM, refPositionsM, jdTdbs }
   }
 
   const step = (jdEnd - jdStart) / (count - 1)
@@ -97,10 +121,13 @@ export async function sampleRelativeOrbit(
   )
   for (let i = 0; i < count; i++) {
     const [s, ref] = pairs[i]!
-    positionsM[i * 3 + 0] = s.position[0] - ref.position[0]
-    positionsM[i * 3 + 1] = s.position[1] - ref.position[1]
-    positionsM[i * 3 + 2] = s.position[2] - ref.position[2]
+    positionsM[i * 3 + 0] = s.position[0]
+    positionsM[i * 3 + 1] = s.position[1]
+    positionsM[i * 3 + 2] = s.position[2]
+    refPositionsM[i * 3 + 0] = ref.position[0]
+    refPositionsM[i * 3 + 1] = ref.position[1]
+    refPositionsM[i * 3 + 2] = ref.position[2]
   }
 
-  return { count, positionsM, jdTdbs }
+  return { count, positionsM, refPositionsM, jdTdbs }
 }

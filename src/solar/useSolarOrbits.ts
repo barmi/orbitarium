@@ -3,7 +3,12 @@ import { useEffect, useState } from 'react'
 import { type JdTdb } from '@/astro'
 import { getBodyBySlug } from '@/bodies'
 import type { De440Evaluator } from '@/ephemeris'
-import { type OrbitPolyline, sampleOrbit, sampleRelativeOrbit } from '@/orbits'
+import {
+  type OrbitPolyline,
+  type PairedOrbitSamples,
+  sampleOrbit,
+  samplePairedOrbit,
+} from '@/orbits'
 
 import {
   ORBIT_RESAMPLE_GRANULARITY_DAYS,
@@ -20,20 +25,24 @@ const EARTH_NAIF = 399
 export interface SolarOrbitsResult {
   /** SSB-frame polylines (heliocentric ellipses for planets / Pluto). */
   readonly map: ReadonlyMap<number, OrbitPolyline>
-  /** Geocentric Moon orbit — small ring (~38万 km) relative to Earth.
-   * Render translated to Earth's current world position. ``null`` while loading. */
-  readonly moonGeocentric: OrbitPolyline | null
+  /**
+   * Paired Moon + Earth SSB samples covering one sidereal month around the
+   * current jdTdb. Used by `MoonOrbitRing` to draw Moon's orbit at the
+   * exact same scale Moon's body appears at — see `samplePairedOrbit`.
+   */
+  readonly moonOrbitSamples: PairedOrbitSamples | null
   readonly loaded: boolean
 }
 
 /**
- * One-orbit-period polyline per planet/Pluto/Moon, centered on the current
- * ``jdTdb`` (rounded to ``ORBIT_RESAMPLE_GRANULARITY_DAYS``).
+ * One-orbit-period polyline per planet / Pluto / Moon, centered on the
+ * current `jdTdb` (rounded to `ORBIT_RESAMPLE_GRANULARITY_DAYS`).
  *
  * Sun is excluded — at SSB origin its trail is a tiny barycenter wobble.
  *
- * Moon gets a SECOND polyline sampled in the geocentric frame so its orbit
- * (~38万 km) doesn't collapse onto Earth's heliocentric ellipse visually.
+ * Moon also gets paired Moon+Earth SSB samples so its geocentric orbit can
+ * be rendered at the body-accurate scale (the naive sample-relative-orbit
+ * approach mis-scales because the distance policy is non-linear).
  */
 export function useSolarOrbits(evaluator: De440Evaluator, jdTdb: JdTdb): SolarOrbitsResult {
   const granular =
@@ -41,7 +50,7 @@ export function useSolarOrbits(evaluator: De440Evaluator, jdTdb: JdTdb): SolarOr
     ORBIT_RESAMPLE_GRANULARITY_DAYS
   const [state, setState] = useState<SolarOrbitsResult>({
     map: EMPTY,
-    moonGeocentric: null,
+    moonOrbitSamples: null,
     loaded: false,
   })
 
@@ -69,11 +78,11 @@ export function useSolarOrbits(evaluator: De440Evaluator, jdTdb: JdTdb): SolarOr
           ),
         ),
       ),
-      sampleRelativeOrbit(evaluator, MOON_NAIF, EARTH_NAIF, moonStart, moonEnd, ORBIT_SAMPLE_COUNT),
+      samplePairedOrbit(evaluator, MOON_NAIF, EARTH_NAIF, moonStart, moonEnd, ORBIT_SAMPLE_COUNT),
     ])
-      .then(([pairs, moonGeocentric]) => {
+      .then(([pairs, moonOrbitSamples]) => {
         if (cancelled) return
-        setState({ map: new Map(pairs), moonGeocentric, loaded: true })
+        setState({ map: new Map(pairs), moonOrbitSamples, loaded: true })
       })
       .catch(() => {
         // Orbits are decorative — silent fall-through (positions hook surfaces errors).

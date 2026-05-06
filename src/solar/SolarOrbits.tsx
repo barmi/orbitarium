@@ -1,15 +1,17 @@
 import { getBodyByNaifId } from '@/bodies'
 import type { PositionICRF } from '@/ephemeris'
-import { OrbitLine, type OrbitPolyline } from '@/orbits'
-import { positionToWorld, type SceneAnchorContext, ssbAnchor } from '@/render'
+import { OrbitLine, type OrbitPolyline, type PairedOrbitSamples } from '@/orbits'
+import { positionToWorld, type SceneAnchorContext } from '@/render'
 import { type DistancePolicy } from '@/scale'
+
+import MoonOrbitRing from './MoonOrbitRing'
 
 const MOON_NAIF = 301
 const EARTH_NAIF = 399
 
 interface Props {
   readonly orbits: ReadonlyMap<number, OrbitPolyline>
-  readonly moonGeocentric: OrbitPolyline | null
+  readonly moonOrbitSamples: PairedOrbitSamples | null
   readonly positions: ReadonlyMap<number, PositionICRF>
   readonly distancePolicy: DistancePolicy
   readonly anchor: SceneAnchorContext
@@ -18,7 +20,7 @@ interface Props {
 
 export default function SolarOrbits({
   orbits,
-  moonGeocentric,
+  moonOrbitSamples,
   positions,
   distancePolicy,
   anchor,
@@ -51,17 +53,14 @@ export default function SolarOrbits({
           />
         )
       })}
-      {moonGeocentric && earthWorld && (
+      {moonOrbitSamples && earthWorld && (
         <group position={[earthWorld.x, earthWorld.y, earthWorld.z]}>
-          <OrbitLine
-            polyline={moonGeocentric}
+          <MoonOrbitRing
+            samples={moonOrbitSamples}
             distancePolicy={distancePolicy}
-            anchor={ssbAnchor()}
-            variant="trail"
-            material={{
-              color: '#cfd6d3',
-              opacity: focusedSlug === 'moon' || focusedSlug === 'earth' ? 0.95 : 0.7,
-            }}
+            anchor={anchor}
+            color="#cfd6d3"
+            opacity={focusedSlug === 'moon' || focusedSlug === 'earth' ? 0.95 : 0.7}
           />
         </group>
       )}
