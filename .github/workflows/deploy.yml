@@ -27,8 +27,14 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - uses: actions/configure-pages@v5
+      - id: pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Build with computed base path
+        env:
+          VITE_BASE: ${{ steps.pages.outputs.base_path }}/
+        run: pnpm build
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist/

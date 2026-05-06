@@ -26,7 +26,7 @@ export default function SunMesh({
   jdTdb,
   worldPosition,
   worldRadius,
-  haloUrl = '/data/textures/sun-halo.png',
+  haloUrl = `${import.meta.env.BASE_URL}data/textures/sun-halo.png`,
   haloScale = 4,
 }: SunMeshProps) {
   const [haloTexture, setHaloTexture] = useState<Texture | null>(null)

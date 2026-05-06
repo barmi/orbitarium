@@ -10,7 +10,7 @@ export interface WebLoaderOptions {
   readonly baseUrl?: string
 }
 
-const DEFAULT_BASE_URL = '/data/ephemeris/de440/'
+const DEFAULT_BASE_URL = `${import.meta.env.BASE_URL}data/ephemeris/de440/`
 
 export function createWebDe440Loader({
   baseUrl = DEFAULT_BASE_URL,

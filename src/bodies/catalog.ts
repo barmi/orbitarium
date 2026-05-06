@@ -3,7 +3,7 @@ import { BODY_MEAN_EQUATORIAL_RADIUS_M } from '@/scale'
 
 import type { BodyDefinition } from './types'
 
-const TEXTURE_BASE = '/data/textures'
+const TEXTURE_BASE = `${import.meta.env.BASE_URL}data/textures`
 
 /**
  * Mean equatorial radii for moons not in Work 4's `BODY_MEAN_EQUATORIAL_RADIUS_M`

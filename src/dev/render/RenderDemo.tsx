@@ -22,7 +22,7 @@ import LogDepthPair from './scene/LogDepthPair'
 import StarfieldGroup from './scene/StarfieldGroup'
 import StarfieldControls from './StarfieldControls'
 
-const STARFIELD_URL = '/data/starfield/hipparcos-vmag6.bin'
+const STARFIELD_URL = `${import.meta.env.BASE_URL}data/starfield/hipparcos-vmag6.bin`
 const DEMO_UTC = new Date('2026-05-06T00:00:00Z')
 
 const BODY_CHOICES = [

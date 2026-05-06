@@ -65,7 +65,7 @@ export const ORBIT_RESAMPLE_GRANULARITY_DAYS = 365
  * to this granularity before useEffect deps; ~7 minutes resolution at any rate. */
 export const POSITION_GRANULARITY_DAYS = 0.005
 
-export const STARFIELD_URL = '/data/starfield/hipparcos-vmag6.bin'
+export const STARFIELD_URL = `${import.meta.env.BASE_URL}data/starfield/hipparcos-vmag6.bin`
 
 /** Default camera at fresh load. Drag rotates around the focused target;
  * wheel zooms. Spherical coords below. */

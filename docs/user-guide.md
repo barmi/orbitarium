@@ -12,6 +12,14 @@
 2. **The main app `/` is the integrated solar system view** — Sun + 9 planets + Earth's Moon with real DE440 positions, Hipparcos starfield, IAU rotation, all orbit ellipses.
 3. The dev catalog (`/dev/index`) lists 11 dev pages — each one demonstrates a single Work's slice in isolation (handy for debugging).
 
+### Deploy to GitHub Pages
+
+The repo ships with a `.github/workflows/deploy.yml` that builds and publishes to GitHub Pages on every push to `main`.
+
+**One-time setup:** in your fork, open **Settings → Pages → Build and deployment → Source → "GitHub Actions"** and save. Then push (or re-run the workflow). The action also tries `enablement: true` automatically — if your token has `pages:write` and the repo is public (or you're on a Pro/Team/Enterprise plan), the first run can self-activate.
+
+The build uses Vite's `base` option, computed from the `configure-pages` action's `base_path` output, so asset URLs work correctly under `/<repo-name>/`. Override via `VITE_BASE` if your hosting differs.
+
 ## Main App `/` — Controls
 
 | Control | Action |
