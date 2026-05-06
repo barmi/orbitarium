@@ -80,6 +80,7 @@ export const devPages: DevPageEntry[] = [
     slug: 'perf',
     title: 'Polish & Performance',
     summary: 'FPS / draw call / GPU 메모리 라이브 오버레이, 효과 A/B 토글',
+    Component: lazy(() => import('./perf/PerfDemo')),
   },
   {
     workNumber: 12,
