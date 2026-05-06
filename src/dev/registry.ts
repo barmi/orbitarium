@@ -87,5 +87,6 @@ export const devPages: DevPageEntry[] = [
     slug: 'validation',
     title: 'Validation',
     summary: '천체 × 시각 매트릭스 위치 오차 대시보드, 회귀 결과',
+    Component: lazy(() => import('./validation/ValidationDemo')),
   },
 ]

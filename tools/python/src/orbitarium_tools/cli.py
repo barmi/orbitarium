@@ -171,6 +171,17 @@ def _run_fixtures(args: argparse.Namespace) -> int:
         for path in gen_events(args.out):
             print(f"Generated {path}")
         return 0
+    if args.work == 12:
+        from orbitarium_tools.validate import (
+            synthetic_validation_samples,
+            write_report,
+        )
+
+        samples = synthetic_validation_samples()
+        json_path, md_path = write_report(samples, args.out)
+        print(f"Generated {json_path}")
+        print(f"Generated {md_path}")
+        return 0
     print(f"Work {args.work} fixtures not implemented", file=sys.stderr)
     return 1
 

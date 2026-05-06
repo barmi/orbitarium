@@ -10,15 +10,15 @@ test.describe('dev catalog (/dev/index)', () => {
     await expect(cards).toHaveCount(11)
   })
 
-  test('Work 2..11 are available and the rest are placeholders', async ({ page }) => {
+  test('all 11 work cards are available (Work 12 마감)', async ({ page }) => {
     await page.goto('/dev/index')
 
     const placeholders = page.locator('.dev-card[data-status="placeholder"]')
-    await expect(placeholders).toHaveCount(1)
+    await expect(placeholders).toHaveCount(0)
 
     const available = page.locator('.dev-card[data-status="available"]')
-    await expect(available).toHaveCount(10)
-    await expect(available.filter({ hasText: 'Polish & Performance' })).toHaveCount(1)
+    await expect(available).toHaveCount(11)
+    await expect(available.filter({ hasText: 'Validation' })).toHaveCount(1)
   })
 
   test('each card shows work number, title, and target slug', async ({ page }) => {
