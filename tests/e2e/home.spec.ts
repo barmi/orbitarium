@@ -153,12 +153,12 @@ test.describe('main solar app (/)', () => {
     await expect(page.getByTestId('solar-utc')).toContainText('2000-01-01')
   })
 
-  test('moons-visible preset sets size scale to 0.02 + URL ss=', async ({ page }) => {
+  test('moons-visible preset sets size scale to 0.01 + URL ss=', async ({ page }) => {
     await page.goto('/')
     await page.getByTestId('solar-settings-toggle').click()
     await page.getByTestId('solar-sizescale-moons').click()
-    await expect(page.getByTestId('solar-sizescale-value')).toHaveText('0.020')
-    await page.waitForFunction(() => window.location.hash.includes('ss=0.020'))
+    await expect(page.getByTestId('solar-sizescale-value')).toHaveText('0.010')
+    await page.waitForFunction(() => window.location.hash.includes('ss=0.010'))
     await page.getByTestId('solar-sizescale-default').click()
     await expect(page.getByTestId('solar-sizescale-value')).toHaveText('1.000')
     await page.waitForFunction(() => !window.location.hash.includes('ss='))

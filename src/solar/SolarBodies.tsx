@@ -4,6 +4,7 @@ import type { PositionICRF } from '@/ephemeris'
 import { positionToWorld, type SceneAnchorContext, sceneScalarToWorld } from '@/render'
 import { type DistancePolicy, radiusToScene, type SizePolicy } from '@/scale'
 
+import BodyLabel from './BodyLabel'
 import { SOLAR_BODY_SLUGS, SUN_VISUAL_RADIUS_SCENE } from './constants'
 
 interface Props {
@@ -74,6 +75,15 @@ export default function SolarBodies({
                 textureUrl={rings.textureUrl}
                 worldPosition={worldPos}
               />
+            </group>
+          )
+        }
+
+        if (body.slug === 'moon') {
+          return (
+            <group key={body.naifId}>
+              <Body body={body} jdTdb={jdTdb} worldPosition={worldPos} worldRadius={worldRadius} />
+              <BodyLabel text="Moon" worldPosition={worldPos} bodyWorldRadius={worldRadius} />
             </group>
           )
         }

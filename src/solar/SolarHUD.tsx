@@ -229,10 +229,10 @@ export default function SolarHUD({
                     <button
                       type="button"
                       data-testid="solar-sizescale-moons"
-                      onClick={() => onSizeScaleChange(0.02)}
-                      title="Earth's visual radius shrinks below the Earth–Moon scene distance, so the Moon emerges from inside Earth."
+                      onClick={() => onSizeScaleChange(0.01)}
+                      title="Earth's visual radius shrinks below the Earth–Moon scene distance, so the Moon and its orbit ring emerge from inside Earth."
                     >
-                      moons visible (×0.02)
+                      moons visible (×0.01)
                     </button>
                   </div>
                 </label>

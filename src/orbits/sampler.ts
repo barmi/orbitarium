@@ -52,3 +52,55 @@ export async function sampleOrbit(
 
   return { count, positionsM, jdTdbs }
 }
+
+/**
+ * Sample ``naifId``'s position relative to ``refNaifId`` (i.e. ``naif − ref``)
+ * over a uniform jdTdb grid. Useful for geocentric Moon orbit visualization,
+ * where SSB-frame samples produce a near-degenerate huge ellipse.
+ */
+export async function sampleRelativeOrbit(
+  evaluator: De440Evaluator,
+  naifId: number,
+  refNaifId: number,
+  jdStart: JdTdb,
+  jdEnd: JdTdb,
+  count: number,
+): Promise<OrbitPolyline> {
+  if (count < 1) {
+    throw new Error(`sampleRelativeOrbit: count must be >= 1, got ${count}`)
+  }
+  const positionsM = new Float64Array(count * 3)
+  const jdTdbs = new Float64Array(count)
+
+  if (count === 1) {
+    jdTdbs[0] = jdStart
+    const [s, ref] = await Promise.all([
+      evaluator.getStateAt(naifId, jdStart),
+      evaluator.getStateAt(refNaifId, jdStart),
+    ])
+    positionsM[0] = s.position[0] - ref.position[0]
+    positionsM[1] = s.position[1] - ref.position[1]
+    positionsM[2] = s.position[2] - ref.position[2]
+    return { count, positionsM, jdTdbs }
+  }
+
+  const step = (jdEnd - jdStart) / (count - 1)
+  for (let i = 0; i < count; i++) {
+    jdTdbs[i] = jdStart + step * i
+  }
+
+  const pairs = await Promise.all(
+    Array.from({ length: count }, (_, i) => {
+      const jd = jdTdbs[i] as JdTdb
+      return Promise.all([evaluator.getStateAt(naifId, jd), evaluator.getStateAt(refNaifId, jd)])
+    }),
+  )
+  for (let i = 0; i < count; i++) {
+    const [s, ref] = pairs[i]!
+    positionsM[i * 3 + 0] = s.position[0] - ref.position[0]
+    positionsM[i * 3 + 1] = s.position[1] - ref.position[1]
+    positionsM[i * 3 + 2] = s.position[2] - ref.position[2]
+  }
+
+  return { count, positionsM, jdTdbs }
+}

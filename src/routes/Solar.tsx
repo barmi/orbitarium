@@ -14,7 +14,10 @@ import { createWebDe440Loader } from '../dev/ephemeris/webLoader'
 
 const RENDERER_PROPS = createRendererProps(RENDER_DEFAULTS, {
   fov: 50,
-  near: 0.05,
+  // near must be < CAMERA_DISTANCE_MIN (0.001) so geometries between the
+  // camera and the focused body (e.g. Moon when Earth is focused at small
+  // sizeScale) aren't clipped.
+  near: 1e-4,
   far: 1e10,
   position: [4, 3, 7],
 })
