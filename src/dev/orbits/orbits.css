@@ -1,0 +1,128 @@
+.orbits-demo {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 100vh;
+  padding: 1.25rem 1.5rem;
+  gap: 1rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.orbits-demo__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.orbits-demo__grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  grid-template-rows: auto auto auto 1fr;
+  gap: 1rem;
+}
+
+.orbits-demo__canvas-panel {
+  grid-column: 2;
+  grid-row: 1 / span 4;
+  background: #050807;
+  border: 1px solid #1f2826;
+  border-radius: 6px;
+  position: relative;
+  min-height: 540px;
+  overflow: hidden;
+}
+
+.orbits-demo__canvas-panel canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.orbits-panel {
+  background: #0a1010;
+  border: 1px solid #1f2826;
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.orbits-panel h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.orbits-panel__eyebrow {
+  margin: 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: #8fb8ff;
+  text-transform: uppercase;
+}
+
+.orbits-control {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+}
+
+.orbits-control__label {
+  display: flex;
+  justify-content: space-between;
+  color: #cfd6d3;
+}
+
+.orbits-control__label strong {
+  color: #ffd166;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+.orbits-control input[type='range'] {
+  width: 100%;
+  accent-color: #8fb8ff;
+}
+
+.orbits-control select {
+  background: #050807;
+  color: #cfd6d3;
+  border: 1px solid #2a3633;
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  width: 100%;
+  font: inherit;
+}
+
+.orbits-toggle-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.orbits-toggle-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.orbits-info {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  color: #cfd6d3;
+}
+
+.orbits-error {
+  color: #ff8e8e;
+  font-size: 0.78rem;
+}
+
+@media (max-width: 980px) {
+  .orbits-demo__grid {
+    grid-template-columns: 1fr;
+  }
+  .orbits-demo__canvas-panel {
+    grid-column: 1;
+    grid-row: auto;
+    min-height: 420px;
+  }
+}

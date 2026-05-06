@@ -52,6 +52,7 @@ export const devPages: DevPageEntry[] = [
     slug: 'orbits',
     title: 'Orbits & Trajectories',
     summary: '단일 천체 + 과거 trail / 미래 predict 토글, 시간 윈도우 슬라이더',
+    Component: lazy(() => import('./orbits/OrbitsDemo')),
   },
   {
     workNumber: 8,
