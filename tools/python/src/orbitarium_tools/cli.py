@@ -159,6 +159,12 @@ def _run_fixtures(args: argparse.Namespace) -> int:
         for out_file in gen_bodies(args.out):
             print(f"Generated {out_file}")
         return 0
+    if args.work == 7:
+        from orbitarium_tools.orbits import generate_fixtures as gen_orbits
+
+        for path in gen_orbits(args.out):
+            print(f"Generated {path}")
+        return 0
     print(f"Work {args.work} fixtures not implemented", file=sys.stderr)
     return 1
 
