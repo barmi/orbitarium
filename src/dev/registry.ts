@@ -59,6 +59,7 @@ export const devPages: DevPageEntry[] = [
     slug: 'time',
     title: 'Time Control',
     summary: '시간 컨트롤러 (scrubber, 속도, presets) + body 동기화 데모',
+    Component: lazy(() => import('./time/TimeDemo')),
   },
   {
     workNumber: 9,

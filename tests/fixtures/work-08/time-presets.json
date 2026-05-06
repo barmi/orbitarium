@@ -1,0 +1,30 @@
+{
+  "_comment": "Work 8 time presets \u2014 TS / Python should produce same jdTdb.",
+  "_tolerance_sec": 0.001,
+  "presets": [
+    {
+      "id": "j2000",
+      "label": "J2000 (2000-01-01 12:00 TT)",
+      "utc_iso": "2000-01-01T12:00:00Z",
+      "jd_tdb": 2451545.0007428695
+    },
+    {
+      "id": "voyager1_launch",
+      "label": "Voyager 1 launch",
+      "utc_iso": "1977-09-05T12:56:00Z",
+      "jd_tdb": 2443392.0394465574
+    },
+    {
+      "id": "eclipse_2024",
+      "label": "2024-04-08 total eclipse",
+      "utc_iso": "2024-04-08T18:18:00Z",
+      "jd_tdb": 2460409.26330076
+    },
+    {
+      "id": "present",
+      "label": "2026-05-06 (Work 8 demo)",
+      "utc_iso": "2026-05-06T00:00:00Z",
+      "jd_tdb": 2461166.500800757
+    }
+  ]
+}

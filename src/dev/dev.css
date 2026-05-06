@@ -4,6 +4,7 @@
 @import './orbits/orbits.css';
 @import './render/render.css';
 @import './scale/scale.css';
+@import './time/time.css';
 
 .dev-index {
   min-height: 100vh;
