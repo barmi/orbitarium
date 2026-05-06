@@ -21,6 +21,7 @@ interface Props {
   readonly showOrbits: boolean
   readonly showStarfield: boolean
   readonly vmagCutoff: number
+  readonly sizeScale: number
   readonly onPositionsLoaded?: (loaded: boolean) => void
   readonly onPositionsError?: (error: string | null) => void
 }
@@ -34,6 +35,7 @@ export default function SolarScene({
   showOrbits,
   showStarfield,
   vmagCutoff,
+  sizeScale,
   onPositionsLoaded,
   onPositionsError,
 }: Props) {
@@ -61,6 +63,7 @@ export default function SolarScene({
         sizePolicy={sizePolicy}
         anchor={anchor}
         jdTdb={jdTdb}
+        sizeScale={sizeScale}
       />
       {showOrbits && (
         <SolarOrbits
@@ -75,6 +78,7 @@ export default function SolarScene({
         positions={positions.map}
         distancePolicy={distancePolicy}
         anchor={anchor}
+        sizeScale={sizeScale}
       />
     </>
   )

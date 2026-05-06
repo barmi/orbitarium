@@ -21,6 +21,7 @@ interface Props {
   readonly positions: ReadonlyMap<number, PositionICRF>
   readonly distancePolicy: DistancePolicy
   readonly anchor: SceneAnchorContext
+  readonly sizeScale: number
 }
 
 /**
@@ -33,6 +34,7 @@ export default function CameraController({
   positions,
   distancePolicy,
   anchor,
+  sizeScale,
 }: Props) {
   const { camera, gl } = useThree()
   const phi = useRef(DEFAULT_CAMERA_PHI_RAD)
@@ -88,13 +90,15 @@ export default function CameraController({
 
   // Smoothly recenter on a newly-focused body.
   useEffect(() => {
-    // Bigger zoom-in when focusing a specific planet.
     if (focusedSlug) {
-      distance.current = Math.min(distance.current, 4)
+      // Scale the focused-zoom-in with body size — at sizeScale=0.02 the body
+      // is ~50× smaller and the default 4 scene units leaves it as a dot.
+      const focusedTarget = Math.max(0.05, 4 * sizeScale)
+      distance.current = Math.min(distance.current, focusedTarget)
     } else {
       distance.current = Math.max(distance.current, 6)
     }
-  }, [focusedSlug])
+  }, [focusedSlug, sizeScale])
 
   const targetWorld = useMemo<readonly [number, number, number]>(() => {
     if (!focusedSlug) return [0, 0, 0]

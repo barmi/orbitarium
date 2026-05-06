@@ -160,6 +160,27 @@
   cursor: not-allowed;
 }
 
+.solar-hud__slider-presets {
+  display: flex;
+  gap: 0.3rem;
+  margin-top: 0.25rem;
+}
+
+.solar-hud__slider-presets button {
+  flex: 1;
+  background: #050807;
+  border: 1px solid #2a3633;
+  color: #cfd6d3;
+  padding: 0.18rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.solar-hud__slider-presets button:hover {
+  border-color: #8fb8ff;
+}
+
 .solar-hud__time {
   background: rgba(0, 0, 0, 0.6);
   border: 1px solid #2a3633;

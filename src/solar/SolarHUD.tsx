@@ -18,9 +18,11 @@ interface Props {
   readonly showOrbits: boolean
   readonly showStarfield: boolean
   readonly vmagCutoff: number
+  readonly sizeScale: number
   readonly onShowOrbitsChange: (next: boolean) => void
   readonly onShowStarfieldChange: (next: boolean) => void
   readonly onVmagCutoffChange: (next: number) => void
+  readonly onSizeScaleChange: (next: number) => void
   readonly loaded: boolean
   readonly error: string | null
 }
@@ -69,9 +71,11 @@ export default function SolarHUD({
   showOrbits,
   showStarfield,
   vmagCutoff,
+  sizeScale,
   onShowOrbitsChange,
   onShowStarfieldChange,
   onVmagCutoffChange,
+  onSizeScaleChange,
   loaded,
   error,
 }: Props) {
@@ -199,6 +203,38 @@ export default function SolarHUD({
                     disabled={!showStarfield}
                     onChange={(e) => onVmagCutoffChange(Number(e.currentTarget.value))}
                   />
+                </label>
+                <label className="solar-hud__slider">
+                  <span>
+                    body size ×{' '}
+                    <strong data-testid="solar-sizescale-value">{sizeScale.toFixed(3)}</strong>
+                  </span>
+                  <input
+                    type="range"
+                    min={Math.log10(0.005)}
+                    max={Math.log10(2)}
+                    step={0.01}
+                    value={Math.log10(sizeScale)}
+                    data-testid="solar-sizescale-slider"
+                    onChange={(e) => onSizeScaleChange(10 ** Number(e.currentTarget.value))}
+                  />
+                  <div className="solar-hud__slider-presets">
+                    <button
+                      type="button"
+                      data-testid="solar-sizescale-default"
+                      onClick={() => onSizeScaleChange(1)}
+                    >
+                      reset (×1)
+                    </button>
+                    <button
+                      type="button"
+                      data-testid="solar-sizescale-moons"
+                      onClick={() => onSizeScaleChange(0.02)}
+                      title="Earth's visual radius shrinks below the Earth–Moon scene distance, so the Moon emerges from inside Earth."
+                    >
+                      moons visible (×0.02)
+                    </button>
+                  </div>
                 </label>
               </fieldset>
             </div>

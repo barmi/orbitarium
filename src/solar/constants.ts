@@ -79,5 +79,7 @@ export const DEFAULT_CAMERA_THETA_RAD = -Math.PI / 4
 /** Spherical clamp ranges. */
 export const CAMERA_PHI_MIN = 0.1
 export const CAMERA_PHI_MAX = Math.PI - 0.1
-export const CAMERA_DISTANCE_MIN = 0.2
+/** Minimum camera distance — small enough to zoom in on a moon when the
+ * user dials body-size down to see it. */
+export const CAMERA_DISTANCE_MIN = 0.001
 export const CAMERA_DISTANCE_MAX = 200

@@ -12,6 +12,7 @@ describe('encodeShareState / decodeShareState', () => {
     showOrbits: null,
     showStarfield: null,
     vmagCutoff: null,
+    sizeScale: null,
     ...overrides,
   })
 
@@ -43,6 +44,7 @@ describe('encodeShareState / decodeShareState', () => {
     expect(hash).not.toContain('o=')
     expect(hash).not.toContain('s=')
     expect(hash).not.toContain('vm=')
+    expect(hash).not.toContain('ss=')
   })
 
   it('round-trips distance + size policy fields', () => {
@@ -70,6 +72,13 @@ describe('encodeShareState / decodeShareState', () => {
     expect(hash).toContain('vm=4.50')
     const back = decodeShareState(hash)
     expect(back!.vmagCutoff).toBeCloseTo(4.5, 2)
+  })
+
+  it('round-trips size scale', () => {
+    const hash = encodeShareState(baseState({ sizeScale: 0.05 }))
+    expect(hash).toContain('ss=0.050')
+    const back = decodeShareState(hash)
+    expect(back!.sizeScale).toBeCloseTo(0.05, 3)
   })
 
   it('rejects mismatched version', () => {

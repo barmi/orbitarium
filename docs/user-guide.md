@@ -30,6 +30,15 @@ The build uses Vite's `base` option, computed from the `configure-pages` action'
 | **▶ / ⏸** (top-right) | Play / pause the simulation clock. |
 | **Rate select** (top-right) | 1s/s · 1m/s · 1h/s · 1d/s · 30d/s · 1y/s — how much simulated time passes per real second. |
 | **URL fragment** | The current view (jdTdb + focused body) is encoded into the URL hash; copy/paste to share. |
+| **▸ Settings** (top-left) | Distance / size scale picker, view options, body-size multiplier. See [`solar-settings.md`](solar-settings.md). |
+| **Time panel** (top-right) | UTC readout, datetime jump, presets, ±1y/mo/d/h step, direction toggle, play/pause, rate. |
+
+## Settings panel
+
+`/` 의 좌측 상단 **▸ Settings** 가 모든 시각화 옵션의 단일 패널입니다.
+거리/크기 정책, 궤도·별자리 토글, vmag cutoff, 그리고 **body size 배율**
+(예: `×0.02` 로 두면 위성을 행성에서 분리해서 볼 수 있음). 자세한 내용은
+[`solar-settings.md`](solar-settings.md) 를 참고하세요.
 
 ## Dev Demo Pages
 

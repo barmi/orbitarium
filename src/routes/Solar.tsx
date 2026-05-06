@@ -20,6 +20,7 @@ const RENDERER_PROPS = createRendererProps(RENDER_DEFAULTS, {
 })
 
 const DEFAULT_VMAG_CUTOFF = 6
+const DEFAULT_SIZE_SCALE = 1
 
 interface InitialState {
   readonly jdTdb: JdTdb
@@ -29,6 +30,7 @@ interface InitialState {
   readonly showOrbits: boolean
   readonly showStarfield: boolean
   readonly vmagCutoff: number
+  readonly sizeScale: number
 }
 
 function readInitialState(): InitialState {
@@ -42,6 +44,7 @@ function readInitialState(): InitialState {
       showOrbits: decoded.showOrbits ?? true,
       showStarfield: decoded.showStarfield ?? true,
       vmagCutoff: decoded.vmagCutoff ?? DEFAULT_VMAG_CUTOFF,
+      sizeScale: decoded.sizeScale ?? DEFAULT_SIZE_SCALE,
     }
   }
   return {
@@ -52,6 +55,7 @@ function readInitialState(): InitialState {
     showOrbits: true,
     showStarfield: true,
     vmagCutoff: DEFAULT_VMAG_CUTOFF,
+    sizeScale: DEFAULT_SIZE_SCALE,
   }
 }
 
@@ -63,6 +67,7 @@ export default function Solar() {
   const [showOrbits, setShowOrbits] = useState<boolean>(initial.showOrbits)
   const [showStarfield, setShowStarfield] = useState<boolean>(initial.showStarfield)
   const [vmagCutoff, setVmagCutoff] = useState<number>(initial.vmagCutoff)
+  const [sizeScale, setSizeScale] = useState<number>(initial.sizeScale)
 
   return (
     <SimulationClockProvider initial={{ jdTdb: initial.jdTdb }}>
@@ -76,9 +81,11 @@ export default function Solar() {
         showOrbits={showOrbits}
         showStarfield={showStarfield}
         vmagCutoff={vmagCutoff}
+        sizeScale={sizeScale}
         onShowOrbitsChange={setShowOrbits}
         onShowStarfieldChange={setShowStarfield}
         onVmagCutoffChange={setVmagCutoff}
+        onSizeScaleChange={setSizeScale}
       />
     </SimulationClockProvider>
   )
@@ -94,9 +101,11 @@ interface SolarAppProps {
   readonly showOrbits: boolean
   readonly showStarfield: boolean
   readonly vmagCutoff: number
+  readonly sizeScale: number
   readonly onShowOrbitsChange: (next: boolean) => void
   readonly onShowStarfieldChange: (next: boolean) => void
   readonly onVmagCutoffChange: (next: number) => void
+  readonly onSizeScaleChange: (next: number) => void
 }
 
 function SolarApp({
@@ -109,9 +118,11 @@ function SolarApp({
   showOrbits,
   showStarfield,
   vmagCutoff,
+  sizeScale,
   onShowOrbitsChange,
   onShowStarfieldChange,
   onVmagCutoffChange,
+  onSizeScaleChange,
 }: SolarAppProps) {
   const { state: clock } = useSimulationClock()
   const evaluator = useMemo(() => createDe440Evaluator(createWebDe440Loader()), [])
@@ -130,11 +141,21 @@ function SolarApp({
       showOrbits: showOrbits ? null : false,
       showStarfield: showStarfield ? null : false,
       vmagCutoff: vmagCutoff === DEFAULT_VMAG_CUTOFF ? null : vmagCutoff,
+      sizeScale: sizeScale === DEFAULT_SIZE_SCALE ? null : sizeScale,
     })
     if (window.location.hash !== hash) {
       window.history.replaceState(null, '', hash)
     }
-  }, [clock.jdTdb, focusedSlug, distancePolicy, sizePolicy, showOrbits, showStarfield, vmagCutoff])
+  }, [
+    clock.jdTdb,
+    focusedSlug,
+    distancePolicy,
+    sizePolicy,
+    showOrbits,
+    showStarfield,
+    vmagCutoff,
+    sizeScale,
+  ])
 
   const handleLoaded = useCallback((next: boolean) => setLoaded(next), [])
   const handleError = useCallback((next: string | null) => setError(next), [])
@@ -152,6 +173,7 @@ function SolarApp({
           showOrbits={showOrbits}
           showStarfield={showStarfield}
           vmagCutoff={vmagCutoff}
+          sizeScale={sizeScale}
           onPositionsLoaded={handleLoaded}
           onPositionsError={handleError}
         />
@@ -166,9 +188,11 @@ function SolarApp({
         showOrbits={showOrbits}
         showStarfield={showStarfield}
         vmagCutoff={vmagCutoff}
+        sizeScale={sizeScale}
         onShowOrbitsChange={onShowOrbitsChange}
         onShowStarfieldChange={onShowStarfieldChange}
         onVmagCutoffChange={onVmagCutoffChange}
+        onSizeScaleChange={onSizeScaleChange}
         loaded={loaded}
         error={error}
       />

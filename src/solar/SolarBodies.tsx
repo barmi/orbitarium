@@ -12,6 +12,7 @@ interface Props {
   readonly sizePolicy: SizePolicy
   readonly anchor: SceneAnchorContext
   readonly jdTdb: JdTdb
+  readonly sizeScale: number
 }
 
 function computeWorldPosition(
@@ -32,6 +33,7 @@ export default function SolarBodies({
   sizePolicy,
   anchor,
   jdTdb,
+  sizeScale,
 }: Props) {
   return (
     <>
@@ -41,9 +43,10 @@ export default function SolarBodies({
         const worldPos = computeWorldPosition(body, positions, distancePolicy, anchor)
         if (!worldPos) return null
         const isSun = body.kind === 'sun'
-        const worldRadius = isSun
-          ? SUN_VISUAL_RADIUS_SCENE
-          : sceneScalarToWorld(radiusToScene(body.radiusM, sizePolicy))
+        const worldRadius =
+          (isSun
+            ? SUN_VISUAL_RADIUS_SCENE
+            : sceneScalarToWorld(radiusToScene(body.radiusM, sizePolicy))) * sizeScale
 
         if (isSun) {
           return (
