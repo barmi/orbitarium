@@ -1,5 +1,6 @@
 @import './astro/astro.css';
 @import './body/body.css';
+@import './camera/camera.css';
 @import './ephemeris/ephemeris.css';
 @import './orbits/orbits.css';
 @import './render/render.css';

@@ -66,6 +66,7 @@ export const devPages: DevPageEntry[] = [
     slug: 'camera',
     title: 'Camera & Navigation',
     summary: '모드/프리셋 버튼, 트랜지션 곡선 토글, 카메라 상태 라이브 표시',
+    Component: lazy(() => import('./camera/CameraDemo')),
   },
   {
     workNumber: 10,

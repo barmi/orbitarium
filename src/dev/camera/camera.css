@@ -1,0 +1,70 @@
+.camera-demo {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 100vh;
+  padding: 1.25rem 1.5rem;
+  gap: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.camera-demo__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.camera-demo__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.camera-panel {
+  background: #0a1010;
+  border: 1px solid #1f2826;
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.camera-panel h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.camera-panel__eyebrow {
+  margin: 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: #8fb8ff;
+  text-transform: uppercase;
+}
+
+.camera-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+
+.camera-buttons button {
+  background: #050807;
+  border: 1px solid #2a3633;
+  color: #cfd6d3;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.camera-buttons button[data-active='true'] {
+  border-color: #8fb8ff;
+  color: #ffd166;
+}
+
+.camera-info {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  color: #cfd6d3;
+}
