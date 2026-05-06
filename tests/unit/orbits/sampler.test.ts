@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { type JdTdb,meters, metersPerSecond } from '@/astro'
+import { type JdTdb, meters, metersPerSecond } from '@/astro'
 import type { De440Evaluator, StateVectorICRF } from '@/ephemeris'
 import { positionICRF, velocityICRF } from '@/ephemeris'
 import { sampleOrbit } from '@/orbits'

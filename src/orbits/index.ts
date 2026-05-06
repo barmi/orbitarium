@@ -1,3 +1,6 @@
 export * from './constants'
+export * from './material'
 export * from './sampler'
+export type { OrbitLineProps } from './Trail'
+export { default as OrbitLine } from './Trail'
 export * from './types'
