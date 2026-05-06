@@ -6,14 +6,14 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 현재 phase | **P0 kickoff** — P1 시작 대기 |
-| 다음 액션 | P1 — `src/orbits/{types,constants,index}.ts` + Python placeholder |
+| 현재 phase | **P1 완료** ✓ — P2 시작 대기 |
+| 다음 액션 | P2 — `src/orbits/sampler.ts` + Python `sample_orbit` + `extract_keplerian` |
 | 마지막 갱신 | 2026-05-06 |
 | 블로커 | 없음 |
 
 ## 1. 진행 체크리스트
 
-- [ ] P1 — Orbit Strategy & Types
+- [x] P1 — Orbit Strategy & Types _(완료 2026-05-06)_
 - [ ] P2 — Orbit Sampling
 - [ ] P3 — Trail & Predict Components
 - [ ] P4 — Asteroid Belt 인스턴싱
@@ -24,7 +24,11 @@
 
 | # | 항목 | 결정 | Phase | 결정일 |
 | --- | --- | --- | --- | --- |
-| — | (대기) | | | |
+| 1 | OrbitPolyline 메모리 모델 | **`Float64Array` typed (positionsM + jdTdbs)** | P1 | 2026-05-06 |
+| 2 | 샘플 분포 | **uniform in jdTdb** | P1 | 2026-05-06 |
+| 3 | Trail / Predict default duration | **각 365 days, 256 samples** | P1 | 2026-05-06 |
+| 4 | AsteroidBelt default count | **256 instances** | P1 | 2026-05-06 |
+| 5 | tolerance | **round-trip 1 mm + 폴리라인 reconstruction 100 m** | P1 | 2026-05-06 |
 
 ## 3. 미결정 (요약)
 
@@ -32,7 +36,14 @@ P1: typed array vs object, 샘플 분포, default durations · P2: evaluator 직
 
 ## 4. 산출물 인덱스
 
-P1~P6 _(대기)_
+### P1 — Strategy & Types _(완료 2026-05-06)_
+
+- `src/orbits/{types,constants,index}.ts` — `OrbitSample`, `OrbitPolyline` (Float64Array typed), `TrailConfig` / `PredictConfig`, `DEFAULT_TRAIL_DAYS`, etc.
+- `tools/python/src/orbitarium_tools/orbits.py` — Python mirror dataclasses + 동일 상수.
+- `tests/unit/orbits/types.test.ts` (6 tests) + `tools/python/tests/test_orbits.py` (4 tests).
+- 검증: format/lint/typecheck/test(559)/build/ruff/mypy(15)/pytest(177) 그린.
+
+### P2~P6 _(대기)_
 
 ## 5. 다음 작업자에게
 
@@ -52,3 +63,4 @@ P1 시작 시:
 | 날짜 | 변경 |
 | --- | --- |
 | 2026-05-06 | 초기 작성 — P0 kickoff. 6 phase 구조 확정. |
+| 2026-05-06 | **P1 완료** — types/constants + Python mirror + 10 tests. 결정 5건 (#1~#5). 559 / 177 그린. |
