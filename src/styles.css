@@ -21,3 +21,5 @@ body,
   padding: 0;
   height: 100%;
 }
+
+@import './ui/ui.css';

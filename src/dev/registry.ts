@@ -73,6 +73,7 @@ export const devPages: DevPageEntry[] = [
     slug: 'ui-kit',
     title: 'UI Kit',
     summary: '전체 UI 컴포넌트 카탈로그',
+    Component: lazy(() => import('./ui-kit/UiKitDemo')),
   },
   {
     workNumber: 11,
