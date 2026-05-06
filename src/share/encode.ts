@@ -11,6 +11,8 @@ export interface ShareState {
   readonly jdTdb: number
   readonly bodySlug: string | null
   readonly cameraMode: string | null
+  readonly distancePolicy: string | null
+  readonly sizePolicy: string | null
 }
 
 export const SHARE_VERSION = 1
@@ -21,6 +23,8 @@ export function encodeShareState(state: ShareState): string {
   params.set('jd', state.jdTdb.toFixed(6))
   if (state.bodySlug) params.set('body', state.bodySlug)
   if (state.cameraMode) params.set('cam', state.cameraMode)
+  if (state.distancePolicy) params.set('dist', state.distancePolicy)
+  if (state.sizePolicy) params.set('size', state.sizePolicy)
   return `#?${params.toString()}`
 }
 
@@ -36,5 +40,7 @@ export function decodeShareState(hash: string): ShareState | null {
     jdTdb: jd,
     bodySlug: params.get('body'),
     cameraMode: params.get('cam'),
+    distancePolicy: params.get('dist'),
+    sizePolicy: params.get('size'),
   }
 }

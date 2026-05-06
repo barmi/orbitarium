@@ -16,6 +16,8 @@ interface Props {
   readonly evaluator: De440Evaluator
   readonly jdTdb: JdTdb
   readonly focusedSlug: string | null
+  readonly distancePolicyName: string
+  readonly sizePolicyName: string
   readonly onPositionsLoaded?: (loaded: boolean) => void
   readonly onPositionsError?: (error: string | null) => void
 }
@@ -24,11 +26,13 @@ export default function SolarScene({
   evaluator,
   jdTdb,
   focusedSlug,
+  distancePolicyName,
+  sizePolicyName,
   onPositionsLoaded,
   onPositionsError,
 }: Props) {
-  const distancePolicy = useMemo(() => getDistancePolicy('piecewise-monotonic'), [])
-  const sizePolicy = useMemo(() => getSizePolicy('logarithmic-magnification'), [])
+  const distancePolicy = useMemo(() => getDistancePolicy(distancePolicyName), [distancePolicyName])
+  const sizePolicy = useMemo(() => getSizePolicy(sizePolicyName), [sizePolicyName])
   const anchor = useMemo(() => ssbAnchor(), [])
 
   const positions = useSolarPositions(evaluator, jdTdb)

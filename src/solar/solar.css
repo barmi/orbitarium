@@ -59,6 +59,74 @@
   color: #8a9590;
 }
 
+.solar-hud__settings-toggle {
+  margin-top: 0.5rem;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid #2a3633;
+  color: #cfd6d3;
+  padding: 0.25rem 0.55rem;
+  border-radius: 4px;
+  font:
+    0.75rem ui-monospace,
+    'SF Mono',
+    Menlo,
+    monospace;
+  cursor: pointer;
+}
+
+.solar-hud__settings-toggle:hover {
+  border-color: #8fb8ff;
+}
+
+.solar-hud__settings {
+  margin-top: 0.4rem;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid #2a3633;
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 16rem;
+}
+
+.solar-hud__radio-group {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.solar-hud__radio-group legend {
+  color: #6c7c77;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+  padding: 0;
+}
+
+.solar-hud__radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #cfd6d3;
+  cursor: pointer;
+}
+
+.solar-hud__radio-group input[type='radio'] {
+  accent-color: #ffd166;
+  cursor: pointer;
+}
+
+.solar-hud__radio-group input[type='radio']:checked + span {
+  color: #ffd166;
+}
+
 .solar-hud__time {
   background: rgba(0, 0, 0, 0.6);
   border: 1px solid #2a3633;

@@ -109,4 +109,22 @@ test.describe('main solar app (/)', () => {
     await page.getByTestId('solar-jump-apply').click()
     await expect(page.getByTestId('solar-utc')).toContainText('2030-07-15')
   })
+
+  test('Settings panel toggles open + persists policy choice in URL', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.getByTestId('solar-settings-panel')).toHaveCount(0)
+    await page.getByTestId('solar-settings-toggle').click()
+    await expect(page.getByTestId('solar-settings-panel')).toBeVisible()
+    await page.getByTestId('solar-distance-logarithmic').check()
+    await page.waitForFunction(() => window.location.hash.includes('dist=logarithmic'))
+    await page.getByTestId('solar-size-minmax-clamp').check()
+    await page.waitForFunction(() => window.location.hash.includes('size=minmax-clamp'))
+  })
+
+  test('share URL hash restores policy choice on reload', async ({ page }) => {
+    await page.goto('/#?v=1&jd=2461166.5&dist=logarithmic&size=uniform')
+    await page.getByTestId('solar-settings-toggle').click()
+    await expect(page.getByTestId('solar-distance-logarithmic')).toBeChecked()
+    await expect(page.getByTestId('solar-size-uniform')).toBeChecked()
+  })
 })

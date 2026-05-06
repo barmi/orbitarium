@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 
 import { type JdTdb, jdTdbToUtc, utcToJdTdb } from '@/astro'
 import { getBodyBySlug } from '@/bodies'
+import { DISTANCE_POLICIES, SIZE_POLICIES } from '@/scale'
 import { useSimulationClock } from '@/time'
 
 import { SOLAR_BODY_SLUGS } from './constants'
@@ -10,6 +11,10 @@ import { SOLAR_BODY_SLUGS } from './constants'
 interface Props {
   readonly focusedSlug: string | null
   readonly onSelectFocus: (slug: string | null) => void
+  readonly distancePolicy: string
+  readonly sizePolicy: string
+  readonly onDistancePolicyChange: (name: string) => void
+  readonly onSizePolicyChange: (name: string) => void
   readonly loaded: boolean
   readonly error: string | null
 }
@@ -48,10 +53,20 @@ function rateLabel(r: number): string {
   return `${r}s/s`
 }
 
-export default function SolarHUD({ focusedSlug, onSelectFocus, loaded, error }: Props) {
+export default function SolarHUD({
+  focusedSlug,
+  onSelectFocus,
+  distancePolicy,
+  sizePolicy,
+  onDistancePolicyChange,
+  onSizePolicyChange,
+  loaded,
+  error,
+}: Props) {
   const { state: clock, dispatch } = useSimulationClock()
   const [jumpDraft, setJumpDraft] = useState<string>(() => jdTdbToInputValue(clock.jdTdb))
   const [editingJump, setEditingJump] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   // Keep the date input synced with the clock when the user isn't editing it.
   useEffect(() => {
@@ -94,6 +109,51 @@ export default function SolarHUD({ focusedSlug, onSelectFocus, loaded, error }: 
           <p className="solar-hud__subtitle">
             real-position solar system{focusedBody ? ` · focus: ${focusedBody.label}` : ''}
           </p>
+          <button
+            type="button"
+            className="solar-hud__settings-toggle"
+            data-testid="solar-settings-toggle"
+            aria-expanded={settingsOpen}
+            onClick={() => setSettingsOpen((v) => !v)}
+          >
+            {settingsOpen ? '▾ Settings' : '▸ Settings'}
+          </button>
+          {settingsOpen && (
+            <div className="solar-hud__settings" data-testid="solar-settings-panel">
+              <fieldset className="solar-hud__radio-group">
+                <legend>Distance scale</legend>
+                {DISTANCE_POLICIES.map((p) => (
+                  <label key={p.name}>
+                    <input
+                      type="radio"
+                      name="solar-distance-policy"
+                      value={p.name}
+                      checked={p.name === distancePolicy}
+                      data-testid={`solar-distance-${p.name}`}
+                      onChange={() => onDistancePolicyChange(p.name)}
+                    />
+                    <span>{p.name}</span>
+                  </label>
+                ))}
+              </fieldset>
+              <fieldset className="solar-hud__radio-group">
+                <legend>Size scale</legend>
+                {SIZE_POLICIES.map((p) => (
+                  <label key={p.name}>
+                    <input
+                      type="radio"
+                      name="solar-size-policy"
+                      value={p.name}
+                      checked={p.name === sizePolicy}
+                      data-testid={`solar-size-${p.name}`}
+                      onChange={() => onSizePolicyChange(p.name)}
+                    />
+                    <span>{p.name}</span>
+                  </label>
+                ))}
+              </fieldset>
+            </div>
+          )}
         </div>
 
         <div className="solar-hud__time" data-testid="solar-time-panel">

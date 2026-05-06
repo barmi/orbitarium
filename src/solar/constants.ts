@@ -54,6 +54,9 @@ export const ORBITAL_PERIOD_DAYS: Readonly<Record<string, number>> = {
  */
 export const SUN_VISUAL_RADIUS_SCENE = 0.18
 
+export const DEFAULT_DISTANCE_POLICY = 'piecewise-monotonic'
+export const DEFAULT_SIZE_POLICY = 'logarithmic-magnification'
+
 export const ORBIT_SAMPLE_COUNT = 256
 
 /** Re-sample orbits every N days of jdTdb drift. 1 year keeps the inner-planet
