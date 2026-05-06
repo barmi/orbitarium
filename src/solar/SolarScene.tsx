@@ -18,6 +18,9 @@ interface Props {
   readonly focusedSlug: string | null
   readonly distancePolicyName: string
   readonly sizePolicyName: string
+  readonly showOrbits: boolean
+  readonly showStarfield: boolean
+  readonly vmagCutoff: number
   readonly onPositionsLoaded?: (loaded: boolean) => void
   readonly onPositionsError?: (error: string | null) => void
 }
@@ -28,6 +31,9 @@ export default function SolarScene({
   focusedSlug,
   distancePolicyName,
   sizePolicyName,
+  showOrbits,
+  showStarfield,
+  vmagCutoff,
   onPositionsLoaded,
   onPositionsError,
 }: Props) {
@@ -48,7 +54,7 @@ export default function SolarScene({
     <>
       <ambientLight intensity={RENDER_DEFAULTS.ambientIntensity} />
       <pointLight position={[0, 0, 0]} intensity={RENDER_DEFAULTS.sunIntensity * 1.5} decay={0} />
-      <Starfield />
+      <Starfield enabled={showStarfield} vmagCutoff={vmagCutoff} />
       <SolarBodies
         positions={positions.map}
         distancePolicy={distancePolicy}
@@ -56,12 +62,14 @@ export default function SolarScene({
         anchor={anchor}
         jdTdb={jdTdb}
       />
-      <SolarOrbits
-        orbits={orbits.map}
-        distancePolicy={distancePolicy}
-        anchor={anchor}
-        focusedSlug={focusedSlug}
-      />
+      {showOrbits && (
+        <SolarOrbits
+          orbits={orbits.map}
+          distancePolicy={distancePolicy}
+          anchor={anchor}
+          focusedSlug={focusedSlug}
+        />
+      )}
       <CameraController
         focusedSlug={focusedSlug}
         positions={positions.map}

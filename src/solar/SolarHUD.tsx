@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { type JdTdb, jdTdbToUtc, utcToJdTdb } from '@/astro'
 import { getBodyBySlug } from '@/bodies'
 import { DISTANCE_POLICIES, SIZE_POLICIES } from '@/scale'
-import { useSimulationClock } from '@/time'
+import { TIME_PRESETS, useSimulationClock } from '@/time'
 
 import { SOLAR_BODY_SLUGS } from './constants'
 
@@ -15,6 +15,12 @@ interface Props {
   readonly sizePolicy: string
   readonly onDistancePolicyChange: (name: string) => void
   readonly onSizePolicyChange: (name: string) => void
+  readonly showOrbits: boolean
+  readonly showStarfield: boolean
+  readonly vmagCutoff: number
+  readonly onShowOrbitsChange: (next: boolean) => void
+  readonly onShowStarfieldChange: (next: boolean) => void
+  readonly onVmagCutoffChange: (next: number) => void
   readonly loaded: boolean
   readonly error: string | null
 }
@@ -60,6 +66,12 @@ export default function SolarHUD({
   sizePolicy,
   onDistancePolicyChange,
   onSizePolicyChange,
+  showOrbits,
+  showStarfield,
+  vmagCutoff,
+  onShowOrbitsChange,
+  onShowStarfieldChange,
+  onVmagCutoffChange,
   loaded,
   error,
 }: Props) {
@@ -152,6 +164,43 @@ export default function SolarHUD({
                   </label>
                 ))}
               </fieldset>
+              <fieldset className="solar-hud__radio-group">
+                <legend>View options</legend>
+                <label>
+                  <input
+                    type="checkbox"
+                    data-testid="solar-toggle-orbits"
+                    checked={showOrbits}
+                    onChange={(e) => onShowOrbitsChange(e.currentTarget.checked)}
+                  />
+                  <span>show orbits</span>
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    data-testid="solar-toggle-starfield"
+                    checked={showStarfield}
+                    onChange={(e) => onShowStarfieldChange(e.currentTarget.checked)}
+                  />
+                  <span>show starfield</span>
+                </label>
+                <label className="solar-hud__slider">
+                  <span>
+                    vmag cutoff{' '}
+                    <strong data-testid="solar-vmag-value">{vmagCutoff.toFixed(1)}</strong>
+                  </span>
+                  <input
+                    type="range"
+                    min={1}
+                    max={6}
+                    step={0.1}
+                    value={vmagCutoff}
+                    data-testid="solar-vmag-slider"
+                    disabled={!showStarfield}
+                    onChange={(e) => onVmagCutoffChange(Number(e.currentTarget.value))}
+                  />
+                </label>
+              </fieldset>
             </div>
           )}
         </div>
@@ -190,6 +239,31 @@ export default function SolarHUD({
             <button type="button" data-testid="solar-now" onClick={jumpToNow}>
               Now
             </button>
+          </div>
+
+          <div className="solar-hud__time-row">
+            <label className="solar-hud__time-label" htmlFor="solar-preset-select">
+              Preset
+            </label>
+            <select
+              id="solar-preset-select"
+              data-testid="solar-preset"
+              defaultValue=""
+              onChange={(e) => {
+                const id = e.currentTarget.value
+                if (!id) return
+                const preset = TIME_PRESETS.find((p) => p.id === id)
+                if (preset) dispatch({ type: 'setJdTdb', jdTdb: preset.jdTdb })
+                e.currentTarget.value = ''
+              }}
+            >
+              <option value="">— jump to preset —</option>
+              {TIME_PRESETS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="solar-hud__time-row solar-hud__time-row--steps">

@@ -19,11 +19,16 @@ const RENDERER_PROPS = createRendererProps(RENDER_DEFAULTS, {
   position: [4, 3, 7],
 })
 
+const DEFAULT_VMAG_CUTOFF = 6
+
 interface InitialState {
   readonly jdTdb: JdTdb
   readonly focusedSlug: string | null
   readonly distancePolicy: string
   readonly sizePolicy: string
+  readonly showOrbits: boolean
+  readonly showStarfield: boolean
+  readonly vmagCutoff: number
 }
 
 function readInitialState(): InitialState {
@@ -34,6 +39,9 @@ function readInitialState(): InitialState {
       focusedSlug: decoded.bodySlug,
       distancePolicy: decoded.distancePolicy ?? DEFAULT_DISTANCE_POLICY,
       sizePolicy: decoded.sizePolicy ?? DEFAULT_SIZE_POLICY,
+      showOrbits: decoded.showOrbits ?? true,
+      showStarfield: decoded.showStarfield ?? true,
+      vmagCutoff: decoded.vmagCutoff ?? DEFAULT_VMAG_CUTOFF,
     }
   }
   return {
@@ -41,6 +49,9 @@ function readInitialState(): InitialState {
     focusedSlug: null,
     distancePolicy: DEFAULT_DISTANCE_POLICY,
     sizePolicy: DEFAULT_SIZE_POLICY,
+    showOrbits: true,
+    showStarfield: true,
+    vmagCutoff: DEFAULT_VMAG_CUTOFF,
   }
 }
 
@@ -49,6 +60,9 @@ export default function Solar() {
   const [focusedSlug, setFocusedSlug] = useState<string | null>(initial.focusedSlug)
   const [distancePolicy, setDistancePolicy] = useState<string>(initial.distancePolicy)
   const [sizePolicy, setSizePolicy] = useState<string>(initial.sizePolicy)
+  const [showOrbits, setShowOrbits] = useState<boolean>(initial.showOrbits)
+  const [showStarfield, setShowStarfield] = useState<boolean>(initial.showStarfield)
+  const [vmagCutoff, setVmagCutoff] = useState<number>(initial.vmagCutoff)
 
   return (
     <SimulationClockProvider initial={{ jdTdb: initial.jdTdb }}>
@@ -59,9 +73,30 @@ export default function Solar() {
         sizePolicy={sizePolicy}
         onDistancePolicyChange={setDistancePolicy}
         onSizePolicyChange={setSizePolicy}
+        showOrbits={showOrbits}
+        showStarfield={showStarfield}
+        vmagCutoff={vmagCutoff}
+        onShowOrbitsChange={setShowOrbits}
+        onShowStarfieldChange={setShowStarfield}
+        onVmagCutoffChange={setVmagCutoff}
       />
     </SimulationClockProvider>
   )
+}
+
+interface SolarAppProps {
+  readonly focusedSlug: string | null
+  readonly onSelectFocus: (slug: string | null) => void
+  readonly distancePolicy: string
+  readonly sizePolicy: string
+  readonly onDistancePolicyChange: (name: string) => void
+  readonly onSizePolicyChange: (name: string) => void
+  readonly showOrbits: boolean
+  readonly showStarfield: boolean
+  readonly vmagCutoff: number
+  readonly onShowOrbitsChange: (next: boolean) => void
+  readonly onShowStarfieldChange: (next: boolean) => void
+  readonly onVmagCutoffChange: (next: number) => void
 }
 
 function SolarApp({
@@ -71,20 +106,19 @@ function SolarApp({
   sizePolicy,
   onDistancePolicyChange,
   onSizePolicyChange,
-}: {
-  readonly focusedSlug: string | null
-  readonly onSelectFocus: (slug: string | null) => void
-  readonly distancePolicy: string
-  readonly sizePolicy: string
-  readonly onDistancePolicyChange: (name: string) => void
-  readonly onSizePolicyChange: (name: string) => void
-}) {
+  showOrbits,
+  showStarfield,
+  vmagCutoff,
+  onShowOrbitsChange,
+  onShowStarfieldChange,
+  onVmagCutoffChange,
+}: SolarAppProps) {
   const { state: clock } = useSimulationClock()
   const evaluator = useMemo(() => createDe440Evaluator(createWebDe440Loader()), [])
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Reflect clock + focus + scale policy into the URL fragment so the view is shareable.
+  // Reflect clock + focus + scale + view state into the URL fragment.
   useEffect(() => {
     if (typeof window === 'undefined') return
     const hash = encodeShareState({
@@ -93,11 +127,14 @@ function SolarApp({
       cameraMode: null,
       distancePolicy: distancePolicy === DEFAULT_DISTANCE_POLICY ? null : distancePolicy,
       sizePolicy: sizePolicy === DEFAULT_SIZE_POLICY ? null : sizePolicy,
+      showOrbits: showOrbits ? null : false,
+      showStarfield: showStarfield ? null : false,
+      vmagCutoff: vmagCutoff === DEFAULT_VMAG_CUTOFF ? null : vmagCutoff,
     })
     if (window.location.hash !== hash) {
       window.history.replaceState(null, '', hash)
     }
-  }, [clock.jdTdb, focusedSlug, distancePolicy, sizePolicy])
+  }, [clock.jdTdb, focusedSlug, distancePolicy, sizePolicy, showOrbits, showStarfield, vmagCutoff])
 
   const handleLoaded = useCallback((next: boolean) => setLoaded(next), [])
   const handleError = useCallback((next: string | null) => setError(next), [])
@@ -112,6 +149,9 @@ function SolarApp({
           focusedSlug={focusedSlug}
           distancePolicyName={distancePolicy}
           sizePolicyName={sizePolicy}
+          showOrbits={showOrbits}
+          showStarfield={showStarfield}
+          vmagCutoff={vmagCutoff}
           onPositionsLoaded={handleLoaded}
           onPositionsError={handleError}
         />
@@ -123,6 +163,12 @@ function SolarApp({
         sizePolicy={sizePolicy}
         onDistancePolicyChange={onDistancePolicyChange}
         onSizePolicyChange={onSizePolicyChange}
+        showOrbits={showOrbits}
+        showStarfield={showStarfield}
+        vmagCutoff={vmagCutoff}
+        onShowOrbitsChange={onShowOrbitsChange}
+        onShowStarfieldChange={onShowStarfieldChange}
+        onVmagCutoffChange={onVmagCutoffChange}
         loaded={loaded}
         error={error}
       />

@@ -123,8 +123,41 @@
   cursor: pointer;
 }
 
-.solar-hud__radio-group input[type='radio']:checked + span {
+.solar-hud__radio-group input[type='radio']:checked + span,
+.solar-hud__radio-group input[type='checkbox']:checked + span {
   color: #ffd166;
+}
+
+.solar-hud__radio-group input[type='checkbox'] {
+  accent-color: #ffd166;
+  cursor: pointer;
+}
+
+.solar-hud__slider {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.2rem;
+  margin-top: 0.2rem;
+}
+
+.solar-hud__slider span {
+  font-size: 0.7rem;
+  color: #cfd6d3;
+}
+
+.solar-hud__slider strong {
+  color: #ffd166;
+}
+
+.solar-hud__slider input[type='range'] {
+  width: 100%;
+  accent-color: #ffd166;
+  cursor: pointer;
+}
+
+.solar-hud__slider input[type='range']:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .solar-hud__time {

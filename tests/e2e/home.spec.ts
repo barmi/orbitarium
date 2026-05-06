@@ -127,4 +127,29 @@ test.describe('main solar app (/)', () => {
     await expect(page.getByTestId('solar-distance-logarithmic')).toBeChecked()
     await expect(page.getByTestId('solar-size-uniform')).toBeChecked()
   })
+
+  test('orbit + starfield checkboxes update URL and disable vmag slider', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('solar-settings-toggle').click()
+    await page.getByTestId('solar-toggle-orbits').uncheck()
+    await page.waitForFunction(() => window.location.hash.includes('o=0'))
+    await page.getByTestId('solar-toggle-starfield').uncheck()
+    await page.waitForFunction(() => window.location.hash.includes('s=0'))
+    await expect(page.getByTestId('solar-vmag-slider')).toBeDisabled()
+  })
+
+  test('vmag slider updates label + URL', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('solar-settings-toggle').click()
+    const slider = page.getByTestId('solar-vmag-slider')
+    await slider.fill('3.5')
+    await expect(page.getByTestId('solar-vmag-value')).toHaveText('3.5')
+    await page.waitForFunction(() => window.location.hash.includes('vm=3.50'))
+  })
+
+  test('time preset jumps to J2000', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('solar-preset').selectOption('j2000')
+    await expect(page.getByTestId('solar-utc')).toContainText('2000-01-01')
+  })
 })
