@@ -1,0 +1,157 @@
+.solar {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #000;
+}
+
+.solar canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  touch-action: none;
+}
+
+.solar-hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  color: #cfd6d3;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+}
+
+.solar-hud > * {
+  pointer-events: auto;
+}
+
+.solar-hud__top {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  right: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.solar-hud__title h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+}
+
+.solar-hud__subtitle {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  color: #8a9590;
+}
+
+.solar-hud__time {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid #2a3633;
+  padding: 0.5rem 0.7rem;
+  border-radius: 6px;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: flex-end;
+}
+
+.solar-hud__utc {
+  color: #ffd166;
+}
+
+.solar-hud__time-actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.solar-hud__time button,
+.solar-hud__time select {
+  background: #050807;
+  border: 1px solid #2a3633;
+  color: #cfd6d3;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.solar-hud__time button:hover,
+.solar-hud__time select:hover {
+  border-color: #8fb8ff;
+}
+
+.solar-hud__loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  color: #8a9590;
+  pointer-events: none;
+}
+
+.solar-hud__error {
+  position: absolute;
+  bottom: 5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(80, 0, 0, 0.85);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-family: ui-monospace, monospace;
+}
+
+.solar-hud__bottom {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 2rem);
+}
+
+.solar-hud__chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid #2a3633;
+  padding: 0.5rem 0.6rem;
+  border-radius: 999px;
+}
+
+.solar-hud__dev-link {
+  position: absolute;
+  bottom: 0.4rem;
+  right: 0.6rem;
+  font-size: 0.72rem;
+  color: #6b9eff;
+  text-decoration: none;
+  pointer-events: auto;
+  font-family: ui-monospace, monospace;
+}
+
+.solar-hud__dev-link:hover {
+  text-decoration: underline;
+}

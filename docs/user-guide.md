@@ -9,8 +9,19 @@
    pnpm install
    pnpm dev
    ```
-2. The home page (`/`) shows a starter scene with a rotating sphere and starfield.
-3. The dev catalog (`/dev/index`) lists 11 work pages — each demonstrates a system layer.
+2. **The main app `/` is the integrated solar system view** — Sun + 9 planets + Earth's Moon with real DE440 positions, Hipparcos starfield, IAU rotation, all orbit ellipses.
+3. The dev catalog (`/dev/index`) lists 11 dev pages — each one demonstrates a single Work's slice in isolation (handy for debugging).
+
+## Main App `/` — Controls
+
+| Control | Action |
+| --- | --- |
+| **Drag** in the canvas | Orbit camera around the focused target (or SSB origin) |
+| **Mouse wheel** | Zoom in/out |
+| **Body chip (bottom)** | Click to focus the camera on a body. "System" returns to overview. |
+| **▶ / ⏸** (top-right) | Play / pause the simulation clock. |
+| **Rate select** (top-right) | 1s/s · 1m/s · 1h/s · 1d/s · 30d/s · 1y/s — how much simulated time passes per real second. |
+| **URL fragment** | The current view (jdTdb + focused body) is encoded into the URL hash; copy/paste to share. |
 
 ## Dev Demo Pages
 
