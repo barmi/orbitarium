@@ -7,6 +7,7 @@ export const INITIAL_CLOCK_STATE: ClockState = {
   jdTdb: J2000_JD_TDB,
   mode: 'paused',
   rate: DEFAULT_RATE,
+  direction: 1,
 }
 
 function clampRate(r: number): number {
@@ -32,9 +33,11 @@ export function clockReducer(state: ClockState, action: ClockAction): ClockState
         state.mode === 'paused' ? 'paused' : rate === 1 ? 'realtime' : 'fast'
       return { ...state, rate, mode }
     }
+    case 'setDirection':
+      return { ...state, direction: action.direction }
     case 'tick': {
       if (state.mode === 'paused' || action.dtMs <= 0) return state
-      const deltaDays = (action.dtMs * state.rate) / MS_PER_DAY
+      const deltaDays = (action.dtMs * state.rate * state.direction) / MS_PER_DAY
       return { ...state, jdTdb: ((state.jdTdb as number) + deltaDays) as JdTdb }
     }
   }

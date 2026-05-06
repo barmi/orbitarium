@@ -75,4 +75,38 @@ test.describe('main solar app (/)', () => {
     await page.getByRole('link', { name: /dev\/index/ }).click()
     await expect(page).toHaveURL(/\/dev\/index$/)
   })
+
+  test('direction toggle reverses playback indicator', async ({ page }) => {
+    await page.goto('/')
+    const dir = page.getByTestId('solar-direction-toggle')
+    await expect(dir).toHaveText('▶▶')
+    await dir.click()
+    await expect(dir).toHaveText('◀◀')
+    await expect(dir).toHaveAttribute('aria-pressed', 'true')
+    await dir.click()
+    await expect(dir).toHaveText('▶▶')
+  })
+
+  test('step buttons advance/retreat the simulation clock', async ({ page }) => {
+    await page.goto('/#?v=1&jd=2461166.5')
+    const utc = page.getByTestId('solar-utc')
+    const before = await utc.textContent()
+    await page.getByTestId('solar-step-+1d').click()
+    const after = await utc.textContent()
+    expect(after).not.toEqual(before)
+  })
+
+  test('Now button jumps to current real-world UTC', async ({ page }) => {
+    await page.goto('/#?v=1&jd=2451545.0')
+    await expect(page.getByTestId('solar-utc')).toContainText('2000-01-01')
+    await page.getByTestId('solar-now').click()
+    await expect(page.getByTestId('solar-utc')).not.toContainText('2000-01-01')
+  })
+
+  test('Apply jump-input changes the clock to the entered UTC', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('solar-jump-input').fill('2030-07-15T06:00:00')
+    await page.getByTestId('solar-jump-apply').click()
+    await expect(page.getByTestId('solar-utc')).toContainText('2030-07-15')
+  })
 })

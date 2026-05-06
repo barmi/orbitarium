@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   J2000_JD_TDB,
+  jdTdbToUtc,
   jdToJ2000Days,
   jdToMjd,
   leapSecondsAt,
@@ -133,6 +134,20 @@ describe('time scale conversions — invariants', () => {
       const d = new Date(iso)
       const diffS = (utcToJdTdb(d) - utcToJdTt(d)) * SECONDS_PER_DAY
       expect(Math.abs(diffS)).toBeLessThan(2e-3)
+    }
+  })
+
+  it('jdTdbToUtc inverts utcToJdTdb within ~1 second (HUD-grade)', () => {
+    for (const iso of [
+      '1990-03-15T08:30:00Z',
+      '2000-01-01T12:00:00Z',
+      '2026-05-06T00:00:00Z',
+      '2050-12-31T23:59:59Z',
+    ]) {
+      const d = new Date(iso)
+      const jd = utcToJdTdb(d)
+      const back = jdTdbToUtc(jd)
+      expect(Math.abs(back.getTime() - d.getTime())).toBeLessThan(1000)
     }
   })
 })

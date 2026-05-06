@@ -65,37 +65,78 @@
   padding: 0.5rem 0.7rem;
   border-radius: 6px;
   font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   display: flex;
   flex-direction: column;
+  gap: 0.35rem;
+  min-width: 21rem;
+}
+
+.solar-hud__time-row {
+  display: flex;
+  align-items: center;
   gap: 0.4rem;
-  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.solar-hud__time-row--readout {
+  justify-content: space-between;
+}
+
+.solar-hud__utc-label,
+.solar-hud__time-label {
+  color: #6c7c77;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  min-width: 2.6rem;
 }
 
 .solar-hud__utc {
   color: #ffd166;
+  font-size: 0.92rem;
 }
 
-.solar-hud__time-actions {
-  display: flex;
-  gap: 0.4rem;
-  align-items: center;
+.solar-hud__time-row--play {
+  justify-content: flex-end;
+  margin-top: 0.1rem;
+}
+
+.solar-hud__step-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 0.25rem;
+  flex: 1;
 }
 
 .solar-hud__time button,
-.solar-hud__time select {
+.solar-hud__time select,
+.solar-hud__time input {
   background: #050807;
   border: 1px solid #2a3633;
   color: #cfd6d3;
-  padding: 0.2rem 0.5rem;
+  padding: 0.2rem 0.45rem;
   border-radius: 4px;
   font: inherit;
   cursor: pointer;
 }
 
+.solar-hud__time input[type='datetime-local'] {
+  flex: 1;
+  cursor: text;
+  color-scheme: dark;
+  min-width: 0;
+}
+
 .solar-hud__time button:hover,
-.solar-hud__time select:hover {
+.solar-hud__time select:hover,
+.solar-hud__time input:hover {
   border-color: #8fb8ff;
+}
+
+.solar-hud__time button[aria-pressed='true'] {
+  border-color: #ffd166;
+  color: #ffd166;
 }
 
 .solar-hud__loading {

@@ -1,5 +1,7 @@
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import { type JdTdb, jdTdbToUtc, utcToJdTdb } from '@/astro'
 import { getBodyBySlug } from '@/bodies'
 import { useSimulationClock } from '@/time'
 
@@ -12,24 +14,77 @@ interface Props {
   readonly error: string | null
 }
 
-function jdTdbToUtcIso(jd: number): string {
-  const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0)
-  const ms = J2000_MS + (jd - 2_451_545.0) * 86_400_000
-  if (!Number.isFinite(ms)) return '—'
-  try {
-    return new Date(ms).toISOString().replace('.000Z', 'Z')
-  } catch {
-    return '—'
-  }
+const RATE_PRESETS = [1, 60, 3600, 86_400, 86_400 * 30, 86_400 * 365] // 1s/s ... 1yr/s
+
+const STEP_BUTTONS: readonly { readonly label: string; readonly days: number }[] = [
+  { label: '-1y', days: -365 },
+  { label: '-1mo', days: -30 },
+  { label: '-1d', days: -1 },
+  { label: '-1h', days: -1 / 24 },
+  { label: '+1h', days: 1 / 24 },
+  { label: '+1d', days: 1 },
+  { label: '+1mo', days: 30 },
+  { label: '+1y', days: 365 },
+]
+
+function jdTdbToIsoUtc(jd: number): string {
+  const d = jdTdbToUtc(jd)
+  if (!Number.isFinite(d.getTime())) return '—'
+  return d.toISOString().replace(/\.\d{3}Z$/, 'Z')
 }
 
-const RATE_PRESETS = [1, 60, 3600, 86_400, 86_400 * 30, 86_400 * 365] // 1s/s ... 1yr/s
+function jdTdbToInputValue(jd: number): string {
+  const d = jdTdbToUtc(jd)
+  if (!Number.isFinite(d.getTime())) return ''
+  // datetime-local format: YYYY-MM-DDTHH:MM:SS (no millis, no Z)
+  return d.toISOString().slice(0, 19)
+}
+
+function rateLabel(r: number): string {
+  if (r >= 86_400 * 365) return `${(r / (86_400 * 365)).toFixed(0)}y/s`
+  if (r >= 86_400 * 30) return `${(r / (86_400 * 30)).toFixed(0)}mo/s`
+  if (r >= 86_400) return `${(r / 86_400).toFixed(0)}d/s`
+  if (r >= 3600) return `${(r / 3600).toFixed(0)}h/s`
+  return `${r}s/s`
+}
 
 export default function SolarHUD({ focusedSlug, onSelectFocus, loaded, error }: Props) {
   const { state: clock, dispatch } = useSimulationClock()
-  const utc = jdTdbToUtcIso(clock.jdTdb)
+  const [jumpDraft, setJumpDraft] = useState<string>(() => jdTdbToInputValue(clock.jdTdb))
+  const [editingJump, setEditingJump] = useState(false)
 
+  // Keep the date input synced with the clock when the user isn't editing it.
+  useEffect(() => {
+    if (!editingJump) setJumpDraft(jdTdbToInputValue(clock.jdTdb))
+  }, [clock.jdTdb, editingJump])
+
+  const utc = jdTdbToIsoUtc(clock.jdTdb)
   const focusedBody = focusedSlug ? getBodyBySlug(focusedSlug) : null
+
+  const applyJump = useCallback(() => {
+    if (!jumpDraft) return
+    const ms = Date.parse(`${jumpDraft}Z`)
+    if (!Number.isFinite(ms)) return
+    const next = utcToJdTdb(new Date(ms))
+    dispatch({ type: 'setJdTdb', jdTdb: next })
+    setEditingJump(false)
+  }, [dispatch, jumpDraft])
+
+  const jumpToNow = useCallback(() => {
+    dispatch({ type: 'setJdTdb', jdTdb: utcToJdTdb(new Date()) })
+  }, [dispatch])
+
+  const stepBy = useCallback(
+    (days: number) => {
+      const next = ((clock.jdTdb as number) + days) as JdTdb
+      dispatch({ type: 'setJdTdb', jdTdb: next })
+    },
+    [clock.jdTdb, dispatch],
+  )
+
+  const flipDirection = useCallback(() => {
+    dispatch({ type: 'setDirection', direction: clock.direction === 1 ? -1 : 1 })
+  }, [clock.direction, dispatch])
 
   return (
     <div className="solar-hud">
@@ -40,18 +95,79 @@ export default function SolarHUD({ focusedSlug, onSelectFocus, loaded, error }: 
             real-position solar system{focusedBody ? ` · focus: ${focusedBody.label}` : ''}
           </p>
         </div>
+
         <div className="solar-hud__time" data-testid="solar-time-panel">
-          <span className="solar-hud__utc" data-testid="solar-utc">
-            {utc}
-          </span>
-          <div className="solar-hud__time-actions">
+          <div className="solar-hud__time-row solar-hud__time-row--readout">
+            <span className="solar-hud__utc-label">UTC</span>
+            <span className="solar-hud__utc" data-testid="solar-utc">
+              {utc}
+            </span>
+          </div>
+
+          <div className="solar-hud__time-row">
+            <label className="solar-hud__time-label" htmlFor="solar-jump-input">
+              Jump
+            </label>
+            <input
+              id="solar-jump-input"
+              type="datetime-local"
+              step="1"
+              value={jumpDraft}
+              data-testid="solar-jump-input"
+              onChange={(e) => {
+                setJumpDraft(e.currentTarget.value)
+                setEditingJump(true)
+              }}
+              onFocus={() => setEditingJump(true)}
+              onBlur={() => setEditingJump(false)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') applyJump()
+              }}
+            />
+            <button type="button" data-testid="solar-jump-apply" onClick={applyJump}>
+              Apply
+            </button>
+            <button type="button" data-testid="solar-now" onClick={jumpToNow}>
+              Now
+            </button>
+          </div>
+
+          <div className="solar-hud__time-row solar-hud__time-row--steps">
+            <span className="solar-hud__time-label">Step</span>
+            <div className="solar-hud__step-grid">
+              {STEP_BUTTONS.map((btn) => (
+                <button
+                  key={btn.label}
+                  type="button"
+                  data-testid={`solar-step-${btn.label}`}
+                  onClick={() => stepBy(btn.days)}
+                >
+                  {btn.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="solar-hud__time-row solar-hud__time-row--play">
+            <button
+              type="button"
+              aria-label={clock.direction === 1 ? 'Play forward' : 'Play backward'}
+              aria-pressed={clock.direction === -1}
+              data-testid="solar-direction-toggle"
+              onClick={flipDirection}
+              title={
+                clock.direction === 1 ? 'forward — click to reverse' : 'reverse — click to forward'
+              }
+            >
+              {clock.direction === 1 ? '▶▶' : '◀◀'}
+            </button>
             <button
               type="button"
               aria-label={clock.mode === 'paused' ? 'Play' : 'Pause'}
               data-testid="solar-play-toggle"
               onClick={() => dispatch({ type: clock.mode === 'paused' ? 'play' : 'pause' })}
             >
-              {clock.mode === 'paused' ? '▶' : '⏸'}
+              {clock.mode === 'paused' ? (clock.direction === 1 ? '▶' : '◀') : '⏸'}
             </button>
             <select
               aria-label="Rate"
@@ -61,12 +177,7 @@ export default function SolarHUD({ focusedSlug, onSelectFocus, loaded, error }: 
             >
               {RATE_PRESETS.map((r) => (
                 <option key={r} value={r}>
-                  ×
-                  {r >= 86400
-                    ? `${(r / 86400).toFixed(0)}d/s`
-                    : r >= 3600
-                      ? `${(r / 3600).toFixed(0)}h/s`
-                      : `${r}s/s`}
+                  ×{rateLabel(r)}
                 </option>
               ))}
             </select>

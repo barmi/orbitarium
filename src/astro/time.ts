@@ -104,6 +104,25 @@ export function utcToJdTdb(d: Date): JdTdb {
   return (jdTt + tdbMinusTtSeconds(jdTt) / SECONDS_PER_DAY) as JdTdb
 }
 
+/**
+ * JD on the TDB scale → UTC `Date` (display-side approximation).
+ *
+ * Inverts utcToJdTdb to within ~1 second by ignoring TDB-TT (~1.6 ms) and
+ * recomputing leap seconds from the linear J2000 mapping. Good enough for HUD
+ * readouts; do not use for ephemeris evaluation.
+ */
+export function jdTdbToUtc(jd: number): Date {
+  if (!Number.isFinite(jd)) return new Date(NaN)
+  const tdbMinusTt = tdbMinusTtSeconds(jd)
+  const jdTt = jd - tdbMinusTt / SECONDS_PER_DAY
+  const jdTai = jdTt - TT_TAI_OFFSET_S / SECONDS_PER_DAY
+  const J2000_UTC_MS = Date.UTC(2000, 0, 1, 12, 0, 0)
+  const taiMs = J2000_UTC_MS + (jdTai - 2451545.0) * SECONDS_PER_DAY * 1000
+  const approxUtc = new Date(taiMs)
+  const leap = leapSecondsAt(approxUtc)
+  return new Date(taiMs - leap * 1000)
+}
+
 /** Days elapsed since J2000.0 (any JD scale; conventional usage is TDB). */
 export function jdToJ2000Days(jd: number): number {
   return jd - 2451545.0

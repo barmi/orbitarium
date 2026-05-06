@@ -11,9 +11,10 @@ import {
 } from '@/time'
 
 describe('clockReducer', () => {
-  it('initial state is paused at J2000 with rate 1', () => {
+  it('initial state is paused at J2000 with rate 1, forward direction', () => {
     expect(INITIAL_CLOCK_STATE.mode).toBe('paused')
     expect(INITIAL_CLOCK_STATE.rate).toBe(1)
+    expect(INITIAL_CLOCK_STATE.direction).toBe(1)
     expect(INITIAL_CLOCK_STATE.jdTdb).toBeCloseTo(2_451_545.0, 6)
   })
 
@@ -66,6 +67,21 @@ describe('clockReducer', () => {
       },
     )
     expect(fast.jdTdb - INITIAL_CLOCK_STATE.jdTdb).toBeGreaterThan(0.001)
+  })
+
+  it('setDirection toggles playback direction', () => {
+    const reversed = clockReducer(INITIAL_CLOCK_STATE, { type: 'setDirection', direction: -1 })
+    expect(reversed.direction).toBe(-1)
+    const restored = clockReducer(reversed, { type: 'setDirection', direction: 1 })
+    expect(restored.direction).toBe(1)
+  })
+
+  it('tick with direction=-1 retreats jdTdb', () => {
+    const playing = clockReducer(INITIAL_CLOCK_STATE, { type: 'play' })
+    const reversed = clockReducer(playing, { type: 'setDirection', direction: -1 })
+    const ticked = clockReducer(reversed, { type: 'tick', dtMs: 1000 })
+    const expectedDelta = -1000 / MS_PER_DAY
+    expect(ticked.jdTdb - INITIAL_CLOCK_STATE.jdTdb).toBeCloseTo(expectedDelta, 9)
   })
 })
 
